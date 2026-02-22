@@ -1,0 +1,759 @@
+openapi: 3.0.3
+
+info:
+  title: tachyonhq/webhooks
+  description: API reference for tachyonhq/webhooks
+  termsOfService: https://github.com/tachyonhqdev/webhooks
+  contact:
+    email: firmino.changani@gmail.com
+  license:
+    name: MIT
+    url: https://github.com/tachyonhqdev/webhooks/LICENSE.md
+  version: 0.0.1
+
+externalDocs:
+  description: https://github.com/tachyonhqdev/webhooks/README.md
+  url: https://github.com/tachyonhqdev/webhooks
+
+servers:
+  - url: http://localhost:8080
+
+paths:
+  # Messages
+  /messages/{message_id}:
+    get:
+      summary: Get message by id
+      description: Get message by id
+      tags:
+        - Messages
+      operationId: GetMessageByID
+      security:
+        - ApiKeyAuth: [ ]
+      parameters:
+        - $ref: '#/components/parameters/message_id'
+      responses:
+        "200":
+          description: Message payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "404":
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      summary: Remove message
+      description: Remove message
+      tags:
+        - Messages
+      operationId: removeMessage
+      security:
+        - ApiKeyAuth: [ ]
+      parameters:
+        - $ref: '#/components/parameters/message_id'
+      responses:
+        "204":
+          description: Message removed successfully
+        "404":
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: "#/components/responses/InternalServerError"
+
+  /messages:
+    get:
+      summary: List messages
+      description: List existing messages of a given application
+      tags:
+        - Messages
+      operationId: listMessages
+      security:
+        - ApiKeyAuth: [ ]
+      parameters:
+        - $ref: "#/components/parameters/paginationLimit"
+        - $ref: "#/components/parameters/paginationPage"
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageList"
+        default:
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      summary: Create message
+      description: List tasks given a tenant_id
+      tags:
+        - Messages
+      operationId: createMessage
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/idempotency_key'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required: [ event_type, application_id, payload ]
+              properties:
+                event_type:
+                  type: string
+                application_id:
+                  type: string
+                payload:
+                  type: object
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          $ref: '#/components/responses/BadRequestError'
+        default:
+          $ref: "#/components/responses/InternalServerError"
+
+  # Message Attempts
+  /message-attempts:
+    get:
+      summary: List message attempts
+      description: List existing message attempts of a given endpoint
+      tags:
+        - MessageAttempts
+      operationId: listMessageAttempts
+      parameters:
+        - $ref: "#/components/parameters/paginationLimit"
+        - $ref: "#/components/parameters/paginationPage"
+        - name: messageID
+          description: The number of items per page
+          in: query
+          required: true
+          schema:
+            type: string
+      security:
+        - ApiKeyAuth: [ ]
+      responses:
+        "200":
+          description: Message attempts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageAttemptList"
+        default:
+          $ref: "#/components/responses/InternalServerError"
+
+  /message-attempts/{message_attempt_id}:
+    delete:
+      summary: Remove message attempt
+      description: Remove message attempt
+      tags:
+        - MessageAttempts
+      operationId: removeMessageAttempt
+      security:
+        - ApiKeyAuth: [ ]
+      parameters:
+        - $ref: '#/components/parameters/message_attempt_id'
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageList"
+        "400":
+          $ref: '#/components/responses/BadRequestError'
+        default:
+          $ref: "#/components/responses/InternalServerError"
+
+  # Applications
+  /applications/{application_id}:
+    get:
+      summary: Get application by ID
+      description: Get application by ID
+      tags:
+        - Applications
+      operationId: getApplicationByID
+      security:
+        - ApiKeyAuth: [ ]
+      parameters:
+        - $ref: '#/components/parameters/application_id'
+      responses:
+        "200":
+          description: Application payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        "404":
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      summary: Remove application
+      description: application
+      tags:
+        - Applications
+      operationId: removeApplication
+      security:
+        - ApiKeyAuth: [ ]
+      parameters:
+        - $ref: '#/components/parameters/application_id'
+      responses:
+        "204":
+          description: Application removed
+        "404":
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: "#/components/responses/InternalServerError"
+
+  /applications:
+    get:
+      summary: List applications
+      description: List existing applications
+      tags:
+        - Applications
+      operationId: listApplications
+      security:
+        - ApiKeyAuth: [ ]
+      parameters:
+        - $ref: "#/components/parameters/paginationLimit"
+        - $ref: "#/components/parameters/paginationPage"
+      responses:
+        "200":
+          description: A paginated list of applications
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationList"
+        default:
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      summary: Create application
+      description: Create a new application
+      tags:
+        - Applications
+      operationId: CreateApplication
+      security:
+        - ApiKeyAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required: [name]
+              properties:
+                name:
+                  type: string
+      responses:
+        "201":
+          description: The newly created application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        "400":
+          $ref: '#/components/responses/BadRequestError'
+        default:
+          $ref: "#/components/responses/InternalServerError"
+
+  # Event types
+  /event-types/{event_type_name}:
+    get:
+      summary: Get event type by name
+      description: Get event type by name
+      tags:
+        - EventTypes
+      operationId: getEventTypeByName
+      security:
+        - ApiKeyAuth: [ ]
+      parameters:
+        - $ref: '#/components/parameters/event_type_name'
+      responses:
+        "200":
+          description: Application payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        "404":
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      summary: Remove event type
+      description: Remove event type by its name
+      tags:
+        - EventTypes
+      operationId: removeEventType
+      security:
+        - ApiKeyAuth: [ ]
+      parameters:
+        - $ref: '#/components/parameters/event_type_name'
+      responses:
+        "204":
+          description: Application removed
+        "404":
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: "#/components/responses/InternalServerError"
+
+  /event-types:
+    get:
+      summary: List event types
+      description: List existing event types
+      tags:
+        - EventTypes
+      operationId: ListEventTypes
+      security:
+        - ApiKeyAuth: [ ]
+      parameters:
+        - $ref: "#/components/parameters/paginationLimit"
+        - $ref: "#/components/parameters/paginationPage"
+      responses:
+        "200":
+          description: A paginated list of event types
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventTypeList"
+        default:
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      summary: Create an event type
+      description: Create a new event type
+      tags:
+        - EventTypes
+      operationId: CreateEventType
+      security:
+        - ApiKeyAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required: [ name, description ]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                schema:
+                  type: object
+      responses:
+        "201":
+          description: The newly created event type
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventType"
+        "400":
+          $ref: '#/components/responses/BadRequestError'
+        default:
+          $ref: "#/components/responses/InternalServerError"
+
+  # Endpoints
+  /endpoints/{endpoint_id}:
+    get:
+      summary: Get endpoint by id
+      description: Get endpoint by id
+      tags:
+        - Endpoints
+      operationId: getEndpointById
+      security:
+        - ApiKeyAuth: [ ]
+      parameters:
+        - $ref: '#/components/parameters/endpoint_id'
+      responses:
+        "200":
+          description: Endpoint payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Endpoint"
+        "404":
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      summary: Remove an endpoint
+      description: Remove an endpoint
+      tags:
+        - Endpoints
+      operationId: removeEndpoint
+      security:
+        - ApiKeyAuth: [ ]
+      parameters:
+        - $ref: '#/components/parameters/endpoint_id'
+      responses:
+        "204":
+          description: Application removed
+        "404":
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: "#/components/responses/InternalServerError"
+
+  /endpoints:
+    get:
+      summary: List endpoints
+      description: List existing endpoints
+      tags:
+        - Endpoints
+      operationId: ListEndpoints
+      security:
+        - ApiKeyAuth: [ ]
+      parameters:
+        - $ref: "#/components/parameters/paginationLimit"
+        - $ref: "#/components/parameters/paginationPage"
+      responses:
+        "200":
+          description: A paginated list of event types
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EndpointList"
+        default:
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      summary: Create an endpoint
+      description: Create a new endpoint
+      tags:
+        - Endpoints
+      operationId: CreateEndpoint
+      security:
+        - ApiKeyAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required: [ url, application_id, headers, event_type_ids ]
+              properties:
+                url:
+                  type: string
+                application_id:
+                  type: string
+                description:
+                  type: string
+                event_type_ids:
+                  type: array
+                  items:
+                    type: string
+                secret:
+                  type: string
+                headers:
+                  type: object
+                  additionalProperties:
+                    type: string
+
+      responses:
+        "201":
+          description: The newly created endpoint
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Endpoint"
+        "400":
+          $ref: '#/components/responses/BadRequestError'
+        default:
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  parameters:
+    idempotency_key:
+      name: idempotency_key
+      in: header
+      required: false
+      schema:
+        type: string
+    message_id:
+        name: message_id
+        in: path
+        required: true
+        schema:
+          type: string
+    application_id:
+      name: application_id
+      in: path
+      required: true
+      schema:
+        type: string
+    event_type_name:
+      name: event_type_name
+      in: path
+      required: true
+      schema:
+        type: string
+    endpoint_id:
+      name: endpoint_id
+      in: path
+      required: true
+      schema:
+        type: string
+    message_attempt_id:
+      name: message_attempt_id
+      in: path
+      required: true
+      schema:
+        type: string
+    paginationLimit:
+      name: limit
+      description: The number of items per page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 15
+    paginationPage:
+      name: page
+      description: The page number
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+  schemas:
+    # Endpoint
+    Endpoint:
+      required: [ id, url, application_id, event_type_ids, headers, created_at, updated_at ]
+      properties:
+        id:
+          type: string
+          x-order: 1
+        application_id:
+          type: string
+          x-order: 2
+        url:
+          type: string
+          x-order: 3
+        description:
+          type: string
+          x-order: 4
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+          x-order: 5
+        event_type_ids:
+          type: array
+          items:
+            type: string
+          x-order: 6
+        secret:
+          type: string
+          x-order: 7
+        created_at:
+          type: string
+          format: date-time
+          x-order: 8
+        updated_at:
+          type: string
+          format: date-time
+          x-order: 9
+    EndpointList:
+      required: [ data, pagination ]
+      properties:
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Endpoint'
+
+    # Event type
+    EventType:
+      required: [id, name, description, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          x-order: 1
+        name:
+          type: string
+          x-order: 2
+        description:
+          type: string
+          x-order: 3
+        schema:
+          type: object
+          x-order: 4
+        created_at:
+          type: string
+          format: date-time
+          x-order: 5
+        updated_at:
+          type: string
+          format: date-time
+          x-order: 6
+    EventTypeList:
+      required: [ data, pagination ]
+      properties:
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventType'
+
+    # Application
+    Application:
+      required: [id, name, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          x-order: 1
+        name:
+          type: string
+          x-order: 2
+        created_at:
+          type: string
+          format: date-time
+          x-order: 3
+        updated_at:
+          type: string
+          format: date-time
+          x-order: 4
+    ApplicationList:
+      required: [data, pagination]
+      properties:
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Application'
+
+    # Message
+    Message:
+      required: [id, application_id, event_type, payload, created_at]
+      properties:
+        id:
+          type: string
+          x-order: 1
+        application_id:
+            type: string
+            x-order: 2
+        event_type:
+          type: string
+          x-order: 3
+        payload:
+          type: object
+          x-order: 4
+        created_at:
+          type: string
+          format: date-time
+          x-order: 5
+    MessageList:
+      required: [ data, pagination ]
+      properties:
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+    
+    # Message Attempt
+    MessageAttempt:
+      required: [ id, message_id, status, headers_sent, endpoint_url, response_status_code, attempted_at ]
+      properties:
+        id:
+          type: string
+          x-order: 1
+        message_id:
+          type: string
+          x-order: 2
+        status:
+          type: string
+          x-order: 3
+        headers_sent:
+          type: object
+          x-order: 4
+        response:
+          type: string
+          x-order: 5
+        response_status_code:
+          type: integer
+          x-order: 6
+        endpoint_url:
+          type: string
+          x-order: 7
+        attempted_at:
+          type: string
+          format: date-time
+          x-order: 8
+    MessageAttemptList:
+      required: [ data, pagination ]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessageAttempt'
+          x-order: 1
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    # Pagination
+    Pagination:
+      required: [ total, per_page, current_page, total_pages ]
+      properties:
+        total:
+          type: integer
+          x-order: 1
+        per_page:
+          type: integer
+          x-order: 2
+        current_page:
+          type: integer
+          x-order: 3
+        total_pages:
+          type: integer
+          x-order: 4
+
+    # Error
+    ErrorSchema:
+      type: object
+      required: [error, message]
+      properties:
+        message:
+          type: string
+          description: A description about the error
+        error:
+          type: string
+          description: Error custom error code such as 'email_in_use'
+  responses:
+    UnauthorizedError:
+      description: "Usually causes by an authentication token missing"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorSchema"
+    NotFoundError:
+      description: "Resource not found"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorSchema"
+    BadRequestError:
+      description: "Data validation error"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorSchema"
+    InternalServerError:
+      description: "A generic error response"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorSchema"
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key

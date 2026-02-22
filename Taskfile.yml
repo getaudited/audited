@@ -1,0 +1,124 @@
+version: 3
+
+dotenv:
+  - ./.env.local
+  - ./.env
+
+tasks:
+  setup:
+    cmds:
+      - go install github.com/aarondl/sqlboiler/v4@latest
+      - go install github.com/aarondl/sqlboiler/v4/drivers/sqlboiler-psql@latest
+      - go install github.com/pressly/goose/v3/cmd/goose@latest
+      - go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
+
+  run:
+    cmds:
+      - docker compose up -d {{.CLI_ARGS}}
+
+  dev:
+    cmds:
+      - docker compose --profile dev up -d {{.CLI_ARGS}}
+
+  run:service:
+    cmds:
+      - task watch -- go run ./cmd/service
+
+  run:emulators:
+    cmds:
+      - task watch -- go run ./cmd/emulators
+
+  watch:
+    cmds:
+      - reflex -r '\.go' -r ''  -s -- sh -c '{{.CLI_ARGS}}'
+
+  mig:up:
+    cmds:
+      - goose -s -dir ./misc/sql/migrations up
+
+  mig:down:
+    cmds:
+      - goose -s -dir ./misc/sql/migrations down
+
+  mig:reset:
+    cmds:
+      - goose -s -dir ./misc/sql/migrations reset
+
+  mig:create:
+    cmds:
+      - goose -s -dir ./misc/sql/migrations create {{.CLI_ARGS}} sql
+
+  seed:up:
+    cmds:
+      - goose -no-versioning -dir ./misc/sql/seeds up
+
+  seed:down:
+    cmds:
+      - goose -no-versioning -dir ./misc/sql/seeds down
+
+  seed:create:
+    cmds:
+      - goose -no-versioning -dir ./misc/sql/seeds create {{.CLI_ARGS}} sql
+
+  orm:
+    cmds:
+      - task mig:down
+      - task mig:up
+      - sqlboiler psql --wipe --no-tests -o ./internal/adapters/models
+
+  test:all:
+    cmds:
+      - go clean -testcache
+      - task test
+      - task test:components
+
+  test:
+    cmds:
+      - go test -v -race ./internal/...
+
+  test:components:
+    cmds:
+      - go clean -testcache
+      - go test -v -race ./tests/components/...
+
+  lint:
+    cmds:
+      - golangci-lint run
+
+  lint:fix:
+    cmds:
+      - golangci-lint run --fix
+
+  fmt:
+    cmds:
+      - gofmt -w -s ./
+
+  logs:
+    cmds:
+      - docker compose logs app -f --tail 10 --timestamps
+
+  logs:all:
+    cmds:
+      - docker compose logs -f --tail 10 --timestamps
+
+  openapi:
+    cmds:
+      - |
+        oapi-codegen \
+          -package http \
+          -generate server,types,spec \
+          ./api/openapi.yml > ./internal/ports/http/server.gen.go
+
+      - |
+        oapi-codegen \
+          -package client \
+          -generate client,types,spec \
+          ./api/openapi.yml > ./tests/client/client.gen.go
+
+  events:
+    cmds:
+      - |
+        protoc ./events/events.proto \
+        --go_out=./events/go --go_opt=paths=source_relative \
+        --go-grpc_out=./events/go --go-grpc_opt=paths=source_relative \
+        --proto_path=./events

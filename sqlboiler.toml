@@ -1,0 +1,9 @@
+[psql]
+dbname = "postgres"
+blacklist = ["goose_db_version", "watermill_offsets_whk_commands_forwarded", "watermill_whk_commands_forwarded"]
+host    = "localhost"
+port    = 5432
+user    = "postgres"
+pass    = "password"
+sslmode = "disable"
+no-context = "true"

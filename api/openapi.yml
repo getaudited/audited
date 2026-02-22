@@ -1,0 +1,382 @@
+openapi: 3.0.3
+
+info:
+  title: audited
+  description: API reference for audited API
+  termsOfService: https://github.com/firminochangani/audited
+  contact:
+    email: firmino.changani@gmail.com
+  license:
+    name: MIT
+    url: https://github.com/firminochangani/audited/LICENSE.md
+  version: 0.0.1
+
+externalDocs:
+  description: https://github.com/firminochangani/audited/README.md
+  url: https://github.com/firminochangani/audited
+
+servers:
+  - url: http://localhost:8080
+
+paths:
+  # Events
+  /events:
+    post:
+      summary: Create an event
+      description: ...
+      tags:
+        - Events
+      operationId: createEvent
+      security:
+        - ApiKeyAuth: [ ]
+      parameters:
+        # - $ref: '#/components/parameters/message_id'
+      responses:
+        "200":
+          description: Event created successfully
+        "404":
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: "#/components/responses/InternalServerError"
+
+  # Event types
+  /event-types:
+    post:
+      summary: Create an event type
+      description: Create a new event type
+      tags:
+        - EventTypes
+      operationId: CreateEventType
+      security:
+        # - ApiKeyAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required: [ action, target_types, should_validate_metadata_schema ]
+              properties:
+                action:
+                  type: string
+                target_types:
+                  type: array
+                  items:
+                    type: string
+                should_validate_metadata_schema:
+                    type: boolean
+                schema:
+                  type: string
+      responses:
+        "201":
+          description: The newly created event type
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventType"
+        "400":
+          $ref: '#/components/responses/BadRequestError'
+        default:
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  parameters:
+    idempotency_key:
+      name: idempotency_key
+      in: header
+      required: false
+      schema:
+        type: string
+    message_id:
+        name: message_id
+        in: path
+        required: true
+        schema:
+          type: string
+    application_id:
+      name: application_id
+      in: path
+      required: true
+      schema:
+        type: string
+    event_type_name:
+      name: event_type_name
+      in: path
+      required: true
+      schema:
+        type: string
+    endpoint_id:
+      name: endpoint_id
+      in: path
+      required: true
+      schema:
+        type: string
+    message_attempt_id:
+      name: message_attempt_id
+      in: path
+      required: true
+      schema:
+        type: string
+    paginationLimit:
+      name: limit
+      description: The number of items per page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 15
+    paginationPage:
+      name: page
+      description: The page number
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+  schemas:
+    # Endpoint
+    Endpoint:
+      required: [ id, url, application_id, event_type_ids, headers, created_at, updated_at ]
+      properties:
+        id:
+          type: string
+          x-order: 1
+        application_id:
+          type: string
+          x-order: 2
+        url:
+          type: string
+          x-order: 3
+        description:
+          type: string
+          x-order: 4
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+          x-order: 5
+        event_type_ids:
+          type: array
+          items:
+            type: string
+          x-order: 6
+        secret:
+          type: string
+          x-order: 7
+        created_at:
+          type: string
+          format: date-time
+          x-order: 8
+        updated_at:
+          type: string
+          format: date-time
+          x-order: 9
+    EndpointList:
+      required: [ data, pagination ]
+      properties:
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Endpoint'
+
+    # Event type
+    EventType:
+      required: [id, action, target_types, should_validate_metadata_schema, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          x-order: 1
+        action:
+          type: string
+          x-order: 2
+        target_types:
+          type: array
+          items:
+            type: string
+          x-order: 3
+        schema:
+          type: string
+          x-order: 4
+        should_validate_metadata_schema:
+          type: boolean
+          x-order: 5
+        created_at:
+          type: string
+          format: date-time
+          x-order: 6
+        updated_at:
+          type: string
+          format: date-time
+          x-order: 7
+    EventTypeList:
+      required: [ data, pagination ]
+      properties:
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventType'
+
+    # Application
+    Application:
+      required: [id, name, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          x-order: 1
+        name:
+          type: string
+          x-order: 2
+        created_at:
+          type: string
+          format: date-time
+          x-order: 3
+        updated_at:
+          type: string
+          format: date-time
+          x-order: 4
+    ApplicationList:
+      required: [data, pagination]
+      properties:
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Application'
+
+    # Message
+    Message:
+      required: [id, application_id, event_type, payload, created_at]
+      properties:
+        id:
+          type: string
+          x-order: 1
+        application_id:
+            type: string
+            x-order: 2
+        event_type:
+          type: string
+          x-order: 3
+        payload:
+          type: object
+          x-order: 4
+        created_at:
+          type: string
+          format: date-time
+          x-order: 5
+    MessageList:
+      required: [ data, pagination ]
+      properties:
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+    
+    # Message Attempt
+    MessageAttempt:
+      required: [ id, message_id, status, headers_sent, endpoint_url, response_status_code, attempted_at ]
+      properties:
+        id:
+          type: string
+          x-order: 1
+        message_id:
+          type: string
+          x-order: 2
+        status:
+          type: string
+          x-order: 3
+        headers_sent:
+          type: object
+          x-order: 4
+        response:
+          type: string
+          x-order: 5
+        response_status_code:
+          type: integer
+          x-order: 6
+        endpoint_url:
+          type: string
+          x-order: 7
+        attempted_at:
+          type: string
+          format: date-time
+          x-order: 8
+    MessageAttemptList:
+      required: [ data, pagination ]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessageAttempt'
+          x-order: 1
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    # Pagination
+    Pagination:
+      required: [ total, per_page, current_page, total_pages ]
+      properties:
+        total:
+          type: integer
+          x-order: 1
+        per_page:
+          type: integer
+          x-order: 2
+        current_page:
+          type: integer
+          x-order: 3
+        total_pages:
+          type: integer
+          x-order: 4
+
+    # Error
+    ErrorSchema:
+      type: object
+      required: [error, message]
+      properties:
+        message:
+          type: string
+          description: A description about the error
+        error:
+          type: string
+          description: Error custom error code such as 'email_in_use'
+  responses:
+    UnauthorizedError:
+      description: "Usually causes by an authentication token missing"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorSchema"
+    NotFoundError:
+      description: "Resource not found"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorSchema"
+    BadRequestError:
+      description: "Data validation error"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorSchema"
+    InternalServerError:
+      description: "A generic error response"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorSchema"
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key

@@ -1,0 +1,45 @@
+name: ci
+on:
+  workflow_call:
+
+jobs:
+  tests:
+    name: tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: arduino/setup-task@v2
+        with:
+          version: 3.10.0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.4"
+
+      - name: Download deps
+        run: go mod download
+
+      - name: Spin up Docker
+        run: task run
+
+      - name: Test all
+        run: task test:all
+        timeout-minutes: 4
+
+      - run: docker compose logs app emulators || true
+        if: always()
+
+  golangci:
+    name: lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.4"
+      - uses: actions/checkout@v4
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v8.0.0
+        with:
+          version: v2.1.6
+          args: --timeout 3m --verbose
