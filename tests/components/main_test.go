@@ -18,6 +18,7 @@ var (
 	ctx context.Context
 )
 
+// nolint
 func newApiClient(t *testing.T) *client.ClientWithResponses {
 	cli, err := client.NewClientWithResponses("http://localhost:8080")
 	require.NoError(t, err)
@@ -35,7 +36,7 @@ func TestMain(m *testing.M) {
 	// Wait for the backend to be spun up
 	waitFor := wait_for.NewWaitFor(logs.New())
 	waitFor.Do(func() error {
-		req, err := http.Get(fmt.Sprintf("http://localhost:%s/health", os.Getenv("WHK_HTTP_PORT")))
+		req, err := http.Get(fmt.Sprintf("http://localhost:%s/health", os.Getenv("HTTP_PORT")))
 		if err != nil {
 			return err
 		}
