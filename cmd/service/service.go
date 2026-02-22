@@ -62,10 +62,12 @@ func (s *Service) Run() error {
 	}
 
 	eventTypeRepository := psql.NewEventTypePsqlRepository(db)
+	eventsRepository := psql.NewEventsPsqlRepository(db)
 
 	application := &app.App{
 		Commands: app.Commands{
 			CreateEventType: command.NewCreateEventTypeHandler(eventTypeRepository),
+			CreateEvent:     command.NewCreateEventHandler(eventsRepository),
 		},
 		Queries: app.Queries{},
 	}

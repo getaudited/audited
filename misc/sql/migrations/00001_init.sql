@@ -23,9 +23,42 @@ CREATE TABLE event_types (
     --     REFERENCES tenants (id)
     --     ON DELETE CASCADE
 );
+
+CREATE TABLE events (
+    id TEXT NOT NULL PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    version INT NOT NULL,
+    actor_id TEXT NOT NULL,
+    actor_type TEXT NOT NULL,
+    actor_name TEXT,
+    actor_metadata JSONB,
+    context_location TEXT NOT NULL,
+    context_user_agent TEXT,
+    metadata JSONB,
+    occurred_at TIMESTAMPTZ NOT NULL DEFAULT now()
+
+-- TODO: Enforce this later
+-- CONSTRAINT fk_event_types_belongs_to_tenants
+--     FOREIGN KEY (tenant_id)
+--     REFERENCES tenants (id)
+--     ON DELETE CASCADE
+);
+
+CREATE TABLE event_targets (
+    internal_id TEXT NOT NULL PRIMARY KEY,
+    id TEXT NOT NULL,
+    event_id TEXT NOT NULL,
+    name TEXT,
+    type TEXT NOT NULL,
+    metadata JSONB,
+
+    CONSTRAINT fk_event_target_belongs_to_event FOREIGN KEY (event_id) REFERENCES events (id)
+);
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
+DROP TABLE event_targets;
+DROP TABLE events;
 DROP TABLE event_types;
 -- +goose StatementEnd

@@ -4,29 +4,32 @@ import "time"
 
 type Event struct {
 	Id         string
-	OccurredAt time.Time
+	TenantID   string
 	Version    int
 	Actor      Actor
 	Targets    []Target
 	Context    Context
 	Metadata   Metadata
+	OccurredAt time.Time
 }
 
-type Metadata map[string]any
+type Metadata = []byte
 
 type Context struct {
 	Location  string
-	UserAgent string
+	UserAgent *string
 }
 
 type Actor struct {
 	Id        string
 	ActorType string
+	Name      *string
 	Metadata  Metadata
 }
 
 type Target struct {
 	Id         string
+	Name       *string
 	TargetType string
 	Metadata   Metadata
 }

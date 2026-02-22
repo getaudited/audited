@@ -20,10 +20,6 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 )
 
-const (
-	ApiKeyAuthScopes = "ApiKeyAuth.Scopes"
-)
-
 // ErrorSchema defines model for ErrorSchema.
 type ErrorSchema struct {
 	// Error Error custom error code such as 'email_in_use'
@@ -50,9 +46,6 @@ type BadRequestError = ErrorSchema
 // InternalServerError defines model for InternalServerError.
 type InternalServerError = ErrorSchema
 
-// NotFoundError defines model for NotFoundError.
-type NotFoundError = ErrorSchema
-
 // CreateEventTypeJSONBody defines parameters for CreateEventType.
 type CreateEventTypeJSONBody struct {
 	Action                       string   `json:"action"`
@@ -61,8 +54,34 @@ type CreateEventTypeJSONBody struct {
 	TargetTypes                  []string `json:"target_types"`
 }
 
+// CreateEventJSONBody defines parameters for CreateEvent.
+type CreateEventJSONBody struct {
+	Actor struct {
+		Id       string  `json:"id"`
+		Metadata *string `json:"metadata,omitempty"`
+		Name     *string `json:"name,omitempty"`
+		Type     string  `json:"type"`
+	} `json:"actor"`
+	Context struct {
+		Location  string  `json:"location"`
+		UserAgent *string `json:"user_agent,omitempty"`
+	} `json:"context"`
+	Metadata   *string   `json:"metadata,omitempty"`
+	OccurredAt time.Time `json:"occurred_at"`
+	Targets    []struct {
+		Id       string  `json:"id"`
+		Metadata *string `json:"metadata,omitempty"`
+		Name     *string `json:"name,omitempty"`
+		Type     string  `json:"type"`
+	} `json:"targets"`
+	Version int `json:"version"`
+}
+
 // CreateEventTypeJSONRequestBody defines body for CreateEventType for application/json ContentType.
 type CreateEventTypeJSONRequestBody CreateEventTypeJSONBody
+
+// CreateEventJSONRequestBody defines body for CreateEvent for application/json ContentType.
+type CreateEventJSONRequestBody CreateEventJSONBody
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -142,8 +161,10 @@ type ClientInterface interface {
 
 	CreateEventType(ctx context.Context, body CreateEventTypeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateEvent request
-	CreateEvent(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreateEventWithBody request with any body
+	CreateEventWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateEvent(ctx context.Context, body CreateEventJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) CreateEventTypeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -170,8 +191,20 @@ func (c *Client) CreateEventType(ctx context.Context, body CreateEventTypeJSONRe
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateEvent(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateEventRequest(c.Server)
+func (c *Client) CreateEventWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateEventRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateEvent(ctx context.Context, body CreateEventJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateEventRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -222,8 +255,19 @@ func NewCreateEventTypeRequestWithBody(server string, contentType string, body i
 	return req, nil
 }
 
-// NewCreateEventRequest generates requests for CreateEvent
-func NewCreateEventRequest(server string) (*http.Request, error) {
+// NewCreateEventRequest calls the generic CreateEvent builder with application/json body
+func NewCreateEventRequest(server string, body CreateEventJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateEventRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateEventRequestWithBody generates requests for CreateEvent with any type of body
+func NewCreateEventRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -241,10 +285,12 @@ func NewCreateEventRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	req, err := http.NewRequest("POST", queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -297,8 +343,10 @@ type ClientWithResponsesInterface interface {
 
 	CreateEventTypeWithResponse(ctx context.Context, body CreateEventTypeJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEventTypeResponse, error)
 
-	// CreateEventWithResponse request
-	CreateEventWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CreateEventResponse, error)
+	// CreateEventWithBodyWithResponse request with any body
+	CreateEventWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEventResponse, error)
+
+	CreateEventWithResponse(ctx context.Context, body CreateEventJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEventResponse, error)
 }
 
 type CreateEventTypeResponse struct {
@@ -328,7 +376,6 @@ func (r CreateEventTypeResponse) StatusCode() int {
 type CreateEventResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON404      *NotFoundError
 	JSONDefault  *InternalServerError
 }
 
@@ -365,9 +412,17 @@ func (c *ClientWithResponses) CreateEventTypeWithResponse(ctx context.Context, b
 	return ParseCreateEventTypeResponse(rsp)
 }
 
-// CreateEventWithResponse request returning *CreateEventResponse
-func (c *ClientWithResponses) CreateEventWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CreateEventResponse, error) {
-	rsp, err := c.CreateEvent(ctx, reqEditors...)
+// CreateEventWithBodyWithResponse request with arbitrary body returning *CreateEventResponse
+func (c *ClientWithResponses) CreateEventWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEventResponse, error) {
+	rsp, err := c.CreateEventWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateEventResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateEventWithResponse(ctx context.Context, body CreateEventJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEventResponse, error) {
+	rsp, err := c.CreateEvent(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -428,13 +483,6 @@ func ParseCreateEventResponse(rsp *http.Response) (*CreateEventResponse, error) 
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFoundError
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest InternalServerError
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -450,22 +498,23 @@ func ParseCreateEventResponse(rsp *http.Response) (*CreateEventResponse, error) 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/7xWTW/cNhD9K8S0QC6ytI7dNtCp69gBtm3SwDbQg7FYjKnRiqlEKuTQ9cLQfy9ISev9",
-	"cNe1EeQmkTNvPt7wkQ8gTdMaTZod5A9gybVGO4o/Z1hc0ldPji+sNTYsSaOZNIdPbNtaSWRldPbFGR3W",
-	"nKyowfD1o6UScvghe8TP+l2XRbSr3rTrugQKctKqNkBBDufIKO6wVkUEFxSDdwnMNJPVWF+RvSP7XXOa",
-	"iiVpskr22YixTyGtT4Y/GK+L75rQJTnjrSShDYsyhIdgNHgH8E2A/AFaa1qyrHpqacx1GzX6COkdm2ao",
-	"VJqChPOyEujEG2pQ1QulF97RG0iAVy1BDo6t0svQjIacwyXtQ0/Fxr/AW+NZcEUDu3tIXQKWvnplqYD8",
-	"BkarEX6+djC3X0hyCH1xR5qv4+puuSj7LB52wiRwf2RsQRbyt10C0hIyFQuM3JXGNuELCmQ6YtXQXpob",
-	"/j93CajiYIjjNUEHzU6DWWV8XSyGU0CLhhgLZFzs+d8aUxPqTYCfugQY7ZJ4EYxiBxRT4/bDduuK0Fpc",
-	"baKcdAn4tnh1Q37Z5VAVkIxM7CT4fMFb5GwlNo9zT9Jbxas4733F01b9Tqup5yrWH2awIgypJaCxCUnf",
-	"H2Grjv6m1WMdGL1CX84ILdnR/zb+fRg78Ntf1zCQGUmIu48oFXPbn1q67zXr3Ei3fyiCncuzbKm48rep",
-	"NE1WKtsobWSFeolaZegLxVRklxfT848XaROa6G39IudQjtKlGcUJZeQzHmbIYfBKR7dfl2EjAMK+EH6e",
-	"CUslWdKSRGmsGGKI6ecZJFArSUEX84exyR9n169IOftj9v7i01UsOAwp2cb9WQblV5JeVnwCrLiO5K5X",
-	"7si6vqBJOkmPQwjTksZWQQ4n6SQ9gQRa5CqSllGQlqP1YWqN430y38cBFSg0/SOih4jjEKFtvANmxdru",
-	"Ua36U0KOz0yxetH98f9E7oDqvEppXq8uu4rwWjGYd9tIbD3FhY3Hy9vJ8be7i9dcPXETX1cUGK9XYlCo",
-	"Te67BE4nk//CXyec7T61YpQSfc3P+z71LIqa6JsG7WpjMvX2WDIuXaBhXZ7rxbQf9wOTnqbpoamGPSom",
-	"Tzw1YiZjy5yXkpwrfV2v+qadPl/49sPrm7RsuEYgv9m+QG7m3fxAR3eb6YYRdRHfRbhHBcyzrDYS68o4",
-	"zt9N3k2gm3f/BgAA//9M+rP9igsAAA==",
+	"H4sIAAAAAAAC/8xWX2/bNhD/KsRtQF8UyWmyrdDTnCYDvK1b0QTYwxAYDHWW2EmkSh6zGIa++0Dqj2XL",
+	"dRqjG/YmkXe/+//jbUDoqtYKFVlIN2DQ1lpZDD9XPPuAnxxaujFGG38ktCJU5D95XZdScJJaJR+tVv7M",
+	"igIr7r++NbiCFL5JtvhJe2uTgHbbijZNE0GGVhhZeyhI4ZoTZ4+8lFkAZxiMNxEsFKFRvLxF84jmP/Vp",
+	"znJUaKRovWF9nsCLdhjexBgm3UBtdI2GZJtP7D3exQ46TDhLuurghc6QWScKxi17hRWX5VKqpbP4CiKg",
+	"dY2QgiUjVe4TU6G1PMcp9JyN/hl/0I4YFdildILURGDwk5MGM0j/hF6qh78fFPTDRxTkTd88oqK7cLof",
+	"LhetF5s9MxE8nWmToYH0dROBMMgJsyUPFVxpU/kvyDjhGckKJ26O9L9vIpDZURPnQ4GOil16sUK7Mlt2",
+	"rYfLColnnPhyov+gdYlcjQG+ayIgbnKkpRcKGZCElZ2abYaIuDF8PUa5aCJwdXZyQn7Yr6HMIOorsefg",
+	"8wHvFGfHsfvQ9yickbQO/d5GPK/lL7ieOypC/L4HC+TetQgUr7zTT2e8lmd/4XobBw9aPi9XyA2aXv8h",
+	"/P3UZ+DnP+6gK2YoQrjdohREdTu7+NQSxbUWdjoUXs6mSZJLKtxDLHSVrKSppNKi4CrnSibcZZIwSz7c",
+	"zK/f3cSVT6Iz5YuUfThSrXRPUVyEeoZhhhQ6rbhX+zH3Fx4QpuzzfsEMrtCgEshW2rDOBpu/X0AEpRTo",
+	"ySjd9El+t7g7weXk18Xbm99uQ8C+SdFU9veVp1sp8GXBR0CSylDc4eQRjW0DmsWz+Nyb0DUqXktI4SKe",
+	"xRcQQc2pCEVL0FPL2TBMtbY0Lebb0KCMM4V/s6DBQjsEaBNegkU2yG3Zqp0StHSls/WLXpEvI7kjrHMS",
+	"05zOLvuMcCoZ3De7SGQchoPRxvB6dv71XuShVgfe47sCfcXLNesYalz7JoLL2exz+IPDyf5+E6ysuCvp",
+	"ed1Du0jgRFdV3KxHnal225J4bn0ZhvBsS6Ztux/p9DiOj3X11+zodkvZPT70zIbVo+2Sg5ctGX22QTfP",
+	"7B/h7QoihzaPEN4TTT0tdRvpQcvOolnyvMvLcfsD0CHzRwPXQjhjXvKGD/O9O9r/8xrsEs2I4QdYqQhz",
+	"NBPcXjLq+m0b/rayu3n8Mv65PLBfh/HrecI6IdDalSvL9b878fvDbrsQbADw55vRC50mie+3stCW0jez",
+	"NzNo7pt/AgAA//+aZzehnw0AAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

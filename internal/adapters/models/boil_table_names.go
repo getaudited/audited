@@ -4,7 +4,11 @@
 package models
 
 var TableNames = struct {
-	EventTypes string
+	EventTargets string
+	EventTypes   string
+	Events       string
 }{
-	EventTypes: "event_types",
+	EventTargets: "event_targets",
+	EventTypes:   "event_types",
+	Events:       "events",
 }

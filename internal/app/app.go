@@ -19,7 +19,7 @@ type QueryHandler[Q, R any] interface {
 }
 
 type Commands struct {
-	CreateEvent     CommandHandler[any]
+	CreateEvent     CommandHandler[command.CreateEvent]
 	CreateEventType CommandHandler[command.CreateEventType]
 	CreateExport    CommandHandler[any]
 }

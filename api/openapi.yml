@@ -28,14 +28,60 @@ paths:
         - Events
       operationId: createEvent
       security:
-        - ApiKeyAuth: [ ]
+        # - ApiKeyAuth: [ ]
       parameters:
         # - $ref: '#/components/parameters/message_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required: [version, actor, targets, context, occurred_at]
+              properties:
+                version:
+                  type: integer
+                actor:
+                  type: object
+                  required: [id, type]
+                  properties:
+                    id:
+                      type: string
+                    type:
+                      type: string
+                    name:
+                      type: string
+                    metadata:
+                      type: string
+                targets:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, type]
+                    properties:
+                      id:
+                        type: string
+                      type:
+                        type: string
+                      name:
+                        type: string
+                      metadata:
+                        type: string
+                context:
+                  type: object
+                  required: [location]
+                  properties:
+                    location:
+                      type: string
+                    user_agent:
+                      type: string
+                metadata:
+                  type: string
+                occurred_at:
+                  type: string
+                  format: date-time
       responses:
-        "200":
+        "204":
           description: Event created successfully
-        "404":
-          $ref: '#/components/responses/NotFoundError'
         default:
           $ref: "#/components/responses/InternalServerError"
 
@@ -86,36 +132,6 @@ components:
       required: false
       schema:
         type: string
-    message_id:
-        name: message_id
-        in: path
-        required: true
-        schema:
-          type: string
-    application_id:
-      name: application_id
-      in: path
-      required: true
-      schema:
-        type: string
-    event_type_name:
-      name: event_type_name
-      in: path
-      required: true
-      schema:
-        type: string
-    endpoint_id:
-      name: endpoint_id
-      in: path
-      required: true
-      schema:
-        type: string
-    message_attempt_id:
-      name: message_attempt_id
-      in: path
-      required: true
-      schema:
-        type: string
     paginationLimit:
       name: limit
       description: The number of items per page
@@ -134,53 +150,6 @@ components:
         type: integer
         minimum: 1
   schemas:
-    # Endpoint
-    Endpoint:
-      required: [ id, url, application_id, event_type_ids, headers, created_at, updated_at ]
-      properties:
-        id:
-          type: string
-          x-order: 1
-        application_id:
-          type: string
-          x-order: 2
-        url:
-          type: string
-          x-order: 3
-        description:
-          type: string
-          x-order: 4
-        headers:
-          type: object
-          additionalProperties:
-            type: string
-          x-order: 5
-        event_type_ids:
-          type: array
-          items:
-            type: string
-          x-order: 6
-        secret:
-          type: string
-          x-order: 7
-        created_at:
-          type: string
-          format: date-time
-          x-order: 8
-        updated_at:
-          type: string
-          format: date-time
-          x-order: 9
-    EndpointList:
-      required: [ data, pagination ]
-      properties:
-        pagination:
-          $ref: '#/components/schemas/Pagination'
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Endpoint'
-
     # Event type
     EventType:
       required: [id, action, target_types, should_validate_metadata_schema, created_at, updated_at]
@@ -219,104 +188,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EventType'
-
-    # Application
-    Application:
-      required: [id, name, created_at, updated_at]
-      properties:
-        id:
-          type: string
-          x-order: 1
-        name:
-          type: string
-          x-order: 2
-        created_at:
-          type: string
-          format: date-time
-          x-order: 3
-        updated_at:
-          type: string
-          format: date-time
-          x-order: 4
-    ApplicationList:
-      required: [data, pagination]
-      properties:
-        pagination:
-          $ref: '#/components/schemas/Pagination'
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Application'
-
-    # Message
-    Message:
-      required: [id, application_id, event_type, payload, created_at]
-      properties:
-        id:
-          type: string
-          x-order: 1
-        application_id:
-            type: string
-            x-order: 2
-        event_type:
-          type: string
-          x-order: 3
-        payload:
-          type: object
-          x-order: 4
-        created_at:
-          type: string
-          format: date-time
-          x-order: 5
-    MessageList:
-      required: [ data, pagination ]
-      properties:
-        pagination:
-          $ref: '#/components/schemas/Pagination'
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Message'
-    
-    # Message Attempt
-    MessageAttempt:
-      required: [ id, message_id, status, headers_sent, endpoint_url, response_status_code, attempted_at ]
-      properties:
-        id:
-          type: string
-          x-order: 1
-        message_id:
-          type: string
-          x-order: 2
-        status:
-          type: string
-          x-order: 3
-        headers_sent:
-          type: object
-          x-order: 4
-        response:
-          type: string
-          x-order: 5
-        response_status_code:
-          type: integer
-          x-order: 6
-        endpoint_url:
-          type: string
-          x-order: 7
-        attempted_at:
-          type: string
-          format: date-time
-          x-order: 8
-    MessageAttemptList:
-      required: [ data, pagination ]
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/MessageAttempt'
-          x-order: 1
-        pagination:
-          $ref: '#/components/schemas/Pagination'
 
     # Pagination
     Pagination:
