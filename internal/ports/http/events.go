@@ -31,6 +31,7 @@ func (h handlers) CreateEvent(c echo.Context) error {
 			Id:         ulid.Make().String(),
 			OccurredAt: body.OccurredAt,
 			Version:    body.Version,
+			// TODO: add tenant_id
 			Actor: domain.Actor{
 				Id:        body.Actor.Id,
 				ActorType: body.Actor.Type,
