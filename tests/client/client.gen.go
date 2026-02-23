@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/oapi-codegen/runtime"
 )
 
 // ErrorSchema defines model for ErrorSchema.
@@ -31,20 +32,27 @@ type ErrorSchema struct {
 
 // EventType defines model for EventType.
 type EventType struct {
-	Id                           string    `json:"id"`
 	Action                       string    `json:"action"`
-	TargetTypes                  []string  `json:"target_types"`
+	CreatedAt                    time.Time `json:"created_at"`
+	Id                           string    `json:"id"`
 	Schema                       *string   `json:"schema,omitempty"`
 	ShouldValidateMetadataSchema bool      `json:"should_validate_metadata_schema"`
-	CreatedAt                    time.Time `json:"created_at"`
+	TargetTypes                  []string  `json:"target_types"`
 	UpdatedAt                    time.Time `json:"updated_at"`
+	Version                      int       `json:"version"`
 }
+
+// EventTypeAction defines model for event_type_action.
+type EventTypeAction = string
 
 // BadRequestError defines model for BadRequestError.
 type BadRequestError = ErrorSchema
 
 // InternalServerError defines model for InternalServerError.
 type InternalServerError = ErrorSchema
+
+// NotFoundError defines model for NotFoundError.
+type NotFoundError = ErrorSchema
 
 // CreateEventTypeJSONBody defines parameters for CreateEventType.
 type CreateEventTypeJSONBody struct {
@@ -161,6 +169,9 @@ type ClientInterface interface {
 
 	CreateEventType(ctx context.Context, body CreateEventTypeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetEventTypeByID request
+	GetEventTypeByID(ctx context.Context, eventTypeAction EventTypeAction, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// CreateEventWithBody request with any body
 	CreateEventWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -181,6 +192,18 @@ func (c *Client) CreateEventTypeWithBody(ctx context.Context, contentType string
 
 func (c *Client) CreateEventType(ctx context.Context, body CreateEventTypeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateEventTypeRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetEventTypeByID(ctx context.Context, eventTypeAction EventTypeAction, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetEventTypeByIDRequest(c.Server, eventTypeAction)
 	if err != nil {
 		return nil, err
 	}
@@ -251,6 +274,40 @@ func NewCreateEventTypeRequestWithBody(server string, contentType string, body i
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetEventTypeByIDRequest generates requests for GetEventTypeByID
+func NewGetEventTypeByIDRequest(server string, eventTypeAction EventTypeAction) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "event_type_action", runtime.ParamLocationPath, eventTypeAction)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/event-types/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -343,6 +400,9 @@ type ClientWithResponsesInterface interface {
 
 	CreateEventTypeWithResponse(ctx context.Context, body CreateEventTypeJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEventTypeResponse, error)
 
+	// GetEventTypeByIDWithResponse request
+	GetEventTypeByIDWithResponse(ctx context.Context, eventTypeAction EventTypeAction, reqEditors ...RequestEditorFn) (*GetEventTypeByIDResponse, error)
+
 	// CreateEventWithBodyWithResponse request with any body
 	CreateEventWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEventResponse, error)
 
@@ -367,6 +427,31 @@ func (r CreateEventTypeResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r CreateEventTypeResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetEventTypeByIDResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *EventType
+	JSON400      *BadRequestError
+	JSON404      *NotFoundError
+	JSONDefault  *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r GetEventTypeByIDResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetEventTypeByIDResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -410,6 +495,15 @@ func (c *ClientWithResponses) CreateEventTypeWithResponse(ctx context.Context, b
 		return nil, err
 	}
 	return ParseCreateEventTypeResponse(rsp)
+}
+
+// GetEventTypeByIDWithResponse request returning *GetEventTypeByIDResponse
+func (c *ClientWithResponses) GetEventTypeByIDWithResponse(ctx context.Context, eventTypeAction EventTypeAction, reqEditors ...RequestEditorFn) (*GetEventTypeByIDResponse, error) {
+	rsp, err := c.GetEventTypeByID(ctx, eventTypeAction, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetEventTypeByIDResponse(rsp)
 }
 
 // CreateEventWithBodyWithResponse request with arbitrary body returning *CreateEventResponse
@@ -469,6 +563,53 @@ func ParseCreateEventTypeResponse(rsp *http.Response) (*CreateEventTypeResponse,
 	return response, nil
 }
 
+// ParseGetEventTypeByIDResponse parses an HTTP response from a GetEventTypeByIDWithResponse call
+func ParseGetEventTypeByIDResponse(rsp *http.Response) (*GetEventTypeByIDResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetEventTypeByIDResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EventType
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequestError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFoundError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseCreateEventResponse parses an HTTP response from a CreateEventWithResponse call
 func ParseCreateEventResponse(rsp *http.Response) (*CreateEventResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -498,23 +639,24 @@ func ParseCreateEventResponse(rsp *http.Response) (*CreateEventResponse, error) 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/8xWX2/bNhD/KsRtQF8UyWmyrdDTnCYDvK1b0QTYwxAYDHWW2EmkSh6zGIa++0Dqj2XL",
-	"dRqjG/YmkXe/+//jbUDoqtYKFVlIN2DQ1lpZDD9XPPuAnxxaujFGG38ktCJU5D95XZdScJJaJR+tVv7M",
-	"igIr7r++NbiCFL5JtvhJe2uTgHbbijZNE0GGVhhZeyhI4ZoTZ4+8lFkAZxiMNxEsFKFRvLxF84jmP/Vp",
-	"znJUaKRovWF9nsCLdhjexBgm3UBtdI2GZJtP7D3exQ46TDhLuurghc6QWScKxi17hRWX5VKqpbP4CiKg",
-	"dY2QgiUjVe4TU6G1PMcp9JyN/hl/0I4YFdildILURGDwk5MGM0j/hF6qh78fFPTDRxTkTd88oqK7cLof",
-	"LhetF5s9MxE8nWmToYH0dROBMMgJsyUPFVxpU/kvyDjhGckKJ26O9L9vIpDZURPnQ4GOil16sUK7Mlt2",
-	"rYfLColnnPhyov+gdYlcjQG+ayIgbnKkpRcKGZCElZ2abYaIuDF8PUa5aCJwdXZyQn7Yr6HMIOorsefg",
-	"8wHvFGfHsfvQ9yickbQO/d5GPK/lL7ieOypC/L4HC+TetQgUr7zTT2e8lmd/4XobBw9aPi9XyA2aXv8h",
-	"/P3UZ+DnP+6gK2YoQrjdohREdTu7+NQSxbUWdjoUXs6mSZJLKtxDLHSVrKSppNKi4CrnSibcZZIwSz7c",
-	"zK/f3cSVT6Iz5YuUfThSrXRPUVyEeoZhhhQ6rbhX+zH3Fx4QpuzzfsEMrtCgEshW2rDOBpu/X0AEpRTo",
-	"ySjd9El+t7g7weXk18Xbm99uQ8C+SdFU9veVp1sp8GXBR0CSylDc4eQRjW0DmsWz+Nyb0DUqXktI4SKe",
-	"xRcQQc2pCEVL0FPL2TBMtbY0Lebb0KCMM4V/s6DBQjsEaBNegkU2yG3Zqp0StHSls/WLXpEvI7kjrHMS",
-	"05zOLvuMcCoZ3De7SGQchoPRxvB6dv71XuShVgfe47sCfcXLNesYalz7JoLL2exz+IPDyf5+E6ysuCvp",
-	"ed1Du0jgRFdV3KxHnal225J4bn0ZhvBsS6Ztux/p9DiOj3X11+zodkvZPT70zIbVo+2Sg5ctGX22QTfP",
-	"7B/h7QoihzaPEN4TTT0tdRvpQcvOolnyvMvLcfsD0CHzRwPXQjhjXvKGD/O9O9r/8xrsEs2I4QdYqQhz",
-	"NBPcXjLq+m0b/rayu3n8Mv65PLBfh/HrecI6IdDalSvL9b878fvDbrsQbADw55vRC50mie+3stCW0jez",
-	"NzNo7pt/AgAA//+aZzehnw0AAA==",
+	"H4sIAAAAAAAC/8xXTW/cNhP+KwTfF8hFXm0aHwKduo6dYtsmDRwDPQTGYkyNJKYSqZBDNwtD/70g9bW7",
+	"kj+2cI3cVuR8cp55ZvaOC13VWqEiy5M7XoOBCglN+MJbVLShbY0bECS18odS8YTXQAWPuIIKeTIjF3GD",
+	"35w0mPKEjMOIW1FgBd6Al+MJt2SkynnTNF7Y1lpZDF7PIL3Ebw4tXRijjT8SWhEq8j+hrkspwHuJv9o2",
+	"pNH2/w1mPOH/i8e04vbWxsHa51Y0eE3RCiPrNjF+DgTsFkqZBuMMg/Mm4mtFaBSUn9HconnRmFYsR4VG",
+	"ijYa1r+TD+ujpvfaqfRFA7pEq50RyJQmlnn33At12t74rgEPKKNrNCTb0mIf677VoMOEs6SrLlOhU2TW",
+	"iYKBZa+wAllupNo4i694dAihiFdoLeQ4Nb1iO98MbrQjRgV21Z1YanaB+4X3Ur3560FB33xFQd71hQf/",
+	"VTg9THdsmknAwiAQphsI9cq0qfwvngLhCckK55KU6aypezsr4rbQrkw3HapxUyFBCgSbic6N1iWC8koE",
+	"Jse2nUMWkrCys+a7AzAGtv7b1enRSd2isfuPJBVhjmZSDJnyiA/80usdxPt4zntvvxfzdYAyCmckbQOE",
+	"2wdY1fI33K4cFQP/FQgpmpEBv59ALU/+wu2YIgQtn+IZgkHT69+Er/f94/z65xXvahjqEG5HKwVR3TYi",
+	"fm9p6FwLO8W5l7NJHOeSCnezELqKM2kqqbQoQOWgZAwulYRpfHmxOv9wsaj8czpTHqUcYKgy3fMNiFDq",
+	"0J884Z3Wolf7OfcX3iCfctunNTOYoUElkGXasM4HW31a84iXUqCnuuSuf+QP66t/EXL8+/rdxcfPIWGP",
+	"WTSV/SPzZC4FHpd8xElSGYo7nAz45cvFcvHau9A1KqglT/ibxXLxhkdhXIaixWFUngy9VWtL02K+CwBl",
+	"wBT+zYIGC3AIpk2g9XU6yI0E1PYLWjrT6faokfBk3vpRyOaAGwZaOJIMrpt9S35XOdxHflq+fr7xOtRq",
+	"ZrheFegrXm5Zx1C7tW8ifrpc3md/CDg+3J6ClwxcSY/rzm06gRNdVYHZ7iBT7cOSILe+DEN6tiXTXbjH",
+	"d5M1sfEh5TjTAZdIzqgwqVMkkKVlOvNugwd2NdcNvyAN/s+26/PQd+M6+2U++1Eknq6xzfUEC8uXw8Lz",
+	"VP90efq43v4y+byYeVotH4bQA2S5WCweIsbnJMV2d90/vmcp64lm9rKdZ/dy3N0jW2lYhILI3D4a0vtO",
+	"00hL3WY669lZNBvIu3d52P9gaM79g4lrIZwxR26ILaXvT4cfvAaHi/HTl9xxrW3xNqY/Vnb/HZ82wk5n",
+	"/nWF9utHjXVCoLWZK8vtfzs0DpvddinYYKBl6nHJS+LY460stKXk7fLtkjfXzT8BAAD//8Q4MYy3EAAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

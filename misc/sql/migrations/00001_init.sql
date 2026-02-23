@@ -11,7 +11,10 @@
 CREATE TABLE event_types (
     id TEXT NOT NULL PRIMARY KEY,
     tenant_id TEXT NOT NULL,
+    version INTEGER DEFAULT 1 NOT NULL,
     action TEXT NOT NULL,
+    target_types TEXT[] NOT NULL,
+    should_validate_metadata_schema BOOLEAN NOT NULL DEFAULT false,
     event_schema JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -23,6 +26,8 @@ CREATE TABLE event_types (
     --     REFERENCES tenants (id)
     --     ON DELETE CASCADE
 );
+
+-- TODO: add event_type_schemas
 
 CREATE TABLE events (
     id TEXT NOT NULL PRIMARY KEY,

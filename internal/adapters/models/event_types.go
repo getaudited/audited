@@ -18,56 +18,125 @@ import (
 	"github.com/aarondl/sqlboiler/v4/queries"
 	"github.com/aarondl/sqlboiler/v4/queries/qm"
 	"github.com/aarondl/sqlboiler/v4/queries/qmhelper"
+	"github.com/aarondl/sqlboiler/v4/types"
 	"github.com/aarondl/strmangle"
 	"github.com/friendsofgo/errors"
 )
 
 // EventType is an object representing the database table.
 type EventType struct {
-	ID          string    `boil:"id" json:"id" toml:"id" yaml:"id"`
-	TenantID    string    `boil:"tenant_id" json:"tenant_id" toml:"tenant_id" yaml:"tenant_id"`
-	Action      string    `boil:"action" json:"action" toml:"action" yaml:"action"`
-	EventSchema null.JSON `boil:"event_schema" json:"event_schema,omitempty" toml:"event_schema" yaml:"event_schema,omitempty"`
-	CreatedAt   time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
-	UpdatedAt   time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
+	ID                           string            `boil:"id" json:"id" toml:"id" yaml:"id"`
+	TenantID                     string            `boil:"tenant_id" json:"tenant_id" toml:"tenant_id" yaml:"tenant_id"`
+	Version                      int               `boil:"version" json:"version" toml:"version" yaml:"version"`
+	Action                       string            `boil:"action" json:"action" toml:"action" yaml:"action"`
+	TargetTypes                  types.StringArray `boil:"target_types" json:"target_types" toml:"target_types" yaml:"target_types"`
+	ShouldValidateMetadataSchema bool              `boil:"should_validate_metadata_schema" json:"should_validate_metadata_schema" toml:"should_validate_metadata_schema" yaml:"should_validate_metadata_schema"`
+	EventSchema                  null.JSON         `boil:"event_schema" json:"event_schema,omitempty" toml:"event_schema" yaml:"event_schema,omitempty"`
+	CreatedAt                    time.Time         `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	UpdatedAt                    time.Time         `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 
 	R *eventTypeR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L eventTypeL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var EventTypeColumns = struct {
-	ID          string
-	TenantID    string
-	Action      string
-	EventSchema string
-	CreatedAt   string
-	UpdatedAt   string
+	ID                           string
+	TenantID                     string
+	Version                      string
+	Action                       string
+	TargetTypes                  string
+	ShouldValidateMetadataSchema string
+	EventSchema                  string
+	CreatedAt                    string
+	UpdatedAt                    string
 }{
-	ID:          "id",
-	TenantID:    "tenant_id",
-	Action:      "action",
-	EventSchema: "event_schema",
-	CreatedAt:   "created_at",
-	UpdatedAt:   "updated_at",
+	ID:                           "id",
+	TenantID:                     "tenant_id",
+	Version:                      "version",
+	Action:                       "action",
+	TargetTypes:                  "target_types",
+	ShouldValidateMetadataSchema: "should_validate_metadata_schema",
+	EventSchema:                  "event_schema",
+	CreatedAt:                    "created_at",
+	UpdatedAt:                    "updated_at",
 }
 
 var EventTypeTableColumns = struct {
-	ID          string
-	TenantID    string
-	Action      string
-	EventSchema string
-	CreatedAt   string
-	UpdatedAt   string
+	ID                           string
+	TenantID                     string
+	Version                      string
+	Action                       string
+	TargetTypes                  string
+	ShouldValidateMetadataSchema string
+	EventSchema                  string
+	CreatedAt                    string
+	UpdatedAt                    string
 }{
-	ID:          "event_types.id",
-	TenantID:    "event_types.tenant_id",
-	Action:      "event_types.action",
-	EventSchema: "event_types.event_schema",
-	CreatedAt:   "event_types.created_at",
-	UpdatedAt:   "event_types.updated_at",
+	ID:                           "event_types.id",
+	TenantID:                     "event_types.tenant_id",
+	Version:                      "event_types.version",
+	Action:                       "event_types.action",
+	TargetTypes:                  "event_types.target_types",
+	ShouldValidateMetadataSchema: "event_types.should_validate_metadata_schema",
+	EventSchema:                  "event_types.event_schema",
+	CreatedAt:                    "event_types.created_at",
+	UpdatedAt:                    "event_types.updated_at",
 }
 
 // Generated where
+
+type whereHelperint struct{ field string }
+
+func (w whereHelperint) EQ(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
+func (w whereHelperint) NEQ(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
+func (w whereHelperint) LT(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.LT, x) }
+func (w whereHelperint) LTE(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.LTE, x) }
+func (w whereHelperint) GT(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
+func (w whereHelperint) GTE(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
+func (w whereHelperint) IN(slice []int) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
+}
+func (w whereHelperint) NIN(slice []int) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
+}
+
+type whereHelpertypes_StringArray struct{ field string }
+
+func (w whereHelpertypes_StringArray) EQ(x types.StringArray) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.EQ, x)
+}
+func (w whereHelpertypes_StringArray) NEQ(x types.StringArray) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.NEQ, x)
+}
+func (w whereHelpertypes_StringArray) LT(x types.StringArray) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LT, x)
+}
+func (w whereHelpertypes_StringArray) LTE(x types.StringArray) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LTE, x)
+}
+func (w whereHelpertypes_StringArray) GT(x types.StringArray) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GT, x)
+}
+func (w whereHelpertypes_StringArray) GTE(x types.StringArray) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GTE, x)
+}
+
+type whereHelperbool struct{ field string }
+
+func (w whereHelperbool) EQ(x bool) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
+func (w whereHelperbool) NEQ(x bool) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
+func (w whereHelperbool) LT(x bool) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.LT, x) }
+func (w whereHelperbool) LTE(x bool) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.LTE, x) }
+func (w whereHelperbool) GT(x bool) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
+func (w whereHelperbool) GTE(x bool) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
 
 type whereHelpertime_Time struct{ field string }
 
@@ -91,19 +160,25 @@ func (w whereHelpertime_Time) GTE(x time.Time) qm.QueryMod {
 }
 
 var EventTypeWhere = struct {
-	ID          whereHelperstring
-	TenantID    whereHelperstring
-	Action      whereHelperstring
-	EventSchema whereHelpernull_JSON
-	CreatedAt   whereHelpertime_Time
-	UpdatedAt   whereHelpertime_Time
+	ID                           whereHelperstring
+	TenantID                     whereHelperstring
+	Version                      whereHelperint
+	Action                       whereHelperstring
+	TargetTypes                  whereHelpertypes_StringArray
+	ShouldValidateMetadataSchema whereHelperbool
+	EventSchema                  whereHelpernull_JSON
+	CreatedAt                    whereHelpertime_Time
+	UpdatedAt                    whereHelpertime_Time
 }{
-	ID:          whereHelperstring{field: "\"event_types\".\"id\""},
-	TenantID:    whereHelperstring{field: "\"event_types\".\"tenant_id\""},
-	Action:      whereHelperstring{field: "\"event_types\".\"action\""},
-	EventSchema: whereHelpernull_JSON{field: "\"event_types\".\"event_schema\""},
-	CreatedAt:   whereHelpertime_Time{field: "\"event_types\".\"created_at\""},
-	UpdatedAt:   whereHelpertime_Time{field: "\"event_types\".\"updated_at\""},
+	ID:                           whereHelperstring{field: "\"event_types\".\"id\""},
+	TenantID:                     whereHelperstring{field: "\"event_types\".\"tenant_id\""},
+	Version:                      whereHelperint{field: "\"event_types\".\"version\""},
+	Action:                       whereHelperstring{field: "\"event_types\".\"action\""},
+	TargetTypes:                  whereHelpertypes_StringArray{field: "\"event_types\".\"target_types\""},
+	ShouldValidateMetadataSchema: whereHelperbool{field: "\"event_types\".\"should_validate_metadata_schema\""},
+	EventSchema:                  whereHelpernull_JSON{field: "\"event_types\".\"event_schema\""},
+	CreatedAt:                    whereHelpertime_Time{field: "\"event_types\".\"created_at\""},
+	UpdatedAt:                    whereHelpertime_Time{field: "\"event_types\".\"updated_at\""},
 }
 
 // EventTypeRels is where relationship names are stored.
@@ -123,9 +198,9 @@ func (*eventTypeR) NewStruct() *eventTypeR {
 type eventTypeL struct{}
 
 var (
-	eventTypeAllColumns            = []string{"id", "tenant_id", "action", "event_schema", "created_at", "updated_at"}
-	eventTypeColumnsWithoutDefault = []string{"id", "tenant_id", "action"}
-	eventTypeColumnsWithDefault    = []string{"event_schema", "created_at", "updated_at"}
+	eventTypeAllColumns            = []string{"id", "tenant_id", "version", "action", "target_types", "should_validate_metadata_schema", "event_schema", "created_at", "updated_at"}
+	eventTypeColumnsWithoutDefault = []string{"id", "tenant_id", "action", "target_types"}
+	eventTypeColumnsWithDefault    = []string{"version", "should_validate_metadata_schema", "event_schema", "created_at", "updated_at"}
 	eventTypePrimaryKeyColumns     = []string{"id"}
 	eventTypeGeneratedColumns      = []string{}
 )

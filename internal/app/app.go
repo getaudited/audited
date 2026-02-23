@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/tachyonhqdev/webhooks/internal/app/command"
+	"github.com/tachyonhqdev/webhooks/internal/app/query"
+	"github.com/tachyonhqdev/webhooks/internal/domain"
 )
 
 type CommandHandler[C any] interface {
@@ -25,8 +27,10 @@ type Commands struct {
 }
 
 type Queries struct {
-	EventTypes QueryHandler[any, any]
-	Events     QueryHandler[any, any]
+	EventTypes        QueryHandler[any, query.Pagination[domain.EventType]]
+	EventTypeByAction QueryHandler[query.EventTypeByAction, *domain.EventType]
+	Events            QueryHandler[any, query.Pagination[domain.Event]]
+	EventByID         QueryHandler[any, domain.Event]
 }
 
 type App struct {

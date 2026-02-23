@@ -5,11 +5,15 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/friendsofgo/errors"
 	"github.com/labstack/echo/v4"
 	"github.com/oklog/ulid/v2"
 	"github.com/tachyonhqdev/webhooks/internal/app/command"
+	"github.com/tachyonhqdev/webhooks/internal/app/query"
 	"github.com/tachyonhqdev/webhooks/internal/domain"
 )
+
+const mockTenantID = "dummy-tenant-id"
 
 func (h handlers) CreateEventType(c echo.Context) error {
 	var body CreateEventTypeJSONBody
@@ -25,7 +29,7 @@ func (h handlers) CreateEventType(c echo.Context) error {
 
 	eventType := domain.EventType{
 		Id:                           ulid.Make().String(),
-		TenantID:                     "dummy-tenant-id",
+		TenantID:                     mockTenantID,
 		Version:                      1,
 		Action:                       body.Action,
 		TargetTypes:                  body.TargetTypes,
@@ -50,6 +54,31 @@ func (h handlers) CreateEventType(c echo.Context) error {
 		ShouldValidateMetadataSchema: eventType.ShouldValidateMetadataSchema,
 		CreatedAt:                    eventType.CreatedAt,
 		UpdatedAt:                    eventType.UpdatedAt,
+	})
+}
+
+func (h handlers) GetEventTypeByID(c echo.Context, eventTypeAction EventTypeAction) error {
+	et, err := h.application.Queries.EventTypeByAction.Execute(ctxFromEcho(c), query.EventTypeByAction{
+		TenantID: mockTenantID,
+		Action:   eventTypeAction,
+	})
+	if errors.Is(err, domain.ErrEventTypeNotFound) {
+		return NewNotFoundError(err, "event-type-not-found")
+	}
+	if err != nil {
+		return NewHandlerError(err, "error-querying-event-type")
+	}
+
+	schema := string(et.Schema)
+	return c.JSON(http.StatusOK, EventType{
+		Id:                           et.Id,
+		Version:                      et.Version,
+		Action:                       et.Action,
+		TargetTypes:                  et.TargetTypes,
+		Schema:                       &schema,
+		ShouldValidateMetadataSchema: et.ShouldValidateMetadataSchema,
+		CreatedAt:                    et.CreatedAt,
+		UpdatedAt:                    et.UpdatedAt,
 	})
 }
 

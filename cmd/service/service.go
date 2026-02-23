@@ -10,6 +10,7 @@ import (
 
 	"github.com/kelseyhightower/envconfig"
 	_ "github.com/lib/pq"
+	"github.com/tachyonhqdev/webhooks/internal/app/query"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/tachyonhqdev/webhooks/internal/adapters/psql"
@@ -69,7 +70,12 @@ func (s *Service) Run() error {
 			CreateEventType: command.NewCreateEventTypeHandler(eventTypeRepository),
 			CreateEvent:     command.NewCreateEventHandler(eventsRepository),
 		},
-		Queries: app.Queries{},
+		Queries: app.Queries{
+			EventTypes:        nil,
+			EventTypeByAction: query.NewEventTypeByActionHandler(eventTypeRepository),
+			Events:            nil,
+			EventByID:         nil,
+		},
 	}
 
 	httpPort, err := http.NewServer(http.Config{
