@@ -4,7 +4,6 @@ import "time"
 
 type EventType struct {
 	Id                           string
-	TenantID                     string
 	Version                      int
 	Action                       string
 	TargetTypes                  []string

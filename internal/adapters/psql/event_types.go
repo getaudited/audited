@@ -23,7 +23,6 @@ func NewEventTypePsqlRepository(db boil.ContextExecutor) EventTypePsqlRepository
 func (a EventTypePsqlRepository) Save(ctx context.Context, et domain.EventType) error {
 	row := models.EventType{
 		ID:                           et.Id,
-		TenantID:                     et.TenantID,
 		Version:                      et.Version,
 		Action:                       et.Action,
 		TargetTypes:                  et.TargetTypes,
@@ -41,21 +40,19 @@ func (a EventTypePsqlRepository) Save(ctx context.Context, et domain.EventType) 
 	return nil
 }
 
-func (a EventTypePsqlRepository) FindByAction(ctx context.Context, tenantID string, action string) (*domain.EventType, error) {
+func (a EventTypePsqlRepository) FindByAction(ctx context.Context, action string) (*domain.EventType, error) {
 	row, err := models.EventTypes(
-		models.EventTypeWhere.TenantID.EQ(tenantID),
 		models.EventTypeWhere.Action.EQ(action),
 	).One(ctx, a.db)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrEventTypeNotFound
 	}
 	if err != nil {
-		return nil, fmt.Errorf("error querying for event_type by action '%s' from tenant_id '%s': %v", action, tenantID, err)
+		return nil, fmt.Errorf("error querying for event_type by action '%s': %v", action, err)
 	}
 
 	return &domain.EventType{
 		Id:                           row.ID,
-		TenantID:                     row.TenantID,
 		Version:                      row.Version,
 		Action:                       row.Action,
 		TargetTypes:                  row.TargetTypes, //,,

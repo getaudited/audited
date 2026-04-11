@@ -3,7 +3,7 @@ package domain
 import "time"
 
 type Export struct {
-	Id        string
+	ID        string
 	State     string
 	Url       string
 	Targets   []string

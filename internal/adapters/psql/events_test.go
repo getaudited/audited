@@ -32,7 +32,6 @@ func TestEventsPsqlRepository_Save(t *testing.T) {
 	require.NotNil(t, storedEvent)
 
 	require.Equal(t, event.Id, storedEvent.ID)
-	require.Equal(t, event.TenantID, storedEvent.TenantID)
 	require.Equal(t, event.Version, storedEvent.Version)
 	require.WithinDuration(t, event.OccurredAt, storedEvent.OccurredAt, time.Millisecond)
 
@@ -96,9 +95,8 @@ func queryEventByID(t *testing.T, eventID string) *models.Event {
 
 func fixtureEvent() domain.Event {
 	return domain.Event{
-		Id:       ulid.Make().String(),
-		TenantID: ulid.Make().String(),
-		Version:  1,
+		Id:      ulid.Make().String(),
+		Version: 1,
 		Actor: domain.Actor{
 			Id:        ulid.Make().String(),
 			ActorType: "user",
