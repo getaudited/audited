@@ -7,8 +7,7 @@ import (
 )
 
 type EventTypeByAction struct {
-	TenantID string
-	Action   string
+	Action string
 }
 
 type EventTypeByActionHandler struct {
@@ -22,5 +21,5 @@ func NewEventTypeByActionHandler(finder eventTypeFinder) EventTypeByActionHandle
 }
 
 func (e EventTypeByActionHandler) Execute(ctx context.Context, q EventTypeByAction) (*domain.EventType, error) {
-	return e.finder.FindByAction(ctx, q.TenantID, q.Action)
+	return e.finder.FindByAction(ctx, q.Action)
 }

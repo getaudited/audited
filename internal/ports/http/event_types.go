@@ -13,8 +13,6 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-const mockTenantID = "dummy-tenant-id"
-
 func (h handlers) CreateEventType(c echo.Context) error {
 	var body CreateEventTypeJSONBody
 	err := c.Bind(&body)
@@ -29,7 +27,6 @@ func (h handlers) CreateEventType(c echo.Context) error {
 
 	eventType := domain.EventType{
 		Id:                           ulid.Make().String(),
-		TenantID:                     mockTenantID,
 		Version:                      1,
 		Action:                       body.Action,
 		TargetTypes:                  body.TargetTypes,
@@ -59,8 +56,7 @@ func (h handlers) CreateEventType(c echo.Context) error {
 
 func (h handlers) GetEventTypeByID(c echo.Context, eventTypeAction EventTypeAction) error {
 	et, err := h.application.Queries.EventTypeByAction.Execute(ctxFromEcho(c), query.EventTypeByAction{
-		TenantID: mockTenantID,
-		Action:   eventTypeAction,
+		Action: eventTypeAction,
 	})
 	if errors.Is(err, domain.ErrEventTypeNotFound) {
 		return NewNotFoundError(err, "event-type-not-found")

@@ -1,12 +1,5 @@
 -- +goose Up
 -- +goose StatementBegin
--- CREATE TABLE tenants (
---     id TEXT NOT NULL PRIMARY KEY,
---     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
---     disabled_at TIMESTAMPTZ
--- );
---
--- INSERT INTO tenants (id) VALUES ('tnt_01JZ3DXWVZKFMVJ500BCDK7BHP');
 
 CREATE TABLE sources (
     id TEXT NOT NULL PRIMARY KEY,
@@ -17,7 +10,6 @@ CREATE TABLE sources (
 
 CREATE TABLE event_types (
     id TEXT NOT NULL PRIMARY KEY,
-    tenant_id TEXT NOT NULL, -- TODO: REMOVE THIS
     version INTEGER DEFAULT 1 NOT NULL,
     action TEXT NOT NULL,
     target_types TEXT[] NOT NULL,
@@ -26,20 +18,14 @@ CREATE TABLE event_types (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    CONSTRAINT un_event_type_name UNIQUE (action, tenant_id)
-    -- TODO: Enforce this later
-    -- CONSTRAINT fk_event_types_belongs_to_tenants
-    --     FOREIGN KEY (tenant_id)
-    --     REFERENCES tenants (id)
-    --     ON DELETE CASCADE
+    CONSTRAINT un_event_type_name UNIQUE (action)
 );
 
 -- TODO: add event_type_schemas
 
 CREATE TABLE events (
     id TEXT NOT NULL PRIMARY KEY,
-    tenant_id TEXT NOT NULL,
-    source_id TEXT NOT NULL, -- TODO: enforce constraint later
+    source_id TEXT NOT NULL,
     version INT NOT NULL,
     actor_id TEXT NOT NULL,
     actor_type TEXT NOT NULL,
@@ -49,12 +35,6 @@ CREATE TABLE events (
     context_user_agent TEXT,
     metadata JSONB,
     occurred_at TIMESTAMPTZ NOT NULL DEFAULT now()
-
--- TODO: Enforce this later
--- CONSTRAINT fk_event_types_belongs_to_tenants
---     FOREIGN KEY (tenant_id)
---     REFERENCES tenants (id)
---     ON DELETE CASCADE
 );
 
 CREATE TABLE event_targets (

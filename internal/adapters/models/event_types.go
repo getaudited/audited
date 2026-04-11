@@ -26,7 +26,6 @@ import (
 // EventType is an object representing the database table.
 type EventType struct {
 	ID                           string            `boil:"id" json:"id" toml:"id" yaml:"id"`
-	TenantID                     string            `boil:"tenant_id" json:"tenant_id" toml:"tenant_id" yaml:"tenant_id"`
 	Version                      int               `boil:"version" json:"version" toml:"version" yaml:"version"`
 	Action                       string            `boil:"action" json:"action" toml:"action" yaml:"action"`
 	TargetTypes                  types.StringArray `boil:"target_types" json:"target_types" toml:"target_types" yaml:"target_types"`
@@ -41,7 +40,6 @@ type EventType struct {
 
 var EventTypeColumns = struct {
 	ID                           string
-	TenantID                     string
 	Version                      string
 	Action                       string
 	TargetTypes                  string
@@ -51,7 +49,6 @@ var EventTypeColumns = struct {
 	UpdatedAt                    string
 }{
 	ID:                           "id",
-	TenantID:                     "tenant_id",
 	Version:                      "version",
 	Action:                       "action",
 	TargetTypes:                  "target_types",
@@ -63,7 +60,6 @@ var EventTypeColumns = struct {
 
 var EventTypeTableColumns = struct {
 	ID                           string
-	TenantID                     string
 	Version                      string
 	Action                       string
 	TargetTypes                  string
@@ -73,7 +69,6 @@ var EventTypeTableColumns = struct {
 	UpdatedAt                    string
 }{
 	ID:                           "event_types.id",
-	TenantID:                     "event_types.tenant_id",
 	Version:                      "event_types.version",
 	Action:                       "event_types.action",
 	TargetTypes:                  "event_types.target_types",
@@ -161,7 +156,6 @@ func (w whereHelpertime_Time) GTE(x time.Time) qm.QueryMod {
 
 var EventTypeWhere = struct {
 	ID                           whereHelperstring
-	TenantID                     whereHelperstring
 	Version                      whereHelperint
 	Action                       whereHelperstring
 	TargetTypes                  whereHelpertypes_StringArray
@@ -171,7 +165,6 @@ var EventTypeWhere = struct {
 	UpdatedAt                    whereHelpertime_Time
 }{
 	ID:                           whereHelperstring{field: "\"event_types\".\"id\""},
-	TenantID:                     whereHelperstring{field: "\"event_types\".\"tenant_id\""},
 	Version:                      whereHelperint{field: "\"event_types\".\"version\""},
 	Action:                       whereHelperstring{field: "\"event_types\".\"action\""},
 	TargetTypes:                  whereHelpertypes_StringArray{field: "\"event_types\".\"target_types\""},
@@ -198,8 +191,8 @@ func (*eventTypeR) NewStruct() *eventTypeR {
 type eventTypeL struct{}
 
 var (
-	eventTypeAllColumns            = []string{"id", "tenant_id", "version", "action", "target_types", "should_validate_metadata_schema", "event_schema", "created_at", "updated_at"}
-	eventTypeColumnsWithoutDefault = []string{"id", "tenant_id", "action", "target_types"}
+	eventTypeAllColumns            = []string{"id", "version", "action", "target_types", "should_validate_metadata_schema", "event_schema", "created_at", "updated_at"}
+	eventTypeColumnsWithoutDefault = []string{"id", "action", "target_types"}
 	eventTypeColumnsWithDefault    = []string{"version", "should_validate_metadata_schema", "event_schema", "created_at", "updated_at"}
 	eventTypePrimaryKeyColumns     = []string{"id"}
 	eventTypeGeneratedColumns      = []string{}

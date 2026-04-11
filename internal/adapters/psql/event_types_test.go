@@ -28,7 +28,6 @@ func TestEventTypePsqlRepository_Save(t *testing.T) {
 	require.NotNil(t, stored)
 
 	require.Equal(t, et.Id, stored.ID)
-	require.Equal(t, et.TenantID, stored.TenantID)
 	require.Equal(t, et.Version, stored.Version)
 	require.Equal(t, et.Action, stored.Action)
 	require.Equal(t, et.TargetTypes, []string(stored.TargetTypes))
@@ -47,14 +46,13 @@ func TestEventTypePsqlRepository_FindByAction(t *testing.T) {
 		require.NoError(t, repo.Save(ctx, et))
 
 		// WHEN
-		result, err := repo.FindByAction(ctx, et.TenantID, et.Action)
+		result, err := repo.FindByAction(ctx, et.Action)
 
 		// THEN
 		require.NoError(t, err)
 		require.NotNil(t, result)
 
 		require.Equal(t, et.Id, result.Id)
-		require.Equal(t, et.TenantID, result.TenantID)
 		require.Equal(t, et.Version, result.Version)
 		require.Equal(t, et.Action, result.Action)
 		require.Equal(t, et.TargetTypes, result.TargetTypes)
@@ -65,7 +63,7 @@ func TestEventTypePsqlRepository_FindByAction(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		// WHEN
-		result, err := repo.FindByAction(ctx, ulid.Make().String(), gofakeit.Word())
+		result, err := repo.FindByAction(ctx, gofakeit.Word())
 
 		// THEN
 		require.ErrorIs(t, err, domain.ErrEventTypeNotFound)
@@ -88,7 +86,6 @@ func fixtureEventType() domain.EventType {
 	now := time.Now()
 	return domain.EventType{
 		Id:                           ulid.Make().String(),
-		TenantID:                     ulid.Make().String(),
 		Version:                      1,
 		Action:                       gofakeit.Word(),
 		TargetTypes:                  []string{"user", "team"},

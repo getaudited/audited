@@ -16,5 +16,5 @@ type PaginationParams struct {
 }
 
 type eventTypeFinder interface {
-	FindByAction(ctx context.Context, tenantID string, action string) (*domain.EventType, error)
+	FindByAction(ctx context.Context, action string) (*domain.EventType, error)
 }

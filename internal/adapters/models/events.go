@@ -25,7 +25,6 @@ import (
 // Event is an object representing the database table.
 type Event struct {
 	ID               string      `boil:"id" json:"id" toml:"id" yaml:"id"`
-	TenantID         string      `boil:"tenant_id" json:"tenant_id" toml:"tenant_id" yaml:"tenant_id"`
 	SourceID         string      `boil:"source_id" json:"source_id" toml:"source_id" yaml:"source_id"`
 	Version          int         `boil:"version" json:"version" toml:"version" yaml:"version"`
 	ActorID          string      `boil:"actor_id" json:"actor_id" toml:"actor_id" yaml:"actor_id"`
@@ -43,7 +42,6 @@ type Event struct {
 
 var EventColumns = struct {
 	ID               string
-	TenantID         string
 	SourceID         string
 	Version          string
 	ActorID          string
@@ -56,7 +54,6 @@ var EventColumns = struct {
 	OccurredAt       string
 }{
 	ID:               "id",
-	TenantID:         "tenant_id",
 	SourceID:         "source_id",
 	Version:          "version",
 	ActorID:          "actor_id",
@@ -71,7 +68,6 @@ var EventColumns = struct {
 
 var EventTableColumns = struct {
 	ID               string
-	TenantID         string
 	SourceID         string
 	Version          string
 	ActorID          string
@@ -84,7 +80,6 @@ var EventTableColumns = struct {
 	OccurredAt       string
 }{
 	ID:               "events.id",
-	TenantID:         "events.tenant_id",
 	SourceID:         "events.source_id",
 	Version:          "events.version",
 	ActorID:          "events.actor_id",
@@ -101,7 +96,6 @@ var EventTableColumns = struct {
 
 var EventWhere = struct {
 	ID               whereHelperstring
-	TenantID         whereHelperstring
 	SourceID         whereHelperstring
 	Version          whereHelperint
 	ActorID          whereHelperstring
@@ -114,7 +108,6 @@ var EventWhere = struct {
 	OccurredAt       whereHelpertime_Time
 }{
 	ID:               whereHelperstring{field: "\"events\".\"id\""},
-	TenantID:         whereHelperstring{field: "\"events\".\"tenant_id\""},
 	SourceID:         whereHelperstring{field: "\"events\".\"source_id\""},
 	Version:          whereHelperint{field: "\"events\".\"version\""},
 	ActorID:          whereHelperstring{field: "\"events\".\"actor_id\""},
@@ -164,8 +157,8 @@ func (r *eventR) GetEventTargets() EventTargetSlice {
 type eventL struct{}
 
 var (
-	eventAllColumns            = []string{"id", "tenant_id", "source_id", "version", "actor_id", "actor_type", "actor_name", "actor_metadata", "context_location", "context_user_agent", "metadata", "occurred_at"}
-	eventColumnsWithoutDefault = []string{"id", "tenant_id", "source_id", "version", "actor_id", "actor_type", "context_location"}
+	eventAllColumns            = []string{"id", "source_id", "version", "actor_id", "actor_type", "actor_name", "actor_metadata", "context_location", "context_user_agent", "metadata", "occurred_at"}
+	eventColumnsWithoutDefault = []string{"id", "source_id", "version", "actor_id", "actor_type", "context_location"}
 	eventColumnsWithDefault    = []string{"actor_name", "actor_metadata", "context_user_agent", "metadata", "occurred_at"}
 	eventPrimaryKeyColumns     = []string{"id"}
 	eventGeneratedColumns      = []string{}
