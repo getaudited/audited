@@ -1,10 +1,10 @@
-FROM golang:1.24.4-bullseye
+FROM golang:1.26
 
 COPY entrypoint.sh /
 
 RUN go install github.com/cespare/reflex@latest
 RUN go install github.com/go-task/task/v3/cmd/task@v3.10.0
 RUN apt-get update -y
-RUN apt-get install -y netcat
+# RUN apt-get install -y netcat
 
 ENTRYPOINT ["/entrypoint.sh"]

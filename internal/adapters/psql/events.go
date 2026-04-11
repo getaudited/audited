@@ -2,6 +2,7 @@ package psql
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/aarondl/null/v8"
@@ -20,6 +21,16 @@ func NewEventsPsqlRepository(db boil.ContextExecutor) EventsPsqlRepository {
 }
 
 func (a EventsPsqlRepository) Save(ctx context.Context, e domain.Event) error {
+	actorMetadata, err := mapMetadataToJSON(e.Actor.Metadata)
+	if err != nil {
+		return err
+	}
+
+	eventMetadata, err := mapMetadataToJSON(e.Metadata)
+	if err != nil {
+		return err
+	}
+
 	row := models.Event{
 		ID:               e.Id,
 		TenantID:         e.TenantID,
@@ -27,27 +38,32 @@ func (a EventsPsqlRepository) Save(ctx context.Context, e domain.Event) error {
 		ActorID:          e.Actor.Id,
 		ActorType:        e.Actor.ActorType,
 		ActorName:        null.StringFromPtr(e.Actor.Name),
-		ActorMetadata:    null.JSONFrom(e.Actor.Metadata),
+		ActorMetadata:    actorMetadata,
 		ContextLocation:  e.Context.Location,
 		ContextUserAgent: null.StringFromPtr(e.Context.UserAgent),
-		Metadata:         null.JSONFrom(e.Metadata),
+		Metadata:         eventMetadata,
 		OccurredAt:       e.OccurredAt,
 	}
 
-	err := row.Insert(ctx, a.db, boil.Infer())
+	err = row.Insert(ctx, a.db, boil.Infer())
 	if err != nil {
 		return fmt.Errorf("error saving event: %v", err)
 	}
 
 	targetRows := make([]*models.EventTarget, len(e.Targets))
 	for i, target := range e.Targets {
+		targetMetadata, err := mapMetadataToJSON(target.Metadata)
+		if err != nil {
+			return err
+		}
+
 		targetRows[i] = &models.EventTarget{
 			InternalID: ulid.Make().String(),
 			ID:         target.Id,
 			EventID:    e.Id,
 			Name:       null.StringFromPtr(target.Name),
 			Type:       target.TargetType,
-			Metadata:   null.JSONFrom(target.Metadata),
+			Metadata:   targetMetadata,
 		}
 	}
 
@@ -57,4 +73,17 @@ func (a EventsPsqlRepository) Save(ctx context.Context, e domain.Event) error {
 	}
 
 	return nil
+}
+
+func mapMetadataToJSON(metadata *domain.Metadata) (null.JSON, error) {
+	if metadata == nil {
+		return null.JSON{}, nil
+	}
+
+	data, err := json.Marshal(*metadata)
+	if err != nil {
+		return null.JSON{}, fmt.Errorf("error mapping metadata into json: %v", err)
+	}
+
+	return null.JSONFrom(data), nil
 }

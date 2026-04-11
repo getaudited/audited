@@ -51,7 +51,8 @@ paths:
                     name:
                       type: string
                     metadata:
-                      type: string
+                      type: object
+                      additionalProperties: true
                 targets:
                   type: array
                   items:
@@ -65,7 +66,8 @@ paths:
                       name:
                         type: string
                       metadata:
-                        type: string
+                        type: object
+                        additionalProperties: true
                 context:
                   type: object
                   required: [location]
@@ -75,7 +77,8 @@ paths:
                     user_agent:
                       type: string
                 metadata:
-                  type: string
+                  type: object
+                  additionalProperties: true
                 occurred_at:
                   type: string
                   format: date-time
@@ -133,7 +136,7 @@ paths:
       operationId: GetEventTypeByID
       parameters:
         - $ref: '#/components/parameters/event_type_action'
-      security:
+      # security:
       # - ApiKeyAuth: [ ]
       responses:
         "200":

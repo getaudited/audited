@@ -47,10 +47,11 @@ func (s *Service) Run() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	g, ctx := errgroup.WithContext(ctx)
 
-	db, err := postgres.Connect(config.DatabaseURL)
+	db, err := postgres.Connect(ctx, config.DatabaseURL)
 	if err != nil {
 		return err
 	}
+	defer func() { _ = db.Close() }()
 
 	err = postgres.ApplyMigrations(db, "misc/sql/migrations")
 	if err != nil {

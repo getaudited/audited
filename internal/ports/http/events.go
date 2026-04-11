@@ -22,7 +22,7 @@ func (h handlers) CreateEvent(c echo.Context) error {
 			Id:         target.Id,
 			Name:       target.Name,
 			TargetType: target.Type,
-			Metadata:   mapToMetadata(target.Metadata),
+			Metadata:   target.Metadata,
 		}
 	}
 
@@ -36,14 +36,14 @@ func (h handlers) CreateEvent(c echo.Context) error {
 				Id:        body.Actor.Id,
 				ActorType: body.Actor.Type,
 				Name:      body.Actor.Name,
-				Metadata:  mapToMetadata(body.Actor.Metadata),
+				Metadata:  body.Actor.Metadata,
 			},
 			Targets: targets,
 			Context: domain.Context{
 				Location:  body.Context.Location,
 				UserAgent: body.Context.UserAgent,
 			},
-			Metadata: mapToMetadata(body.Metadata),
+			Metadata: body.Metadata,
 		},
 	})
 	if err != nil {

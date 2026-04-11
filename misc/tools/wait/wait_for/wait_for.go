@@ -1,6 +1,7 @@
 package wait_for
 
 import (
+	"context"
 	"os"
 	"sync"
 	"time"
@@ -65,7 +66,7 @@ func (w *WaitFor) Wait() {
 func Run() {
 	w := NewWaitFor(logs.New())
 	w.Do(func() error {
-		db, err := postgres.Connect(os.Getenv("DATABASE_URL"))
+		db, err := postgres.Connect(context.Background(), os.Getenv("DATABASE_URL"))
 		if err != nil {
 			return err
 		}

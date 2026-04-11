@@ -9,11 +9,11 @@ type Event struct {
 	Actor      Actor
 	Targets    []Target
 	Context    Context
-	Metadata   Metadata
+	Metadata   *Metadata
 	OccurredAt time.Time
 }
 
-type Metadata = []byte
+type Metadata = map[string]interface{}
 
 type Context struct {
 	Location  string
@@ -24,12 +24,12 @@ type Actor struct {
 	Id        string
 	ActorType string
 	Name      *string
-	Metadata  Metadata
+	Metadata  *Metadata
 }
 
 type Target struct {
 	Id         string
 	Name       *string
 	TargetType string
-	Metadata   Metadata
+	Metadata   *Metadata
 }

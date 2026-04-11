@@ -11,7 +11,7 @@ import (
 
 func loggerMiddleware(logger *logs.Logger, isDebug bool) echo.MiddlewareFunc {
 	if isDebug {
-		return middleware.Logger()
+		return middleware.RequestLogger()
 	}
 
 	return middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
