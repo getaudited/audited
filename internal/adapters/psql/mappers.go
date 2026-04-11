@@ -10,7 +10,7 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-func mapDomainEventTargetsToModelEventTargets(eventID string, targets []domain.Target) ([]*models.EventTarget, error) {
+func mapDomainEventTargetsToModelEventTargets(eventID domain.ID, targets []domain.Target) ([]*models.EventTarget, error) {
 	targetRows := make([]*models.EventTarget, len(targets))
 
 	for i, target := range targets {
@@ -22,7 +22,7 @@ func mapDomainEventTargetsToModelEventTargets(eventID string, targets []domain.T
 		targetRows[i] = &models.EventTarget{
 			InternalID: ulid.Make().String(),
 			ID:         target.Id,
-			EventID:    eventID,
+			EventID:    eventID.String(),
 			Name:       null.StringFromPtr(target.Name),
 			Type:       target.TargetType,
 			Metadata:   targetMetadata,
@@ -33,27 +33,28 @@ func mapDomainEventTargetsToModelEventTargets(eventID string, targets []domain.T
 }
 
 func mapDomainEventToModelEvent(e domain.Event) (models.Event, error) {
-	actorMetadata, err := mapMetadataToJSON(e.Actor.Metadata)
+	actorMetadata, err := mapMetadataToJSON(e.Actor().Metadata)
 	if err != nil {
 		return models.Event{}, err
 	}
 
-	eventMetadata, err := mapMetadataToJSON(e.Metadata)
+	eventMetadata, err := mapMetadataToJSON(e.Metadata())
 	if err != nil {
 		return models.Event{}, err
 	}
 
 	row := models.Event{
-		ID:               e.Id,
-		Version:          e.Version,
-		ActorID:          e.Actor.Id,
-		ActorType:        e.Actor.ActorType,
-		ActorName:        null.StringFromPtr(e.Actor.Name),
+		ID:               e.ID().String(),
+		SourceID:         e.SourceID().String(),
+		Version:          e.Version(),
+		ActorID:          e.Actor().Id,
+		ActorType:        e.Actor().ActorType,
+		ActorName:        null.StringFromPtr(e.Actor().Name),
 		ActorMetadata:    actorMetadata,
-		ContextLocation:  e.Context.Location,
-		ContextUserAgent: null.StringFromPtr(e.Context.UserAgent),
+		ContextLocation:  e.Context().Location,
+		ContextUserAgent: null.StringFromPtr(e.Context().UserAgent),
 		Metadata:         eventMetadata,
-		OccurredAt:       e.OccurredAt,
+		OccurredAt:       e.OccurredAt(),
 	}
 
 	return row, err

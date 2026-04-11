@@ -60,8 +60,10 @@ paths:
         content:
           application/json:
             schema:
-              required: [version, actor, targets, context, occurred_at]
+              required: [source_id, version, actor, targets, context, occurred_at]
               properties:
+                source_id:
+                  type: string
                 version:
                   type: integer
                 actor:

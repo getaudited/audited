@@ -122,19 +122,38 @@ var EventWhere = struct {
 
 // EventRels is where relationship names are stored.
 var EventRels = struct {
+	Source       string
 	EventTargets string
 }{
+	Source:       "Source",
 	EventTargets: "EventTargets",
 }
 
 // eventR is where relationships are stored.
 type eventR struct {
+	Source       *Source          `boil:"Source" json:"Source" toml:"Source" yaml:"Source"`
 	EventTargets EventTargetSlice `boil:"EventTargets" json:"EventTargets" toml:"EventTargets" yaml:"EventTargets"`
 }
 
 // NewStruct creates a new relationship struct
 func (*eventR) NewStruct() *eventR {
 	return &eventR{}
+}
+
+func (o *Event) GetSource() *Source {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetSource()
+}
+
+func (r *eventR) GetSource() *Source {
+	if r == nil {
+		return nil
+	}
+
+	return r.Source
 }
 
 func (o *Event) GetEventTargets() EventTargetSlice {
@@ -469,6 +488,17 @@ func (q eventQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (bool
 	return count > 0, nil
 }
 
+// Source pointed to by the foreign key.
+func (o *Event) Source(mods ...qm.QueryMod) sourceQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"id\" = ?", o.SourceID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return Sources(queryMods...)
+}
+
 // EventTargets retrieves all the event_target's EventTargets with an executor.
 func (o *Event) EventTargets(mods ...qm.QueryMod) eventTargetQuery {
 	var queryMods []qm.QueryMod
@@ -481,6 +511,126 @@ func (o *Event) EventTargets(mods ...qm.QueryMod) eventTargetQuery {
 	)
 
 	return EventTargets(queryMods...)
+}
+
+// LoadSource allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for an N-1 relationship.
+func (eventL) LoadSource(ctx context.Context, e boil.ContextExecutor, singular bool, maybeEvent any, mods queries.Applicator) error {
+	var slice []*Event
+	var object *Event
+
+	if singular {
+		var ok bool
+		object, ok = maybeEvent.(*Event)
+		if !ok {
+			object = new(Event)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeEvent)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeEvent))
+			}
+		}
+	} else {
+		s, ok := maybeEvent.(*[]*Event)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeEvent)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeEvent))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &eventR{}
+		}
+		args[object.SourceID] = struct{}{}
+
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &eventR{}
+			}
+
+			args[obj.SourceID] = struct{}{}
+
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`sources`),
+		qm.WhereIn(`sources.id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load Source")
+	}
+
+	var resultSlice []*Source
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice Source")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for sources")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for sources")
+	}
+
+	if len(sourceAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.Source = foreign
+		if foreign.R == nil {
+			foreign.R = &sourceR{}
+		}
+		foreign.R.Events = append(foreign.R.Events, object)
+		return nil
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if local.SourceID == foreign.ID {
+				local.R.Source = foreign
+				if foreign.R == nil {
+					foreign.R = &sourceR{}
+				}
+				foreign.R.Events = append(foreign.R.Events, local)
+				break
+			}
+		}
+	}
+
+	return nil
 }
 
 // LoadEventTargets allows an eager lookup of values, cached into the
@@ -591,6 +741,53 @@ func (eventL) LoadEventTargets(ctx context.Context, e boil.ContextExecutor, sing
 				break
 			}
 		}
+	}
+
+	return nil
+}
+
+// SetSource of the event to the related item.
+// Sets o.R.Source to related.
+// Adds o to related.R.Events.
+func (o *Event) SetSource(ctx context.Context, exec boil.ContextExecutor, insert bool, related *Source) error {
+	var err error
+	if insert {
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	}
+
+	updateQuery := fmt.Sprintf(
+		"UPDATE \"events\" SET %s WHERE %s",
+		strmangle.SetParamNames("\"", "\"", 1, []string{"source_id"}),
+		strmangle.WhereClause("\"", "\"", 2, eventPrimaryKeyColumns),
+	)
+	values := []any{related.ID, o.ID}
+
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, updateQuery)
+		fmt.Fprintln(writer, values)
+	}
+	if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	o.SourceID = related.ID
+	if o.R == nil {
+		o.R = &eventR{
+			Source: related,
+		}
+	} else {
+		o.R.Source = related
+	}
+
+	if related.R == nil {
+		related.R = &sourceR{
+			Events: EventSlice{o},
+		}
+	} else {
+		related.R.Events = append(related.R.Events, o)
 	}
 
 	return nil
