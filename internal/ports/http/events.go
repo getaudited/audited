@@ -6,7 +6,6 @@ import (
 	"github.com/firminochangani/audited/internal/app/command"
 	"github.com/firminochangani/audited/internal/domain"
 	"github.com/labstack/echo/v4"
-	"github.com/oklog/ulid/v2"
 )
 
 func (h handlers) CreateEvent(c echo.Context) error {
@@ -26,25 +25,29 @@ func (h handlers) CreateEvent(c echo.Context) error {
 		}
 	}
 
-	err = h.application.Commands.CreateEvent.Execute(ctxFromEcho(c), command.CreateEvent{
-		Event: domain.Event{
-			Id:         ulid.Make().String(),
-			OccurredAt: body.OccurredAt,
-			Version:    body.Version,
-			// TODO: add tenant_id
-			Actor: domain.Actor{
-				Id:        body.Actor.Id,
-				ActorType: body.Actor.Type,
-				Name:      body.Actor.Name,
-				Metadata:  body.Actor.Metadata,
-			},
-			Targets: targets,
-			Context: domain.Context{
-				Location:  body.Context.Location,
-				UserAgent: body.Context.UserAgent,
-			},
-			Metadata: body.Metadata,
+	event, err := domain.NewEvent(
+		domain.ID(body.SourceId),
+		body.Version,
+		domain.Actor{
+			Id:        body.Actor.Id,
+			ActorType: body.Actor.Type,
+			Name:      body.Actor.Name,
+			Metadata:  body.Actor.Metadata,
 		},
+		targets,
+		domain.Context{
+			Location:  body.Context.Location,
+			UserAgent: body.Context.UserAgent,
+		},
+		body.Metadata,
+		body.OccurredAt,
+	)
+	if err != nil {
+		return NewBadRequestError(err, "unable to create event")
+	}
+
+	err = h.application.Commands.CreateEvent.Execute(ctxFromEcho(c), command.CreateEvent{
+		Event: event,
 	})
 	if err != nil {
 		return NewHandlerError(err, "unable-to-create-event")
