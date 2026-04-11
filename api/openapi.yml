@@ -27,10 +27,6 @@ paths:
       tags:
         - Sources
       operationId: createSource
-      security:
-      # - ApiKeyAuth: [ ]
-      parameters:
-      # - $ref: '#/components/parameters/message_id'
       requestBody:
         required: true
         content:
@@ -59,10 +55,6 @@ paths:
       tags:
         - Events
       operationId: createEvent
-      security:
-        # - ApiKeyAuth: [ ]
-      parameters:
-        # - $ref: '#/components/parameters/message_id'
       requestBody:
         required: true
         content:
@@ -128,8 +120,6 @@ paths:
       tags:
         - EventTypes
       operationId: CreateEventType
-      security:
-        # - ApiKeyAuth: [ ]
       requestBody:
         required: true
         content:
