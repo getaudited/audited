@@ -72,3 +72,12 @@ func mapMetadataToJSON(metadata *domain.Metadata) (null.JSON, error) {
 
 	return null.JSONFrom(data), nil
 }
+
+func mapDomainSourceToModelSource(source *domain.Source) *models.Source {
+	return &models.Source{
+		ID:        source.ID().String(),
+		Name:      source.Name(),
+		CreatedAt: source.CreatedAt(),
+		UpdatedAt: source.UpdatedAt(),
+	}
+}

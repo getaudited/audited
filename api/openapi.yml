@@ -19,8 +19,40 @@ servers:
   - url: http://localhost:8080
 
 paths:
+  # Sources
+  /v1/sources:
+    post:
+      summary: Create a source
+      description: ...
+      tags:
+        - Sources
+      operationId: createSource
+      security:
+      # - ApiKeyAuth: [ ]
+      parameters:
+      # - $ref: '#/components/parameters/message_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required: [ name ]
+              properties:
+                name:
+                  type: string
+      responses:
+        "204":
+          description: Source created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Source"
+
+        default:
+          $ref: "#/components/responses/InternalServerError"
+
   # Events
-  /events:
+  /v1/events:
     post:
       summary: Create an event
       description: ...
@@ -89,7 +121,7 @@ paths:
           $ref: "#/components/responses/InternalServerError"
 
   # Event types
-  /event-types:
+  /v1/event-types:
     post:
       summary: Create an event type
       description: Create a new event type
@@ -127,7 +159,7 @@ paths:
         default:
           $ref: "#/components/responses/InternalServerError"
 
-  /event-types/{event_type_action}:
+  /v1/event-types/{event_type_action}:
     get:
       summary: Return the details of an Event Type
       description: Return the details of an Event Type
@@ -159,12 +191,6 @@ components:
       required: true
       schema:
         type: string
-    idempotency_key:
-      name: idempotency_key
-      in: header
-      required: false
-      schema:
-        type: string
     paginationLimit:
       name: limit
       description: The number of items per page
@@ -183,6 +209,25 @@ components:
         type: integer
         minimum: 1
   schemas:
+    # Source
+    Source:
+      type: object
+      required: [id, name, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          x-order: 1
+        name:
+          type: string
+          x-order: 2
+        created_at:
+          type: string
+          format: date-time
+          x-order: 3
+        updated_at:
+          type: string
+          format: date-time
+          x-order: 4
     # Event type
     EventType:
       required: [id, action, version, target_types, should_validate_metadata_schema, created_at, updated_at]
