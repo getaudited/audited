@@ -5,6 +5,7 @@ import "time"
 type Event struct {
 	Id         string
 	TenantID   string
+	SourceID   string
 	Version    int
 	Actor      Actor
 	Targets    []Target

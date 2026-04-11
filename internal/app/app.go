@@ -24,6 +24,7 @@ type Commands struct {
 	CreateEvent     CommandHandler[command.CreateEvent]
 	CreateEventType CommandHandler[command.CreateEventType]
 	CreateExport    CommandHandler[any]
+	CreateSource    CommandHandler[command.CreateSource]
 }
 
 type Queries struct {
