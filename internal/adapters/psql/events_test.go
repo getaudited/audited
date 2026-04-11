@@ -9,11 +9,12 @@ import (
 	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/queries/qm"
 	"github.com/brianvoe/gofakeit/v7"
+	"github.com/oklog/ulid/v2"
+	"github.com/stretchr/testify/require"
+
 	"github.com/firminochangani/audited/internal/adapters/models"
 	"github.com/firminochangani/audited/internal/adapters/psql"
 	"github.com/firminochangani/audited/internal/domain"
-	"github.com/oklog/ulid/v2"
-	"github.com/stretchr/testify/require"
 )
 
 func TestEventsPsqlRepository_Save(t *testing.T) {
