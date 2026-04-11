@@ -40,6 +40,14 @@ type EventType struct {
 	Version                      int       `json:"version"`
 }
 
+// Source defines model for Source.
+type Source struct {
+	Id        string    `json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 // EventTypeAction defines model for event_type_action.
 type EventTypeAction = string
 
@@ -83,23 +91,34 @@ type CreateEventJSONBody struct {
 	Version int `json:"version"`
 }
 
+// CreateSourceJSONBody defines parameters for CreateSource.
+type CreateSourceJSONBody struct {
+	Name string `json:"name"`
+}
+
 // CreateEventTypeJSONRequestBody defines body for CreateEventType for application/json ContentType.
 type CreateEventTypeJSONRequestBody CreateEventTypeJSONBody
 
 // CreateEventJSONRequestBody defines body for CreateEvent for application/json ContentType.
 type CreateEventJSONRequestBody CreateEventJSONBody
 
+// CreateSourceJSONRequestBody defines body for CreateSource for application/json ContentType.
+type CreateSourceJSONRequestBody CreateSourceJSONBody
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Create an event type
-	// (POST /event-types)
+	// (POST /v1/event-types)
 	CreateEventType(ctx echo.Context) error
 	// Return the details of an Event Type
-	// (GET /event-types/{event_type_action})
+	// (GET /v1/event-types/{event_type_action})
 	GetEventTypeByID(ctx echo.Context, eventTypeAction EventTypeAction) error
 	// Create an event
-	// (POST /events)
+	// (POST /v1/events)
 	CreateEvent(ctx echo.Context) error
+	// Create a source
+	// (POST /v1/sources)
+	CreateSource(ctx echo.Context) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -141,6 +160,15 @@ func (w *ServerInterfaceWrapper) CreateEvent(ctx echo.Context) error {
 	return err
 }
 
+// CreateSource converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateSource(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.CreateSource(ctx)
+	return err
+}
+
 // This is a simple interface which specifies echo.Route addition functions which
 // are present on both echo.Echo and echo.Group, since we want to allow using
 // either of them for path registration
@@ -169,34 +197,36 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 		Handler: si,
 	}
 
-	router.POST(baseURL+"/event-types", wrapper.CreateEventType)
-	router.GET(baseURL+"/event-types/:event_type_action", wrapper.GetEventTypeByID)
-	router.POST(baseURL+"/events", wrapper.CreateEvent)
+	router.POST(baseURL+"/v1/event-types", wrapper.CreateEventType)
+	router.GET(baseURL+"/v1/event-types/:event_type_action", wrapper.GetEventTypeByID)
+	router.POST(baseURL+"/v1/events", wrapper.CreateEvent)
+	router.POST(baseURL+"/v1/sources", wrapper.CreateSource)
 
 }
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/9RXS2/bRhD+K4ttgVxoUWl8CHiqHDuF2iY1bAM9BIYwXo7ITcldZnfWtWDwvxe7fEki",
-	"/VDgGu1NJOc933wzuudCl5VWqMjy5J5XYKBEQhOe8BYVrWhT4QoESa38S6l4wiugnEdcQYk8mZCLuMFv",
-	"ThpMeULGYcStyLEEb8DL8YRbMlJlvK5rL2wrrSwGryeQXuA3h5bOjNHGvxJaESryP6GqCinAe4m/2iak",
-	"wfaPBtc84T/EQ1px89XGwdplIxq8pmiFkVWTGD8FAnYLhUyDcYbBeR3xpSI0CopLNLdoXjWmBctQoZGi",
-	"iYZ1dfJhfdb0UTuVvmpAF2i1MwKZ0sTW3j33Qq22N75twAPK6AoNyaa12MW6azXoMOEs6bLNVOgUmXUi",
-	"Z2DZGyxBFiupVs7iGx7tQyjiJVoLGY5NL9jWM4Mb7YhRjm13R5bqbeB+4Z1UZ/66V9A3X1GQd33mwX8V",
-	"3u6nOwzNKGBhEAjTFYR+rbUp/S+eAuERyRKnkpTppKkHJyviNteuSFctqnFVIkEKBKuRzo3WBYLySgQm",
-	"w2acQxaSsLST5tsXYAxs/LOr0oOTukVjd4skFWGGZtQMmfKI9/zS6e3F+3TOO7Xfifk6QBmFM5I2AcJN",
-	"ARaV/A03C0d5z385QopmYMC7I6jk0V+4GVKEoOVTPEEwaDr9m/D0sSvOr39e8baHoQ/h62AlJ6qaQcS7",
-	"hoZOtbBjnHs5m8RxJil3NzOhy3gtTSmVFjmoDJSMwaWSMI0vzhann85mpS+nM8VBygGGaq07vgERWh3m",
-	"kye81Zp1aj9n/oM3yMfcdr5kBtdoUAlka21Y64Mtzpc84oUU6Kkuue+K/Gl59R0hx78vP5x9vgwJe8yi",
-	"Ke0fa0/mUuBhyUecJBWhuf2bHr98PpvP3noXukIFleQJfzebz97xKKzL0LQ4rMqjfrYqbWnczA8BoAyY",
-	"wr9Z0GABDsG0CbS+THu5gYCaeUFLJzrdHLQSns1b/xWy2eOGnhYOJIPreteSv1X275Gf5m9fbr32vZpY",
-	"rlc5+o4XG9Yy1Hbv64gfz+cP2e8Djvevp+BlDa6gp3WnLp3Aia4swWy2kKl2YUmQWd+GPj3bkOk23OP7",
-	"0ZlY+5AynJiACyRnVNjUKRLIwjK99m6DB3Y1NQ2/IPX+TzbL0zB3wzn7ZTr7QSQen7H19QgL89fDwst0",
-	"/3h+/LTe7jH5sph5Xi8fh9AjZDmbzR4jxpckxeZ23X39wFHWEU3QTFPpXUBxvqXa/C0anZPNrnuQ/+6f",
-	"uFjDkRREpm7VkPodjbModFOFSc/OollB1tbscf+9oSn3310ULYQz5sDLslkFu1vlf9y7/WP7+YfzcCo3",
-	"GB5KMyBit8bPW4vHE//kwkh368s6IdDatSuKzb+7iPYJxLYp2GCgYf/hcEzi2OO0yLWl5P38/ZzX1/U/",
-	"AQAA//+kKTnWCxEAAA==",
+	"H4sIAAAAAAAC/9RXTW/jNhP+KwTfF9iLYjm7OSx0qrPJFm672yAJ0MMiMCbU2OJWIrXkMI0R6L8XpL5s",
+	"S/lw4AbtzaY43888M3zgQhelVqjI8uSBl2CgQEIT/uEdKlrQusQFCJJa+UOpeMJLoIxHXEGBPBm5F3GD",
+	"P5w0mPKEjMOIW5FhAV6Bv8cTbslIteJVVfnLttTKYrB6Cukl/nBo6dwYbfyR0IpQkf8JZZlLAd5K/N3W",
+	"LvW6/29wyRP+v7gPK66/2jhou6qvBqspWmFkWQfGz4CA3UEu06CcYTBeRXyuCI2C/ArNHZo39WnGVqjQ",
+	"SFF7w9o8ebe+avqsnUrf1KFLtNoZgUxpYktvnvtLjbRXvqnAA8roEg3JurTY+rqtNcgw4SzpoolU6BSZ",
+	"dSJjYNk7LEDmC6kWzuI7Hu1CKOIFWgsrHKqesY3/DG61I0YZNtUdaKo2gfuNt7da9TedgL79joK86XMP",
+	"/utwuhtu3zQDh4VBIEwXEOq11Kbwv3gKhEckCxwLUqajqh7trIjbTLs8XTSoxkWBBCkQLAYyt1rnCMoL",
+	"EZgV1u0copCEhR1V3xyAMbD2/12Z7h3UHRq7nSSpCFdoBsWQKY94xy+t3I6/z8e8lfstn2+qiF8FeA9L",
+	"uXe9In5/pE2KhicfHqndxpXjqiXTJy69f02KN+RPRjMazD6RlAHkPa5QOCNpHfq8TtCslL/ieuYo64ZE",
+	"huDtdmPi/ghKefQnrnsnIUh5HJwiGDSt/G3497kN75c/rnkD9ADW8LXXkhGVNVvhfc3VZ1rYIRn4ezaJ",
+	"45WkzN1OhC7ipTSFVFpkoFagZAwulYRpfHk+O/tyPil8hpzJ9xIOvaqWuiVlEKFYgcR4whupSSv208p/",
+	"8Ar5cABczJnBJRpUAtlSG9bYYLOLOY94LgX6eZA8tEn+Mr9+hcvxb/NP51+vQsC+sdEU9veln3hS4H7B",
+	"R5wk5aG43UnX5Hw6mU6OvQldooJS8oR/mEwnH3gUdopQtPjuOA4rxVHHQaW2NKznp4BZBkzhXyxIsICI",
+	"oN2E8TdPu3s9UdddgJZOdbrea3S+mN//LaS80/Edfe5JmjfVtia/0+3ube+nx4dbQ7pajSwh1xn6iudr",
+	"1pDWZu2riJ9Mp4/p7xyOd7fMYGUJLqfnZcc2wkCLrijArDeQqbZhSbCyvgxdeNZnNtpFfPww2Kgr79UK",
+	"R5rgEskZFZaaFAlkbpleesvBCLsea4ifkToXTtfzs9B9/eb/bTwB/ZV4uPFXNwM4TN8ODocBwMn05Hm5",
+	"7b37sLB5WS2fRdETlDmZTJ6ix0NSY73pbx8/ssK2dBMk01R6E5BfbIjWj8jB8j2+M3Us+PDMfh8WoHBl",
+	"bLMPod/TMIpc11kYtewsmgWsmpw9bb9TNGb+1UnRQjhj9tzD64GwPVv+w7XbfZq8/JnRPyxqDPep6RGx",
+	"neOXDceTkXdv6Op2iFknBFq7dHm+/mfH0S6HbPBH/bx/FYE0T6dDMcgj8NipVri1RwEOMo6aSEdmUf3l",
+	"LUvKbJv2tqRXTQnrrNigoR7q/asgiWPPPXmmLSUfpx+nvLqp/g4AAP//zgWiFA0UAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

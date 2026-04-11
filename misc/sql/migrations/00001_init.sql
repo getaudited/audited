@@ -8,9 +8,16 @@
 --
 -- INSERT INTO tenants (id) VALUES ('tnt_01JZ3DXWVZKFMVJ500BCDK7BHP');
 
+CREATE TABLE sources (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE TABLE event_types (
     id TEXT NOT NULL PRIMARY KEY,
-    tenant_id TEXT NOT NULL,
+    tenant_id TEXT NOT NULL, -- TODO: REMOVE THIS
     version INTEGER DEFAULT 1 NOT NULL,
     action TEXT NOT NULL,
     target_types TEXT[] NOT NULL,
@@ -32,6 +39,7 @@ CREATE TABLE event_types (
 CREATE TABLE events (
     id TEXT NOT NULL PRIMARY KEY,
     tenant_id TEXT NOT NULL,
+    source_id TEXT NOT NULL, -- TODO: enforce constraint later
     version INT NOT NULL,
     actor_id TEXT NOT NULL,
     actor_type TEXT NOT NULL,
@@ -63,6 +71,7 @@ CREATE TABLE event_targets (
 
 -- +goose Down
 -- +goose StatementBegin
+DROP TABLE sources;
 DROP TABLE event_targets;
 DROP TABLE events;
 DROP TABLE event_types;
