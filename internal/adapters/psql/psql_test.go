@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tachyonhqdev/webhooks/internal/common/postgres"
-	"github.com/tachyonhqdev/webhooks/misc/tools/wait/wait_for"
+	"github.com/firminochangani/audited/internal/common/postgres"
+	"github.com/firminochangani/audited/misc/tools/wait/wait_for"
 )
 
 var (

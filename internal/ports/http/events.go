@@ -3,10 +3,10 @@ package http
 import (
 	"net/http"
 
+	"github.com/firminochangani/audited/internal/app/command"
+	"github.com/firminochangani/audited/internal/domain"
 	"github.com/labstack/echo/v4"
 	"github.com/oklog/ulid/v2"
-	"github.com/tachyonhqdev/webhooks/internal/app/command"
-	"github.com/tachyonhqdev/webhooks/internal/domain"
 )
 
 func (h handlers) CreateEvent(c echo.Context) error {

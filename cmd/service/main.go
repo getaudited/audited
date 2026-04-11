@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/tachyonhqdev/webhooks/internal/common/logs"
+	"github.com/firminochangani/audited/internal/common/logs"
 )
 
 func main() {

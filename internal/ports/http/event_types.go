@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/firminochangani/audited/internal/app/command"
+	"github.com/firminochangani/audited/internal/app/query"
+	"github.com/firminochangani/audited/internal/domain"
 	"github.com/friendsofgo/errors"
 	"github.com/labstack/echo/v4"
 	"github.com/oklog/ulid/v2"
-	"github.com/tachyonhqdev/webhooks/internal/app/command"
-	"github.com/tachyonhqdev/webhooks/internal/app/query"
-	"github.com/tachyonhqdev/webhooks/internal/domain"
 )
 
 const mockTenantID = "dummy-tenant-id"

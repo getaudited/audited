@@ -9,13 +9,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/firminochangani/audited/internal/app"
+	"github.com/firminochangani/audited/internal/common/logs"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	oapimiddleware "github.com/oapi-codegen/echo-middleware"
-	"github.com/tachyonhqdev/webhooks/internal/app"
-	"github.com/tachyonhqdev/webhooks/internal/common/logs"
 )
 
 type Server struct {

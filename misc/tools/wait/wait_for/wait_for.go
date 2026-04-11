@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/firminochangani/audited/internal/common/logs"
+	"github.com/firminochangani/audited/internal/common/postgres"
 	_ "github.com/lib/pq"
 	"github.com/rabbitmq/amqp091-go"
-	"github.com/tachyonhqdev/webhooks/internal/common/logs"
-	"github.com/tachyonhqdev/webhooks/internal/common/postgres"
 )
 
 type WaitFor struct {

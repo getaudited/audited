@@ -1,4 +1,4 @@
-module github.com/tachyonhqdev/webhooks
+module github.com/firminochangani/audited
 
 go 1.26
 

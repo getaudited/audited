@@ -4,9 +4,9 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/firminochangani/audited/internal/common/logs"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/tachyonhqdev/webhooks/internal/common/logs"
 )
 
 func loggerMiddleware(logger *logs.Logger, isDebug bool) echo.MiddlewareFunc {

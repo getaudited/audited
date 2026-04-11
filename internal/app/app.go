@@ -3,9 +3,9 @@ package app
 import (
 	"context"
 
-	"github.com/tachyonhqdev/webhooks/internal/app/command"
-	"github.com/tachyonhqdev/webhooks/internal/app/query"
-	"github.com/tachyonhqdev/webhooks/internal/domain"
+	"github.com/firminochangani/audited/internal/app/command"
+	"github.com/firminochangani/audited/internal/app/query"
+	"github.com/firminochangani/audited/internal/domain"
 )
 
 type CommandHandler[C any] interface {

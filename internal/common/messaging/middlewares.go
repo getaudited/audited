@@ -2,7 +2,7 @@ package messaging
 
 import (
 	"github.com/ThreeDotsLabs/watermill/message"
-	"github.com/tachyonhqdev/webhooks/internal/common/logs"
+	"github.com/firminochangani/audited/internal/common/logs"
 )
 
 func observabilityMiddleware(logger *logs.Logger) message.HandlerMiddleware {

@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/firminochangani/audited/internal/common/logs"
+	"github.com/firminochangani/audited/misc/tools/wait/wait_for"
+	"github.com/firminochangani/audited/tests/client"
 	"github.com/stretchr/testify/require"
-	"github.com/tachyonhqdev/webhooks/internal/common/logs"
-	"github.com/tachyonhqdev/webhooks/misc/tools/wait/wait_for"
-	"github.com/tachyonhqdev/webhooks/tests/client"
 )
 
 var (

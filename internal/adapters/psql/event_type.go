@@ -7,9 +7,9 @@ import (
 
 	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/firminochangani/audited/internal/adapters/models"
+	"github.com/firminochangani/audited/internal/domain"
 	"github.com/friendsofgo/errors"
-	"github.com/tachyonhqdev/webhooks/internal/adapters/models"
-	"github.com/tachyonhqdev/webhooks/internal/domain"
 )
 
 type EventTypePsqlRepository struct {

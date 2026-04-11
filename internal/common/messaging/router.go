@@ -13,7 +13,7 @@ import (
 	"github.com/ThreeDotsLabs/watermill/components/forwarder"
 	"github.com/ThreeDotsLabs/watermill/message"
 	"github.com/ThreeDotsLabs/watermill/message/router/middleware"
-	"github.com/tachyonhqdev/webhooks/internal/common/logs"
+	"github.com/firminochangani/audited/internal/common/logs"
 )
 
 const (

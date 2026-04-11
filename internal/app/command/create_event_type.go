@@ -3,7 +3,7 @@ package command
 import (
 	"context"
 
-	"github.com/tachyonhqdev/webhooks/internal/domain"
+	"github.com/firminochangani/audited/internal/domain"
 )
 
 type CreateEventType struct {

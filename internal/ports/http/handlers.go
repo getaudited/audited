@@ -3,8 +3,8 @@ package http
 import (
 	"net/http"
 
+	"github.com/firminochangani/audited/internal/app"
 	"github.com/labstack/echo/v4"
-	"github.com/tachyonhqdev/webhooks/internal/app"
 )
 
 var _ ServerInterface = (*handlers)(nil)

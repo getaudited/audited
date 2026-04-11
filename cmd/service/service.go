@@ -8,19 +8,19 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/firminochangani/audited/internal/app/query"
 	"github.com/kelseyhightower/envconfig"
 	_ "github.com/lib/pq"
-	"github.com/tachyonhqdev/webhooks/internal/app/query"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/tachyonhqdev/webhooks/internal/adapters/psql"
-	"github.com/tachyonhqdev/webhooks/internal/app"
-	"github.com/tachyonhqdev/webhooks/internal/app/command"
-	"github.com/tachyonhqdev/webhooks/internal/common/logs"
-	messaginglib "github.com/tachyonhqdev/webhooks/internal/common/messaging"
-	"github.com/tachyonhqdev/webhooks/internal/common/postgres"
-	"github.com/tachyonhqdev/webhooks/internal/ports/amqp"
-	"github.com/tachyonhqdev/webhooks/internal/ports/http"
+	"github.com/firminochangani/audited/internal/adapters/psql"
+	"github.com/firminochangani/audited/internal/app"
+	"github.com/firminochangani/audited/internal/app/command"
+	"github.com/firminochangani/audited/internal/common/logs"
+	messaginglib "github.com/firminochangani/audited/internal/common/messaging"
+	"github.com/firminochangani/audited/internal/common/postgres"
+	"github.com/firminochangani/audited/internal/ports/amqp"
+	"github.com/firminochangani/audited/internal/ports/http"
 )
 
 type Config struct {

@@ -3,7 +3,7 @@ package query
 import (
 	"context"
 
-	"github.com/tachyonhqdev/webhooks/internal/domain"
+	"github.com/firminochangani/audited/internal/domain"
 )
 
 type EventTypeByAction struct {
