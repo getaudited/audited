@@ -45,6 +45,7 @@ func mapDomainEventToModelEvent(e domain.Event) (models.Event, error) {
 
 	row := models.Event{
 		ID:               e.Id,
+		SourceID:         e.SourceID,
 		Version:          e.Version,
 		ActorID:          e.Actor.Id,
 		ActorType:        e.Actor.ActorType,

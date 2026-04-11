@@ -21,7 +21,10 @@ func TestEventsPsqlRepository_Save(t *testing.T) {
 	repo := psql.NewEventsPsqlRepository(db)
 
 	// GIVEN
-	event := fixtureEvent()
+	source := fixtureSource(t)
+	storeSource(t, source)
+
+	event := fixtureEvent(source.ID())
 
 	// WHEN
 	err := repo.Save(context.Background(), event)
@@ -83,6 +86,11 @@ func findStoredTarget(targets []*models.EventTarget, id string) *models.EventTar
 	return nil
 }
 
+func storeSource(t *testing.T, source *domain.Source) {
+	repo := psql.NewSourcesPsqlRepository(db)
+	require.NoError(t, repo.Save(ctx, source))
+}
+
 func queryEventByID(t *testing.T, eventID string) *models.Event {
 	row, err := models.Events(
 		models.EventWhere.ID.EQ(eventID),
@@ -93,10 +101,11 @@ func queryEventByID(t *testing.T, eventID string) *models.Event {
 	return row
 }
 
-func fixtureEvent() domain.Event {
+func fixtureEvent(sourceID domain.ID) domain.Event {
 	return domain.Event{
-		Id:      ulid.Make().String(),
-		Version: 1,
+		Id:       ulid.Make().String(),
+		Version:  1,
+		SourceID: sourceID.String(),
 		Actor: domain.Actor{
 			Id:        ulid.Make().String(),
 			ActorType: "user",

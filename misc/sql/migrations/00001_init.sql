@@ -34,7 +34,9 @@ CREATE TABLE events (
     context_location TEXT NOT NULL,
     context_user_agent TEXT,
     metadata JSONB,
-    occurred_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    occurred_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    CONSTRAINT fk_event_belongs_to_source FOREIGN KEY (source_id) REFERENCES sources (id)
 );
 
 CREATE TABLE event_targets (
@@ -51,8 +53,8 @@ CREATE TABLE event_targets (
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE sources;
 DROP TABLE event_targets;
 DROP TABLE events;
 DROP TABLE event_types;
+DROP TABLE sources;
 -- +goose StatementEnd
