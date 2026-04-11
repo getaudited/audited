@@ -1,0 +1,136 @@
+package psql_test
+
+import (
+	"context"
+	"encoding/json"
+	"testing"
+	"time"
+
+	"github.com/aarondl/null/v8"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
+	"github.com/brianvoe/gofakeit/v7"
+	"github.com/firminochangani/audited/internal/adapters/models"
+	"github.com/firminochangani/audited/internal/adapters/psql"
+	"github.com/firminochangani/audited/internal/domain"
+	"github.com/oklog/ulid/v2"
+	"github.com/stretchr/testify/require"
+)
+
+func TestEventsPsqlRepository_Save(t *testing.T) {
+	repo := psql.NewEventsPsqlRepository(db)
+
+	// GIVEN
+	event := fixtureEvent()
+
+	// WHEN
+	err := repo.Save(context.Background(), event)
+	require.NoError(t, err)
+
+	// THEN
+	storedEvent := queryEventByID(t, event.Id)
+	require.NotNil(t, storedEvent)
+
+	require.Equal(t, event.Id, storedEvent.ID)
+	require.Equal(t, event.TenantID, storedEvent.TenantID)
+	require.Equal(t, event.Version, storedEvent.Version)
+	require.WithinDuration(t, event.OccurredAt, storedEvent.OccurredAt, time.Millisecond)
+
+	require.Equal(t, event.Actor.Id, storedEvent.ActorID)
+	require.Equal(t, event.Actor.ActorType, storedEvent.ActorType)
+	require.Equal(t, event.Actor.Name, storedEvent.ActorName.Ptr())
+	requireEqualMetadata(t, event.Actor.Metadata, storedEvent.ActorMetadata)
+
+	require.Equal(t, event.Context.Location, storedEvent.ContextLocation)
+	require.Equal(t, event.Context.UserAgent, storedEvent.ContextUserAgent.Ptr())
+
+	requireEqualMetadata(t, event.Metadata, storedEvent.Metadata)
+
+	require.Len(t, storedEvent.R.EventTargets, len(event.Targets))
+
+	for _, target := range event.Targets {
+		storedTarget := findStoredTarget(storedEvent.R.EventTargets, target.Id)
+		require.NotNilf(t, storedTarget, "target %s not found in stored event", target.Id)
+		require.Equal(t, target.Id, storedTarget.ID)
+		require.Equal(t, event.Id, storedTarget.EventID)
+		require.Equal(t, target.TargetType, storedTarget.Type)
+		require.Equal(t, target.Name, storedTarget.Name.Ptr())
+		requireEqualMetadata(t, target.Metadata, storedTarget.Metadata)
+	}
+}
+
+func requireEqualMetadata(t *testing.T, expected *domain.Metadata, actual null.JSON) {
+	t.Helper()
+
+	if expected == nil {
+		require.False(t, actual.Valid)
+		return
+	}
+
+	require.True(t, actual.Valid)
+
+	var actualMap domain.Metadata
+	require.NoError(t, json.Unmarshal(actual.JSON, &actualMap))
+	require.Equal(t, *expected, actualMap)
+}
+
+func findStoredTarget(targets []*models.EventTarget, id string) *models.EventTarget {
+	for _, t := range targets {
+		if t.ID == id {
+			return t
+		}
+	}
+
+	return nil
+}
+
+func queryEventByID(t *testing.T, eventID string) *models.Event {
+	row, err := models.Events(
+		models.EventWhere.ID.EQ(eventID),
+		qm.Load(models.EventRels.EventTargets),
+	).One(ctx, db)
+	require.NoError(t, err)
+
+	return row
+}
+
+func fixtureEvent() domain.Event {
+	return domain.Event{
+		Id:       ulid.Make().String(),
+		TenantID: ulid.Make().String(),
+		Version:  1,
+		Actor: domain.Actor{
+			Id:        ulid.Make().String(),
+			ActorType: "user",
+			Name:      new(gofakeit.Name()),
+			Metadata: &domain.Metadata{
+				"role": "admin",
+			},
+		},
+		Targets: []domain.Target{
+			{
+				Id:         ulid.Make().String(),
+				TargetType: "user",
+				Name:       new(gofakeit.Name()),
+				Metadata: &domain.Metadata{
+					"role": "admin",
+				},
+			},
+			{
+				Id:         ulid.Make().String(),
+				TargetType: "team",
+				Name:       new(gofakeit.Name()),
+				Metadata: &domain.Metadata{
+					"owner_id": ulid.Make().String(),
+				},
+			},
+		},
+		Context: domain.Context{
+			Location:  gofakeit.IPv4Address(),
+			UserAgent: new(gofakeit.UserAgent()),
+		},
+		Metadata: &domain.Metadata{
+			"user_id": ulid.Make().String(),
+		},
+		OccurredAt: time.Now(),
+	}
+}

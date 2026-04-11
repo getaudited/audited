@@ -42,7 +42,10 @@ func (a EventTypePsqlRepository) Save(ctx context.Context, et domain.EventType) 
 }
 
 func (a EventTypePsqlRepository) FindByAction(ctx context.Context, tenantID string, action string) (*domain.EventType, error) {
-	row, err := models.EventTypes(models.EventTypeWhere.TenantID.EQ(tenantID), models.EventTypeWhere.Action.EQ(action)).One(ctx, a.db)
+	row, err := models.EventTypes(
+		models.EventTypeWhere.TenantID.EQ(tenantID),
+		models.EventTypeWhere.Action.EQ(action),
+	).One(ctx, a.db)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrEventTypeNotFound
 	}
