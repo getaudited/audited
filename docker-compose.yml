@@ -26,20 +26,6 @@ services:
       - ${GOCACHE:-/tmp/go-cache}:/root/.cache/go-build
       - ${GOMODCACHE:-/tmp/go-mod-cache}:/go/pkg/mod
 
-  emulators:
-    build: ./misc/tools/reflex
-    stop_grace_period: 1s
-    environment:
-      APP_NAME: emulators
-    env_file:
-      - ./.env
-    ports:
-      - "9090:9090"
-    volumes:
-      - .:/usr/app
-      - ${GOCACHE:-/tmp/go-cache}:/root/.cache/go-build
-      - ${GOMODCACHE:-/tmp/go-mod-cache}:/go/pkg/mod
-
   swagger-ui:
     image: swaggerapi/swagger-ui:latest
     profiles:
