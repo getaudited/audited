@@ -87,14 +87,12 @@ func (s *Service) Run() error {
 	}
 
 	httpPort, err := http.NewServer(http.Config{
-		Application:        application,
-		Port:               config.HttpPort,
-		AllowedCorsOrigin:  config.AllowedCorsOrigin,
-		Logger:             logger,
-		IsDebug:            config.DebugMode,
-		Ctx:                ctx,
-		JwtSecret:          "",
-		WebFrontendEnabled: false,
+		Application:       application,
+		Port:              config.HttpPort,
+		AllowedCorsOrigin: config.AllowedCorsOrigin,
+		Logger:            logger,
+		IsDebug:           config.DebugMode,
+		Context:           ctx,
 	})
 	if err != nil {
 		return err

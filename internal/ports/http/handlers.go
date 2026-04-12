@@ -11,7 +11,21 @@ var _ ServerInterface = (*handlers)(nil)
 
 type handlers struct {
 	application *app.App
-	jwtSecret   string
+}
+
+func (h handlers) GetEvents(ctx echo.Context, params GetEventsParams) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h handlers) GetSources(ctx echo.Context, params GetSourcesParams) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h handlers) GetSourceByID(ctx echo.Context, sourceId SourceId) error {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (h handlers) HealthCheck(c echo.Context) error {
