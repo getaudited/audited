@@ -21,6 +21,20 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
+// Actor defines model for Actor.
+type Actor struct {
+	ActorType string                  `json:"actor_type"`
+	Id        string                  `json:"id"`
+	Metadata  *map[string]interface{} `json:"metadata,omitempty"`
+	Name      string                  `json:"name"`
+}
+
+// Context defines model for Context.
+type Context struct {
+	Location  string  `json:"location"`
+	UserAgent *string `json:"user_agent,omitempty"`
+}
+
 // ErrorSchema defines model for ErrorSchema.
 type ErrorSchema struct {
 	// Error Error custom error code such as 'email_in_use'
@@ -28,6 +42,26 @@ type ErrorSchema struct {
 
 	// Message A description about the error
 	Message string `json:"message"`
+}
+
+// Event defines model for Event.
+type Event struct {
+	Actor      Actor                   `json:"actor"`
+	Context    Context                 `json:"context"`
+	Id         string                  `json:"id"`
+	Metadata   *map[string]interface{} `json:"metadata,omitempty"`
+	OccurredAt string                  `json:"occurred_at"`
+	SourceId   string                  `json:"source_id"`
+	Targets    []Target                `json:"targets"`
+	Version    int                     `json:"version"`
+}
+
+// EventStream defines model for EventStream.
+type EventStream struct {
+	Cursor struct {
+		Next *string `json:"next,omitempty"`
+	} `json:"cursor"`
+	Data []Event `json:"data"`
 }
 
 // EventType defines model for EventType.
@@ -42,6 +76,14 @@ type EventType struct {
 	Version                      int       `json:"version"`
 }
 
+// Pagination defines model for Pagination.
+type Pagination struct {
+	Total       int `json:"total"`
+	PerPage     int `json:"per_page"`
+	CurrentPage int `json:"current_page"`
+	TotalPages  int `json:"total_pages"`
+}
+
 // Source defines model for Source.
 type Source struct {
 	Id        string    `json:"id"`
@@ -50,8 +92,37 @@ type Source struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// SourceList defines model for SourceList.
+type SourceList struct {
+	Data       string     `json:"data"`
+	Pagination Pagination `json:"pagination"`
+}
+
+// Target defines model for Target.
+type Target struct {
+	Id         string                  `json:"id"`
+	Metadata   *map[string]interface{} `json:"metadata,omitempty"`
+	Name       string                  `json:"name"`
+	TargetType string                  `json:"target_type"`
+}
+
 // EventTypeAction defines model for event_type_action.
 type EventTypeAction = string
+
+// PaginationCursor defines model for pagination_cursor.
+type PaginationCursor = string
+
+// PaginationLimit defines model for pagination_limit.
+type PaginationLimit = int
+
+// PaginationPage defines model for pagination_page.
+type PaginationPage = int
+
+// SourceId defines model for source_id.
+type SourceId = string
+
+// SourceIdQuery defines model for source_id_query.
+type SourceIdQuery = string
 
 // BadRequestError defines model for BadRequestError.
 type BadRequestError = ErrorSchema
@@ -68,6 +139,17 @@ type CreateEventTypeJSONBody struct {
 	Schema                       *string  `json:"schema,omitempty"`
 	ShouldValidateMetadataSchema bool     `json:"should_validate_metadata_schema"`
 	TargetTypes                  []string `json:"target_types"`
+}
+
+// GetEventsParams defines parameters for GetEvents.
+type GetEventsParams struct {
+	SourceId SourceIdQuery `form:"source_id" json:"source_id"`
+
+	// Cursor Opaque cursor returned by the previous page. Omit to start from the most recent event.
+	Cursor *PaginationCursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The number of items per page
+	Limit *PaginationLimit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // CreateEventJSONBody defines parameters for CreateEvent.
@@ -92,6 +174,15 @@ type CreateEventJSONBody struct {
 		Type     string                  `json:"type"`
 	} `json:"targets"`
 	Version int `json:"version"`
+}
+
+// GetSourcesParams defines parameters for GetSources.
+type GetSourcesParams struct {
+	// Limit The number of items per page
+	Limit *PaginationLimit `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Page The page number
+	Page *PaginationPage `form:"page,omitempty" json:"page,omitempty"`
 }
 
 // CreateSourceJSONBody defines parameters for CreateSource.
@@ -189,15 +280,24 @@ type ClientInterface interface {
 	// GetEventTypeByID request
 	GetEventTypeByID(ctx context.Context, eventTypeAction EventTypeAction, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetEvents request
+	GetEvents(ctx context.Context, params *GetEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// CreateEventWithBody request with any body
 	CreateEventWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	CreateEvent(ctx context.Context, body CreateEventJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetSources request
+	GetSources(ctx context.Context, params *GetSourcesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// CreateSourceWithBody request with any body
 	CreateSourceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	CreateSource(ctx context.Context, body CreateSourceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetSourceByID request
+	GetSourceByID(ctx context.Context, sourceId SourceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) CreateEventTypeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -236,6 +336,18 @@ func (c *Client) GetEventTypeByID(ctx context.Context, eventTypeAction EventType
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetEvents(ctx context.Context, params *GetEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetEventsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) CreateEventWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateEventRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -260,6 +372,18 @@ func (c *Client) CreateEvent(ctx context.Context, body CreateEventJSONRequestBod
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetSources(ctx context.Context, params *GetSourcesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSourcesRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) CreateSourceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateSourceRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -274,6 +398,18 @@ func (c *Client) CreateSourceWithBody(ctx context.Context, contentType string, b
 
 func (c *Client) CreateSource(ctx context.Context, body CreateSourceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateSourceRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetSourceByID(ctx context.Context, sourceId SourceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSourceByIDRequest(c.Server, sourceId)
 	if err != nil {
 		return nil, err
 	}
@@ -358,6 +494,83 @@ func NewGetEventTypeByIDRequest(server string, eventTypeAction EventTypeAction) 
 	return req, nil
 }
 
+// NewGetEventsRequest generates requests for GetEvents
+func NewGetEventsRequest(server string, params *GetEventsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/events")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "source_id", params.SourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewCreateEventRequest calls the generic CreateEvent builder with application/json body
 func NewCreateEventRequest(server string, body CreateEventJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -398,6 +611,71 @@ func NewCreateEventRequestWithBody(server string, contentType string, body io.Re
 	return req, nil
 }
 
+// NewGetSourcesRequest generates requests for GetSources
+func NewGetSourcesRequest(server string, params *GetSourcesParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/sources")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewCreateSourceRequest calls the generic CreateSource builder with application/json body
 func NewCreateSourceRequest(server string, body CreateSourceJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -434,6 +712,40 @@ func NewCreateSourceRequestWithBody(server string, contentType string, body io.R
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetSourceByIDRequest generates requests for GetSourceByID
+func NewGetSourceByIDRequest(server string, sourceId SourceId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "source_id", sourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/sources/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -489,15 +801,24 @@ type ClientWithResponsesInterface interface {
 	// GetEventTypeByIDWithResponse request
 	GetEventTypeByIDWithResponse(ctx context.Context, eventTypeAction EventTypeAction, reqEditors ...RequestEditorFn) (*GetEventTypeByIDResponse, error)
 
+	// GetEventsWithResponse request
+	GetEventsWithResponse(ctx context.Context, params *GetEventsParams, reqEditors ...RequestEditorFn) (*GetEventsResponse, error)
+
 	// CreateEventWithBodyWithResponse request with any body
 	CreateEventWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEventResponse, error)
 
 	CreateEventWithResponse(ctx context.Context, body CreateEventJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEventResponse, error)
 
+	// GetSourcesWithResponse request
+	GetSourcesWithResponse(ctx context.Context, params *GetSourcesParams, reqEditors ...RequestEditorFn) (*GetSourcesResponse, error)
+
 	// CreateSourceWithBodyWithResponse request with any body
 	CreateSourceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSourceResponse, error)
 
 	CreateSourceWithResponse(ctx context.Context, body CreateSourceJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSourceResponse, error)
+
+	// GetSourceByIDWithResponse request
+	GetSourceByIDWithResponse(ctx context.Context, sourceId SourceId, reqEditors ...RequestEditorFn) (*GetSourceByIDResponse, error)
 }
 
 type CreateEventTypeResponse struct {
@@ -549,6 +870,29 @@ func (r GetEventTypeByIDResponse) StatusCode() int {
 	return 0
 }
 
+type GetEventsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *EventStream
+	JSONDefault  *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r GetEventsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetEventsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type CreateEventResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -565,6 +909,29 @@ func (r CreateEventResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r CreateEventResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetSourcesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SourceList
+	JSONDefault  *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSourcesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSourcesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -588,6 +955,30 @@ func (r CreateSourceResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r CreateSourceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetSourceByIDResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Source
+	JSON404      *NotFoundError
+	JSONDefault  *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSourceByIDResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSourceByIDResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -620,6 +1011,15 @@ func (c *ClientWithResponses) GetEventTypeByIDWithResponse(ctx context.Context, 
 	return ParseGetEventTypeByIDResponse(rsp)
 }
 
+// GetEventsWithResponse request returning *GetEventsResponse
+func (c *ClientWithResponses) GetEventsWithResponse(ctx context.Context, params *GetEventsParams, reqEditors ...RequestEditorFn) (*GetEventsResponse, error) {
+	rsp, err := c.GetEvents(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetEventsResponse(rsp)
+}
+
 // CreateEventWithBodyWithResponse request with arbitrary body returning *CreateEventResponse
 func (c *ClientWithResponses) CreateEventWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEventResponse, error) {
 	rsp, err := c.CreateEventWithBody(ctx, contentType, body, reqEditors...)
@@ -637,6 +1037,15 @@ func (c *ClientWithResponses) CreateEventWithResponse(ctx context.Context, body 
 	return ParseCreateEventResponse(rsp)
 }
 
+// GetSourcesWithResponse request returning *GetSourcesResponse
+func (c *ClientWithResponses) GetSourcesWithResponse(ctx context.Context, params *GetSourcesParams, reqEditors ...RequestEditorFn) (*GetSourcesResponse, error) {
+	rsp, err := c.GetSources(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSourcesResponse(rsp)
+}
+
 // CreateSourceWithBodyWithResponse request with arbitrary body returning *CreateSourceResponse
 func (c *ClientWithResponses) CreateSourceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSourceResponse, error) {
 	rsp, err := c.CreateSourceWithBody(ctx, contentType, body, reqEditors...)
@@ -652,6 +1061,15 @@ func (c *ClientWithResponses) CreateSourceWithResponse(ctx context.Context, body
 		return nil, err
 	}
 	return ParseCreateSourceResponse(rsp)
+}
+
+// GetSourceByIDWithResponse request returning *GetSourceByIDResponse
+func (c *ClientWithResponses) GetSourceByIDWithResponse(ctx context.Context, sourceId SourceId, reqEditors ...RequestEditorFn) (*GetSourceByIDResponse, error) {
+	rsp, err := c.GetSourceByID(ctx, sourceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSourceByIDResponse(rsp)
 }
 
 // ParseCreateEventTypeResponse parses an HTTP response from a CreateEventTypeWithResponse call
@@ -741,6 +1159,39 @@ func ParseGetEventTypeByIDResponse(rsp *http.Response) (*GetEventTypeByIDRespons
 	return response, nil
 }
 
+// ParseGetEventsResponse parses an HTTP response from a GetEventsWithResponse call
+func ParseGetEventsResponse(rsp *http.Response) (*GetEventsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetEventsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EventStream
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseCreateEventResponse parses an HTTP response from a CreateEventWithResponse call
 func ParseCreateEventResponse(rsp *http.Response) (*CreateEventResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -755,6 +1206,39 @@ func ParseCreateEventResponse(rsp *http.Response) (*CreateEventResponse, error) 
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetSourcesResponse parses an HTTP response from a GetSourcesWithResponse call
+func ParseGetSourcesResponse(rsp *http.Response) (*GetSourcesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSourcesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SourceList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest InternalServerError
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -800,29 +1284,78 @@ func ParseCreateSourceResponse(rsp *http.Response) (*CreateSourceResponse, error
 	return response, nil
 }
 
+// ParseGetSourceByIDResponse parses an HTTP response from a GetSourceByIDWithResponse call
+func ParseGetSourceByIDResponse(rsp *http.Response) (*GetSourceByIDResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSourceByIDResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Source
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFoundError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/9RXX2/bNhD/KgQ3oC+K5TR5KPQ0p0kHb2sXJAH2UAQGQ50ldhKpkscsRqDvPpDUH9uS",
-	"kzjwgvXNpnj/f/e74yPlqqyUBImGJo+0YpqVgKD9P7gHiQtcVbBgHIWS7lBImtCKYU4jKlkJNBm5F1EN",
-	"363QkNIEtYWIGp5DyZwCd48m1KAWMqN1XbvLplLSgLd6xtIr+G7B4IXWSrsjriSCRPeTVVUhOHNW4m8m",
-	"uNTr/lnDkib0p7gPKw5fTey1XYer3moKhmtRhcDoOUNG7lkhUq+cgDdeR3QuEbRkxTXoe9Bv6tOMZCBB",
-	"Cx68IW2enFtfFH5SVqZv6tAVGGU1ByIVkqUzT92lRtopX1fgAKVVBRpFKC20vm5q9TKEW4OqbCLlKgVi",
-	"LM8JM+QdlEwUCyEX1sA7Gm1DKKIlGMMyGKqekbX/hN0piwRzaKo70FSvA/crbW+16m87AXX3DTg60xcO",
-	"/Df+dDvcvmkGDnMNDCFdMF+vpdKl+0VThnCEooSxIEU6qmpnZ0XU5MoW6aJBNSxKQJYyZIuBzJ1SBTDp",
-	"hJDpDEI7+ygEQmlG1TcHTGu2cv9tle4d1D1os5kkIREy0INiiJRGtOOXVm7L3+dj3sj9hs+3dUSvPbyH",
-	"pdy7XhF9OFI6BU2Tkx21W7tyXLdk+sSl969J8Zr86WhGvdknkjKAvMMVcKsFrnyfhwTNKvE7rGYW825I",
-	"5MCc3W5MPByxShz9DaveSealHA7OgGnQrfyd//epDe+3v25oA3QPVv+115IjVoGt4CFw9bniZkgG7p5J",
-	"4jgTmNu7CVdlvBS6FFLxnMmMSREzmwqENL66mJ1/vpiULkNWF3sJ+16VS9WSMuO+WJ7EaEIbqUkr9kvm",
-	"PjiFdDgALudEwxI0SA5kqTRpbJDZ5ZxGtBAc3DxIHtskf57fvMLl+I/5x4sv1z5g19igS/Pn0k08wWG/",
-	"4COKAgtf3O6ka3I6nUwnx86EqkCyStCEnkymkxMa+Z3CFy2+P479SnHUcVClDA7r+dFjljAi4R/iJYhH",
-	"hNeu/fibp929nqhDF4DBM5Wu9hqdL+b3/wspb3V8R597kuZtvanJ7XTbe9v76fHh1pCuViNLyE0OruLF",
-	"ijSktV77OqKn0+ku/Z3D8faW6a0smS3wedmxjdDToi1LpldryJSbsESWGVeGLjzjMhttIz5+HGzUtfMq",
-	"g5EmuAK0WvqlJgVkojBELZ1lb4TcjDXEr4CdC2er+bnvvn7z/zqegP5KPNz469sBHKZvB4fDAOB0evq8",
-	"3ObefVjYvKyWz6LoCcqcTCZP0eMhqTFs+pvHO1bYlm68ZJoKZ4IVl2ui4RE5WL7Hd6aOBR+f2e/9AuSv",
-	"jG32PvQHHEZRqJCFUcvWgF6wrMnZ0/Y7RWPmX50UxbnVes89PLzrFjsKFMbF5uT5gSu7/XB5+SOkT9P6",
-	"EySgvU9Tj53NarxsjJ6OvJB9/7fjzljOwZilLYrVfzu4ttlmjWlCJl5FNc0j61BcswMqW5Xzt/YowEEG",
-	"VxPpyNQKX96ypMS0aW9Let2UMGTFeA1h/PfvhySOHUsVuTKYfJh+mNL6tv43AAD//yD19T03FAAA",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

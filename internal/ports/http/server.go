@@ -24,14 +24,12 @@ type Server struct {
 }
 
 type Config struct {
-	Application        *app.App
-	Port               int
-	AllowedCorsOrigin  []string
-	Logger             *logs.Logger
-	IsDebug            bool
-	Ctx                context.Context
-	JwtSecret          string
-	WebFrontendEnabled bool
+	Application       *app.App
+	Port              int
+	AllowedCorsOrigin []string
+	Logger            *logs.Logger
+	IsDebug           bool
+	Context           context.Context
 }
 
 func NewServer(config Config) (*Server, error) {
@@ -44,7 +42,6 @@ func NewServer(config Config) (*Server, error) {
 
 	routerHandlers := &handlers{
 		application: config.Application,
-		jwtSecret:   config.JwtSecret,
 	}
 
 	registerMiddlewares(router, spec, config)
@@ -61,7 +58,7 @@ func NewServer(config Config) (*Server, error) {
 			IdleTimeout:       time.Second * 30,
 			Addr:              fmt.Sprintf(":%d", config.Port),
 			BaseContext: func(listener net.Listener) context.Context {
-				return config.Ctx
+				return config.Context
 			},
 		},
 	}, nil

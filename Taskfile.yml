@@ -82,6 +82,12 @@ tasks:
       - go clean -testcache
       - go test -v -race ./tests/components/...
 
+  test:cov:
+    cmds:
+      - go test -coverprofile=coverage.out {{.CLI_ARGS}}
+      - go tool cover -html=coverage.out
+      - rm coverage.out
+
   lint:
     cmds:
       - golangci-lint run

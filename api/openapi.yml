@@ -21,6 +21,24 @@ servers:
 paths:
   # Sources
   /v1/sources:
+    get:
+      summary: List all sources
+      description: ...
+      tags:
+        - Sources
+      operationId: getSources
+      parameters:
+        - $ref: '#/components/parameters/pagination_limit'
+        - $ref: '#/components/parameters/pagination_page'
+      responses:
+        "200":
+          description: A paginated list of sources
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceList"
+        default:
+          $ref: "#/components/responses/InternalServerError"
     post:
       summary: Create a source
       description: ...
@@ -43,12 +61,50 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Source"
-
+        default:
+          $ref: "#/components/responses/InternalServerError"
+  /v1/sources/{source_id}:
+    get:
+      summary: List all sources
+      description: ...
+      tags:
+        - Sources
+      operationId: getSourceByID
+      parameters:
+        - $ref: '#/components/parameters/source_id'
+      responses:
+        "200":
+          description: Return the source
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Source"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
         default:
           $ref: "#/components/responses/InternalServerError"
 
   # Events
   /v1/events:
+    get:
+      summary: Get events
+      description: ...
+      tags:
+        - Events
+      operationId: getEvents
+      parameters:
+        - $ref: '#/components/parameters/source_id_query'
+        - $ref: '#/components/parameters/pagination_cursor'
+        - $ref: '#/components/parameters/pagination_limit'
+      responses:
+        "200":
+          description: Event stream using cursor-based pagination.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventStream"
+        default:
+          $ref: "#/components/responses/InternalServerError"
     post:
       summary: Create an event
       description: ...
@@ -175,6 +231,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
         default:
           $ref: "#/components/responses/InternalServerError"
+
 components:
   parameters:
     event_type_action:
@@ -183,7 +240,26 @@ components:
       required: true
       schema:
         type: string
-    paginationLimit:
+    source_id:
+      name: source_id
+      in: path
+      required: true
+      schema:
+        type: string
+    source_id_query:
+      name: source_id
+      in: query
+      required: true
+      schema:
+        type: string
+    pagination_cursor:
+      name: cursor
+      description: Opaque cursor returned by the previous page. Omit to start from the most recent event.
+      in: query
+      required: false
+      schema:
+        type: string
+    pagination_limit:
       name: limit
       description: The number of items per page
       in: query
@@ -192,7 +268,7 @@ components:
         type: integer
         minimum: 1
         maximum: 15
-    paginationPage:
+    pagination_page:
       name: page
       description: The page number
       in: query
@@ -201,6 +277,78 @@ components:
         type: integer
         minimum: 1
   schemas:
+    # Event
+    Context:
+      required: [location]
+      properties:
+        location:
+          type: string
+        user_agent:
+          type: string
+          nullable: true
+    Target:
+      required: [ id, target_type, name ]
+      properties:
+        id:
+          type: string
+        target_type:
+          type: string
+        name:
+          type: string
+        metadata:
+          type: object
+          nullable: true
+          additionalProperties: true
+    Actor:
+      required: [id, actor_type, name]
+      properties:
+        id:
+          type: string
+        actor_type:
+          type: string
+        name:
+          type: string
+        metadata:
+          type: object
+          nullable: true
+          additionalProperties: true
+    Event:
+      required: [id, source_id, version, actor, targets, context, occurred_at]
+      properties:
+        id:
+          type: string
+        source_id:
+          type: string
+        version:
+          type: integer
+        actor:
+          $ref: '#/components/schemas/Actor'
+        targets:
+          type: array
+          items:
+            $ref: '#/components/schemas/Target'
+        context:
+          $ref: '#/components/schemas/Context'
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+        occurred_at:
+          type: string
+          format: data-time
+    EventStream:
+      required: [data, cursor]
+      properties:
+        cursor:
+          required: []
+          properties:
+            next:
+              type: string
+              nullable: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Event'
     # Source
     Source:
       type: object
@@ -220,6 +368,15 @@ components:
           type: string
           format: date-time
           x-order: 4
+    SourceList:
+      required: [data, pagination]
+      properties:
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        data:
+          type: string
+          items:
+            $ref: '#/components/schemas/Source'
     # Event type
     EventType:
       required: [id, action, version, target_types, should_validate_metadata_schema, created_at, updated_at]

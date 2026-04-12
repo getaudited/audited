@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-`audited` is an audit log management service for cloud-native applications. It exposes an HTTP API (Echo + oapi-codegen) and is backed by PostgreSQL. RabbitMQ (via Watermill) is present as a messaging dependency.
+`audited` is an audit log management service for cloud-native applications. It exposes an HTTP API (Echo + oapi-codegen) and is backed by PostgreSQL.
 
 ## Commands
 
@@ -16,7 +16,7 @@ This project uses [Task](https://taskfile.dev) (`task`) as the task runner. All 
 task run          # Start postgres + rabbitmq + app in Docker
 task dev          # Also starts swagger-ui on :8090
 ```
-
+In 
 ### Running the service locally (outside Docker)
 
 ```bash
