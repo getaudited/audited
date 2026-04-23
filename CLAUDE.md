@@ -16,7 +16,7 @@ This project uses [Task](https://taskfile.dev) (`task`) as the task runner. All 
 task run          # Start postgres + rabbitmq + app in Docker
 task dev          # Also starts swagger-ui on :8090
 ```
-In 
+
 ### Running the service locally (outside Docker)
 
 ```bash
