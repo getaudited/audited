@@ -74,6 +74,12 @@ type EventType struct {
 	Version                      int       `json:"version"`
 }
 
+// EventTypeList defines model for EventTypeList.
+type EventTypeList struct {
+	Data       []EventType `json:"data"`
+	Pagination Pagination  `json:"pagination"`
+}
+
 // Pagination defines model for Pagination.
 type Pagination struct {
 	Total       int `json:"total"`
@@ -104,6 +110,9 @@ type Target struct {
 	TargetType string                  `json:"target_type"`
 }
 
+// EventId defines model for event_id.
+type EventId = string
+
 // EventTypeAction defines model for event_type_action.
 type EventTypeAction = string
 
@@ -122,6 +131,12 @@ type SourceId = string
 // SourceIdQuery defines model for source_id_query.
 type SourceIdQuery = string
 
+// Token defines model for token.
+type Token = string
+
+// TokenId defines model for token_id.
+type TokenId = string
+
 // BadRequestError defines model for BadRequestError.
 type BadRequestError = ErrorSchema
 
@@ -130,25 +145,6 @@ type InternalServerError = ErrorSchema
 
 // NotFoundError defines model for NotFoundError.
 type NotFoundError = ErrorSchema
-
-// CreateEventTypeJSONBody defines parameters for CreateEventType.
-type CreateEventTypeJSONBody struct {
-	Action                       string   `json:"action"`
-	Schema                       *string  `json:"schema,omitempty"`
-	ShouldValidateMetadataSchema bool     `json:"should_validate_metadata_schema"`
-	TargetTypes                  []string `json:"target_types"`
-}
-
-// GetEventsParams defines parameters for GetEvents.
-type GetEventsParams struct {
-	SourceId SourceIdQuery `form:"source_id" json:"source_id"`
-
-	// Cursor Opaque cursor returned by the previous page. Omit to start from the most recent event.
-	Cursor *PaginationCursor `form:"cursor,omitempty" json:"cursor,omitempty"`
-
-	// Limit The number of items per page
-	Limit *PaginationLimit `form:"limit,omitempty" json:"limit,omitempty"`
-}
 
 // CreateEventJSONBody defines parameters for CreateEvent.
 type CreateEventJSONBody struct {
@@ -174,6 +170,30 @@ type CreateEventJSONBody struct {
 	Version int `json:"version"`
 }
 
+// CreateEventParams defines parameters for CreateEvent.
+type CreateEventParams struct {
+	XToken Token `json:"x-token"`
+}
+
+// CreateEventTypeJSONBody defines parameters for CreateEventType.
+type CreateEventTypeJSONBody struct {
+	Action                       string   `json:"action"`
+	Schema                       *string  `json:"schema,omitempty"`
+	ShouldValidateMetadataSchema bool     `json:"should_validate_metadata_schema"`
+	TargetTypes                  []string `json:"target_types"`
+}
+
+// GetEventsParams defines parameters for GetEvents.
+type GetEventsParams struct {
+	SourceId SourceIdQuery `form:"source_id" json:"source_id"`
+
+	// Cursor Opaque cursor returned by the previous page. Omit to start from the most recent event.
+	Cursor *PaginationCursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The number of items per page
+	Limit *PaginationLimit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // GetSourcesParams defines parameters for GetSources.
 type GetSourcesParams struct {
 	// Limit The number of items per page
@@ -188,43 +208,103 @@ type CreateSourceJSONBody struct {
 	Name string `json:"name"`
 }
 
-// CreateEventTypeJSONRequestBody defines body for CreateEventType for application/json ContentType.
-type CreateEventTypeJSONRequestBody CreateEventTypeJSONBody
+// CreateSourceTokenJSONBody defines parameters for CreateSourceToken.
+type CreateSourceTokenJSONBody struct {
+	Name string `json:"name"`
+}
 
 // CreateEventJSONRequestBody defines body for CreateEvent for application/json ContentType.
 type CreateEventJSONRequestBody CreateEventJSONBody
 
+// CreateEventTypeJSONRequestBody defines body for CreateEventType for application/json ContentType.
+type CreateEventTypeJSONRequestBody CreateEventTypeJSONBody
+
 // CreateSourceJSONRequestBody defines body for CreateSource for application/json ContentType.
 type CreateSourceJSONRequestBody CreateSourceJSONBody
 
+// CreateSourceTokenJSONRequestBody defines body for CreateSourceToken for application/json ContentType.
+type CreateSourceTokenJSONRequestBody CreateSourceTokenJSONBody
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// Create an event type
-	// (POST /v1/event-types)
-	CreateEventType(ctx echo.Context) error
-	// Return the details of an Event Type
-	// (GET /v1/event-types/{event_type_action})
-	GetEventTypeByID(ctx echo.Context, eventTypeAction EventTypeAction) error
-	// Get events
-	// (GET /v1/events)
-	GetEvents(ctx echo.Context, params GetEventsParams) error
 	// Create an event
 	// (POST /v1/events)
-	CreateEvent(ctx echo.Context) error
+	CreateEvent(ctx echo.Context, params CreateEventParams) error
+	// List event types
+	// (GET /x/v1/event-types)
+	GetEventTypes(ctx echo.Context) error
+	// Create an event type
+	// (POST /x/v1/event-types)
+	CreateEventType(ctx echo.Context) error
+	// Archive an event
+	// (POST /x/v1/event-types/{event_id}/archive)
+	ArchiveEventType(ctx echo.Context, eventId EventId) error
+	// Return the details of an Event Type
+	// (GET /x/v1/event-types/{event_type_action})
+	GetEventTypeByID(ctx echo.Context, eventTypeAction EventTypeAction) error
+	// Get events
+	// (GET /x/v1/events)
+	GetEvents(ctx echo.Context, params GetEventsParams) error
 	// List all sources
-	// (GET /v1/sources)
+	// (GET /x/v1/sources)
 	GetSources(ctx echo.Context, params GetSourcesParams) error
 	// Create a source
-	// (POST /v1/sources)
+	// (POST /x/v1/sources)
 	CreateSource(ctx echo.Context) error
 	// List all sources
-	// (GET /v1/sources/{source_id})
+	// (GET /x/v1/sources/{source_id})
 	GetSourceByID(ctx echo.Context, sourceId SourceId) error
+	// Create source token
+	// (POST /x/v1/sources/{source_id}/token)
+	CreateSourceToken(ctx echo.Context, sourceId SourceId) error
+	// Delete token
+	// (DELETE /x/v1/sources/{source_id}/token/{token_id})
+	DeleteToken(ctx echo.Context, sourceId SourceId, tokenId TokenId) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler ServerInterface
+}
+
+// CreateEvent converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateEvent(ctx echo.Context) error {
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateEventParams
+
+	headers := ctx.Request().Header
+	// ------------- Required header parameter "x-token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("x-token")]; found {
+		var XToken Token
+		n := len(valueList)
+		if n != 1 {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Expected one value for x-token, got %d", n))
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "x-token", valueList[0], &XToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter x-token: %s", err))
+		}
+
+		params.XToken = XToken
+	} else {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Header parameter x-token is required, but not found"))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.CreateEvent(ctx, params)
+	return err
+}
+
+// GetEventTypes converts echo context to params.
+func (w *ServerInterfaceWrapper) GetEventTypes(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetEventTypes(ctx)
+	return err
 }
 
 // CreateEventType converts echo context to params.
@@ -233,6 +313,22 @@ func (w *ServerInterfaceWrapper) CreateEventType(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.CreateEventType(ctx)
+	return err
+}
+
+// ArchiveEventType converts echo context to params.
+func (w *ServerInterfaceWrapper) ArchiveEventType(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "event_id" -------------
+	var eventId EventId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "event_id", ctx.Param("event_id"), &eventId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter event_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ArchiveEventType(ctx, eventId)
 	return err
 }
 
@@ -281,15 +377,6 @@ func (w *ServerInterfaceWrapper) GetEvents(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetEvents(ctx, params)
-	return err
-}
-
-// CreateEvent converts echo context to params.
-func (w *ServerInterfaceWrapper) CreateEvent(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.CreateEvent(ctx)
 	return err
 }
 
@@ -343,6 +430,46 @@ func (w *ServerInterfaceWrapper) GetSourceByID(ctx echo.Context) error {
 	return err
 }
 
+// CreateSourceToken converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateSourceToken(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "source_id" -------------
+	var sourceId SourceId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "source_id", ctx.Param("source_id"), &sourceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter source_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.CreateSourceToken(ctx, sourceId)
+	return err
+}
+
+// DeleteToken converts echo context to params.
+func (w *ServerInterfaceWrapper) DeleteToken(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "source_id" -------------
+	var sourceId SourceId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "source_id", ctx.Param("source_id"), &sourceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter source_id: %s", err))
+	}
+
+	// ------------- Path parameter "token_id" -------------
+	var tokenId TokenId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "token_id", ctx.Param("token_id"), &tokenId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter token_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.DeleteToken(ctx, sourceId, tokenId)
+	return err
+}
+
 // This is a simple interface which specifies echo.Route addition functions which
 // are present on both echo.Echo and echo.Group, since we want to allow using
 // either of them for path registration
@@ -371,48 +498,56 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 		Handler: si,
 	}
 
-	router.POST(baseURL+"/v1/event-types", wrapper.CreateEventType)
-	router.GET(baseURL+"/v1/event-types/:event_type_action", wrapper.GetEventTypeByID)
-	router.GET(baseURL+"/v1/events", wrapper.GetEvents)
 	router.POST(baseURL+"/v1/events", wrapper.CreateEvent)
-	router.GET(baseURL+"/v1/sources", wrapper.GetSources)
-	router.POST(baseURL+"/v1/sources", wrapper.CreateSource)
-	router.GET(baseURL+"/v1/sources/:source_id", wrapper.GetSourceByID)
+	router.GET(baseURL+"/x/v1/event-types", wrapper.GetEventTypes)
+	router.POST(baseURL+"/x/v1/event-types", wrapper.CreateEventType)
+	router.POST(baseURL+"/x/v1/event-types/:event_id/archive", wrapper.ArchiveEventType)
+	router.GET(baseURL+"/x/v1/event-types/:event_type_action", wrapper.GetEventTypeByID)
+	router.GET(baseURL+"/x/v1/events", wrapper.GetEvents)
+	router.GET(baseURL+"/x/v1/sources", wrapper.GetSources)
+	router.POST(baseURL+"/x/v1/sources", wrapper.CreateSource)
+	router.GET(baseURL+"/x/v1/sources/:source_id", wrapper.GetSourceByID)
+	router.POST(baseURL+"/x/v1/sources/:source_id/token", wrapper.CreateSourceToken)
+	router.DELETE(baseURL+"/x/v1/sources/:source_id/token/:token_id", wrapper.DeleteToken)
 
 }
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
+	"AAD//zLyz+NbKwAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

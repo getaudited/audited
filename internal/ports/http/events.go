@@ -8,7 +8,8 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func (h handlers) CreateEvent(c echo.Context) error {
+func (h handlers) CreateEvent(c echo.Context, params CreateEventParams) error {
+	// TODO: check token
 	var body CreateEventJSONBody
 	err := c.Bind(&body)
 	if err != nil {
