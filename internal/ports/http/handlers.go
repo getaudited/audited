@@ -13,6 +13,26 @@ type handlers struct {
 	application *app.App
 }
 
+func (h handlers) ArchiveEventType(ctx echo.Context, eventId EventId) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h handlers) GetEventTypes(ctx echo.Context) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h handlers) DeleteToken(ctx echo.Context, sourceId SourceId, tokenId TokenId) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h handlers) CreateSourceToken(ctx echo.Context, sourceId SourceId) error {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (h handlers) GetEvents(ctx echo.Context, params GetEventsParams) error {
 	//TODO implement me
 	panic("implement me")

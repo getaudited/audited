@@ -19,13 +19,82 @@ servers:
   - url: http://localhost:8080
 
 paths:
-  # Sources
-  /v1/sources:
+  # Public API
+  /v1/events:
+    post:
+      summary: Create an event
+      description: ...
+      tags:
+        - Public API
+      operationId: createEvent
+      parameters:
+        - $ref: '#/components/parameters/token'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required: [ source_id, version, actor, targets, context, occurred_at ]
+              properties:
+                source_id:
+                  type: string
+                version:
+                  type: integer
+                actor:
+                  type: object
+                  required: [ id, type ]
+                  properties:
+                    id:
+                      type: string
+                    type:
+                      type: string
+                    name:
+                      type: string
+                    metadata:
+                      type: object
+                      additionalProperties: true
+                targets:
+                  type: array
+                  items:
+                    type: object
+                    required: [ id, type ]
+                    properties:
+                      id:
+                        type: string
+                      type:
+                        type: string
+                      name:
+                        type: string
+                      metadata:
+                        type: object
+                        additionalProperties: true
+                context:
+                  type: object
+                  required: [ location ]
+                  properties:
+                    location:
+                      type: string
+                    user_agent:
+                      type: string
+                metadata:
+                  type: object
+                  additionalProperties: true
+                occurred_at:
+                  type: string
+                  format: date-time
+      responses:
+        "204":
+          description: Event created successfully
+        default:
+          $ref: "#/components/responses/InternalServerError"
+
+  # Admin API
+  /x/v1/sources:
     get:
       summary: List all sources
       description: ...
       tags:
-        - Sources
+        - Admin API
       operationId: getSources
       parameters:
         - $ref: '#/components/parameters/pagination_limit'
@@ -43,7 +112,7 @@ paths:
       summary: Create a source
       description: ...
       tags:
-        - Sources
+        - Admin API
       operationId: createSource
       requestBody:
         required: true
@@ -63,12 +132,12 @@ paths:
                 $ref: "#/components/schemas/Source"
         default:
           $ref: "#/components/responses/InternalServerError"
-  /v1/sources/{source_id}:
+  /x/v1/sources/{source_id}:
     get:
       summary: List all sources
       description: ...
       tags:
-        - Sources
+        - Admin API
       operationId: getSourceByID
       parameters:
         - $ref: '#/components/parameters/source_id'
@@ -83,14 +152,50 @@ paths:
           $ref: "#/components/responses/NotFoundError"
         default:
           $ref: "#/components/responses/InternalServerError"
-
-  # Events
-  /v1/events:
+  /x/v1/sources/{source_id}/token:
+    post:
+      summary: Create source token
+      description: ...
+      tags:
+        - Admin API
+      operationId: createSourceToken
+      parameters:
+        - $ref: '#/components/parameters/source_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required: [ name ]
+              properties:
+                name:
+                  type: string
+      responses:
+        "204":
+          description: Event created successfully
+        default:
+          $ref: "#/components/responses/InternalServerError"
+  /x/v1/sources/{source_id}/token/{token_id}:
+    delete:
+      summary: Delete token
+      description: ...
+      tags:
+        - Admin API
+      operationId: deleteToken
+      parameters:
+        - $ref: '#/components/parameters/source_id'
+        - $ref: '#/components/parameters/token_id'
+      responses:
+        "204":
+          description: Token deleted successfully
+        default:
+          $ref: "#/components/responses/InternalServerError"
+  /x/v1/events:
     get:
       summary: Get events
       description: ...
       tags:
-        - Events
+        - Admin API
       operationId: getEvents
       parameters:
         - $ref: '#/components/parameters/source_id_query'
@@ -105,78 +210,29 @@ paths:
                 $ref: "#/components/schemas/EventStream"
         default:
           $ref: "#/components/responses/InternalServerError"
-    post:
-      summary: Create an event
-      description: ...
+  /x/v1/event-types:
+    get:
+      summary: List event types
+      description: List event types
       tags:
-        - Events
-      operationId: createEvent
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              required: [source_id, version, actor, targets, context, occurred_at]
-              properties:
-                source_id:
-                  type: string
-                version:
-                  type: integer
-                actor:
-                  type: object
-                  required: [id, type]
-                  properties:
-                    id:
-                      type: string
-                    type:
-                      type: string
-                    name:
-                      type: string
-                    metadata:
-                      type: object
-                      additionalProperties: true
-                targets:
-                  type: array
-                  items:
-                    type: object
-                    required: [id, type]
-                    properties:
-                      id:
-                        type: string
-                      type:
-                        type: string
-                      name:
-                        type: string
-                      metadata:
-                        type: object
-                        additionalProperties: true
-                context:
-                  type: object
-                  required: [location]
-                  properties:
-                    location:
-                      type: string
-                    user_agent:
-                      type: string
-                metadata:
-                  type: object
-                  additionalProperties: true
-                occurred_at:
-                  type: string
-                  format: date-time
+        - Admin API
+      operationId: GetEventTypes
       responses:
-        "204":
-          description: Event created successfully
+        "201":
+          description: A list of event types
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventTypeList"
+        "400":
+          $ref: '#/components/responses/BadRequestError'
         default:
           $ref: "#/components/responses/InternalServerError"
-
-  # Event types
-  /v1/event-types:
     post:
       summary: Create an event type
       description: Create a new event type
       tags:
-        - EventTypes
+        - Admin API
       operationId: CreateEventType
       requestBody:
         required: true
@@ -206,13 +262,28 @@ paths:
           $ref: '#/components/responses/BadRequestError'
         default:
           $ref: "#/components/responses/InternalServerError"
-
-  /v1/event-types/{event_type_action}:
+  /x/v1/event-types/{event_id}/archive:
+    post:
+      summary: Archive an event
+      description: Archive an event
+      tags:
+        - Admin API
+      operationId: ArchiveEventType
+      parameters:
+        - $ref: '#/components/parameters/event_id'
+      responses:
+        "204":
+          description: Event has been archived successfully
+        "400":
+          $ref: '#/components/responses/BadRequestError'
+        default:
+          $ref: "#/components/responses/InternalServerError"
+  /x/v1/event-types/{event_type_action}:
     get:
       summary: Return the details of an Event Type
       description: Return the details of an Event Type
       tags:
-        - EventTypes
+        - Admin API
       operationId: GetEventTypeByID
       parameters:
         - $ref: '#/components/parameters/event_type_action'
@@ -234,6 +305,12 @@ paths:
 
 components:
   parameters:
+    token:
+      name: x-token
+      in: header
+      required: true
+      schema:
+        type: string
     event_type_action:
       name: event_type_action
       in: path
@@ -242,6 +319,18 @@ components:
         type: string
     source_id:
       name: source_id
+      in: path
+      required: true
+      schema:
+        type: string
+    token_id:
+      name: token_id
+      in: path
+      required: true
+      schema:
+        type: string
+    event_id:
+      name: event_id
       in: path
       required: true
       schema:
