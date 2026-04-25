@@ -30,6 +30,7 @@ func TestTokensPsqlRepository_Save(t *testing.T) {
 	require.NotNil(t, stored)
 
 	require.Equal(t, token.ID().String(), stored.ID)
+	require.Equal(t, token.Value().String(), stored.Value)
 	require.Equal(t, token.SourceID().String(), stored.SourceID)
 	require.Equal(t, token.Name(), stored.Name)
 	require.WithinDuration(t, token.CreatedAt(), stored.CreatedAt, time.Millisecond)
@@ -44,6 +45,26 @@ func queryTokenByID(t *testing.T, id string) *models.Token {
 	require.NoError(t, err)
 
 	return row
+}
+
+func TestTokensPsqlRepository_Delete(t *testing.T) {
+	repo := psql.NewTokensPsqlRepository(db)
+
+	// GIVEN
+	source := fixtureSource(t)
+	storeSource(t, source)
+
+	token := fixtureToken(t, source.ID())
+	require.NoError(t, repo.Save(ctx, token))
+
+	// WHEN
+	err := repo.Delete(ctx, token.ID(), token.SourceID())
+	require.NoError(t, err)
+
+	// THEN
+	exists, err := models.TokenExists(ctx, db, token.ID().String())
+	require.NoError(t, err)
+	require.False(t, exists)
 }
 
 func fixtureToken(t *testing.T, sourceID domain.ID) domain.Token {

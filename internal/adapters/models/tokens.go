@@ -25,6 +25,7 @@ import (
 type Token struct {
 	ID        string    `boil:"id" json:"id" toml:"id" yaml:"id"`
 	Name      string    `boil:"name" json:"name" toml:"name" yaml:"name"`
+	Value     string    `boil:"value" json:"value" toml:"value" yaml:"value"`
 	SourceID  string    `boil:"source_id" json:"source_id" toml:"source_id" yaml:"source_id"`
 	CreatedAt time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 
@@ -35,11 +36,13 @@ type Token struct {
 var TokenColumns = struct {
 	ID        string
 	Name      string
+	Value     string
 	SourceID  string
 	CreatedAt string
 }{
 	ID:        "id",
 	Name:      "name",
+	Value:     "value",
 	SourceID:  "source_id",
 	CreatedAt: "created_at",
 }
@@ -47,11 +50,13 @@ var TokenColumns = struct {
 var TokenTableColumns = struct {
 	ID        string
 	Name      string
+	Value     string
 	SourceID  string
 	CreatedAt string
 }{
 	ID:        "tokens.id",
 	Name:      "tokens.name",
+	Value:     "tokens.value",
 	SourceID:  "tokens.source_id",
 	CreatedAt: "tokens.created_at",
 }
@@ -61,11 +66,13 @@ var TokenTableColumns = struct {
 var TokenWhere = struct {
 	ID        whereHelperstring
 	Name      whereHelperstring
+	Value     whereHelperstring
 	SourceID  whereHelperstring
 	CreatedAt whereHelpertime_Time
 }{
 	ID:        whereHelperstring{field: "\"tokens\".\"id\""},
 	Name:      whereHelperstring{field: "\"tokens\".\"name\""},
+	Value:     whereHelperstring{field: "\"tokens\".\"value\""},
 	SourceID:  whereHelperstring{field: "\"tokens\".\"source_id\""},
 	CreatedAt: whereHelpertime_Time{field: "\"tokens\".\"created_at\""},
 }
@@ -107,8 +114,8 @@ func (r *tokenR) GetSource() *Source {
 type tokenL struct{}
 
 var (
-	tokenAllColumns            = []string{"id", "name", "source_id", "created_at"}
-	tokenColumnsWithoutDefault = []string{"id", "name", "source_id"}
+	tokenAllColumns            = []string{"id", "name", "value", "source_id", "created_at"}
+	tokenColumnsWithoutDefault = []string{"id", "name", "value", "source_id"}
 	tokenColumnsWithDefault    = []string{"created_at"}
 	tokenPrimaryKeyColumns     = []string{"id"}
 	tokenGeneratedColumns      = []string{}

@@ -79,6 +79,7 @@ func (s *Service) Run() error {
 			CreateEvent:     command.NewCreateEventHandler(eventsRepository),
 			CreateSource:    command.NewCreateSourceHandler(sourcesRepository),
 			CreateToken:     command.NewCreateTokenHandler(tokensRepository),
+			DeleteToken:     command.NewDeleteTokenHandler(tokensRepository),
 		},
 		Queries: app.Queries{
 			EventTypes:        nil,
