@@ -101,6 +101,14 @@ func registerMiddlewares(router *echo.Echo, spec *openapi3.T, config Config) {
 			ErrorHandler: nil,
 			Options: openapi3filter.Options{
 				AuthenticationFunc: func(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
+					if input.SecuritySchemeName == strings.TrimSuffix(BearerAuthScopes, ".Scopes") {
+						return bearerAuthMiddleware(ctx, input)
+					}
+
+					if input.SecuritySchemeName == strings.TrimSuffix(TokenAuthScopes, ".Scopes") {
+						return tokenAuthMiddleware(ctx, input)
+					}
+
 					return nil
 				},
 			},
