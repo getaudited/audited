@@ -87,6 +87,7 @@ func mapDomainTokenToModelToken(token domain.Token) *models.Token {
 		ID:        token.ID().String(),
 		SourceID:  token.SourceID().String(),
 		Name:      token.Name(),
+		Value:     token.Value().String(),
 		CreatedAt: token.CreatedAt(),
 	}
 }

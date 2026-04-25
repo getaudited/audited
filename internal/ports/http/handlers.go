@@ -49,7 +49,8 @@ func (h handlers) CreateToken(c echo.Context, sourceId SourceId) error {
 	return c.JSON(http.StatusCreated, Token{
 		Name:      token.Name(),
 		SourceId:  token.SourceID().String(),
-		Value:     token.ID().String(),
+		Id:        token.ID().String(),
+		Value:     token.Value().String(),
 		CreatedAt: token.CreatedAt(),
 	})
 }

@@ -30,6 +30,7 @@ func TestTokensPsqlRepository_Save(t *testing.T) {
 	require.NotNil(t, stored)
 
 	require.Equal(t, token.ID().String(), stored.ID)
+	require.Equal(t, token.Value().String(), stored.Value)
 	require.Equal(t, token.SourceID().String(), stored.SourceID)
 	require.Equal(t, token.Name(), stored.Name)
 	require.WithinDuration(t, token.CreatedAt(), stored.CreatedAt, time.Millisecond)
