@@ -26,6 +26,7 @@ type Commands struct {
 	CreateExport    CommandHandler[any]
 	CreateSource    CommandHandler[command.CreateSource]
 	CreateToken     CommandHandler[command.CreateToken]
+	DeleteToken     CommandHandler[command.DeleteToken]
 }
 
 type Queries struct {

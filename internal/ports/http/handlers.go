@@ -24,7 +24,15 @@ func (h handlers) GetEventTypes(c echo.Context) error {
 }
 
 func (h handlers) DeleteToken(c echo.Context, sourceId SourceId, tokenId TokenId) error {
-	return nil
+	err := h.application.Commands.DeleteToken.Execute(ctxFromEcho(c), command.DeleteToken{
+		TokenID:  domain.ID(tokenId),
+		SourceID: domain.ID(sourceId),
+	})
+	if err != nil {
+		return NewHandlerError(err, "error-deleting-token")
+	}
+
+	return c.NoContent(http.StatusNoContent)
 }
 
 func (h handlers) CreateToken(c echo.Context, sourceId SourceId) error {

@@ -76,5 +76,5 @@ func MarshallToToken(id, sourceID, value, name string, createdAt time.Time) *Tok
 
 type TokenRepository interface {
 	Save(ctx context.Context, token Token) error
-	Delete(ctx context.Context, id ID) error
+	Delete(ctx context.Context, id, sourceID ID) error
 }
