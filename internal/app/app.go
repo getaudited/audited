@@ -32,6 +32,7 @@ type Queries struct {
 	EventTypeByAction QueryHandler[query.EventTypeByAction, *domain.EventType]
 	Events            QueryHandler[any, query.Pagination[domain.Event]]
 	EventByID         QueryHandler[any, domain.Event]
+	AllSources        QueryHandler[query.AllSources, query.Pagination[domain.Source]]
 }
 
 type App struct {

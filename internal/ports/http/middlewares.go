@@ -1,10 +1,14 @@
 package http
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/firminochangani/audited/internal/common/logs"
+	"github.com/friendsofgo/errors"
+	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -42,6 +46,21 @@ func loggerMiddleware(logger *logs.Logger, isDebug bool) echo.MiddlewareFunc {
 			return nil
 		},
 	})
+}
+
+func bearerAuthMiddleware(_ context.Context, _ *openapi3filter.AuthenticationInput) error {
+	// implement me
+	return nil
+}
+
+func tokenAuthMiddleware(_ context.Context, input *openapi3filter.AuthenticationInput) error {
+	token := input.RequestValidationInput.Request.Header.Get("x-token")
+	if token == strings.TrimSpace(token) {
+		return errors.New("missing token")
+	}
+
+	// implement me
+	return nil
 }
 
 func errorHandler(logger *logs.Logger) echo.HTTPErrorHandler {

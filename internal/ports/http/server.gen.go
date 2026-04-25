@@ -19,6 +19,11 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
+const (
+	BearerAuthScopes = "BearerAuth.Scopes"
+	TokenAuthScopes  = "TokenAuth.Scopes"
+)
+
 // Actor defines model for Actor.
 type Actor struct {
 	ActorType string                  `json:"actor_type"`
@@ -98,7 +103,7 @@ type Source struct {
 
 // SourceList defines model for SourceList.
 type SourceList struct {
-	Data       string     `json:"data"`
+	Data       []Source   `json:"data"`
 	Pagination Pagination `json:"pagination"`
 }
 
@@ -271,6 +276,8 @@ type ServerInterfaceWrapper struct {
 func (w *ServerInterfaceWrapper) CreateEvent(ctx echo.Context) error {
 	var err error
 
+	ctx.Set(TokenAuthScopes, []string{})
+
 	// Parameter object where we will unmarshal all parameters from the context
 	var params CreateEventParams
 
@@ -302,6 +309,8 @@ func (w *ServerInterfaceWrapper) CreateEvent(ctx echo.Context) error {
 func (w *ServerInterfaceWrapper) GetEventTypes(ctx echo.Context) error {
 	var err error
 
+	ctx.Set(BearerAuthScopes, []string{})
+
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetEventTypes(ctx)
 	return err
@@ -310,6 +319,8 @@ func (w *ServerInterfaceWrapper) GetEventTypes(ctx echo.Context) error {
 // CreateEventType converts echo context to params.
 func (w *ServerInterfaceWrapper) CreateEventType(ctx echo.Context) error {
 	var err error
+
+	ctx.Set(BearerAuthScopes, []string{})
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.CreateEventType(ctx)
@@ -326,6 +337,8 @@ func (w *ServerInterfaceWrapper) ArchiveEventType(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter event_id: %s", err))
 	}
+
+	ctx.Set(BearerAuthScopes, []string{})
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.ArchiveEventType(ctx, eventId)
@@ -351,6 +364,8 @@ func (w *ServerInterfaceWrapper) GetEventTypeByID(ctx echo.Context) error {
 // GetEvents converts echo context to params.
 func (w *ServerInterfaceWrapper) GetEvents(ctx echo.Context) error {
 	var err error
+
+	ctx.Set(BearerAuthScopes, []string{})
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetEventsParams
@@ -384,6 +399,8 @@ func (w *ServerInterfaceWrapper) GetEvents(ctx echo.Context) error {
 func (w *ServerInterfaceWrapper) GetSources(ctx echo.Context) error {
 	var err error
 
+	ctx.Set(BearerAuthScopes, []string{})
+
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetSourcesParams
 	// ------------- Optional query parameter "limit" -------------
@@ -409,6 +426,8 @@ func (w *ServerInterfaceWrapper) GetSources(ctx echo.Context) error {
 func (w *ServerInterfaceWrapper) CreateSource(ctx echo.Context) error {
 	var err error
 
+	ctx.Set(BearerAuthScopes, []string{})
+
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.CreateSource(ctx)
 	return err
@@ -425,6 +444,8 @@ func (w *ServerInterfaceWrapper) GetSourceByID(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter source_id: %s", err))
 	}
 
+	ctx.Set(BearerAuthScopes, []string{})
+
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetSourceByID(ctx, sourceId)
 	return err
@@ -440,6 +461,8 @@ func (w *ServerInterfaceWrapper) CreateSourceToken(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter source_id: %s", err))
 	}
+
+	ctx.Set(BearerAuthScopes, []string{})
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.CreateSourceToken(ctx, sourceId)
@@ -464,6 +487,8 @@ func (w *ServerInterfaceWrapper) DeleteToken(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter token_id: %s", err))
 	}
+
+	ctx.Set(BearerAuthScopes, []string{})
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.DeleteToken(ctx, sourceId, tokenId)
@@ -515,39 +540,39 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
-	"AAD//zLyz+NbKwAA",
+	"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",
+	"GU9ItuFSzX6a/jTFu6fdXwEAAP//AR9TfYwsAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

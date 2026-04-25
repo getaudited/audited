@@ -27,20 +27,29 @@ func NewSource(name string) (*Source, error) {
 	}, nil
 }
 
-func (s *Source) ID() ID {
+func (s Source) ID() ID {
 	return s.id
 }
 
-func (s *Source) Name() string {
+func (s Source) Name() string {
 	return s.name
 }
 
-func (s *Source) CreatedAt() time.Time {
+func (s Source) CreatedAt() time.Time {
 	return s.createdAt
 }
 
-func (s *Source) UpdatedAt() time.Time {
+func (s Source) UpdatedAt() time.Time {
 	return s.updatedAt
+}
+
+func MarshallToSource(id, name string, createdAt, updatedAt time.Time) Source {
+	return Source{
+		id:        ID(id),
+		name:      name,
+		createdAt: createdAt,
+		updatedAt: updatedAt,
+	}
 }
 
 type SourceRepository interface {
