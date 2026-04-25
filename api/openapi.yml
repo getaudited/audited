@@ -30,7 +30,7 @@ paths:
       security:
         - TokenAuth: []
       parameters:
-        - $ref: '#/components/parameters/token'
+        - $ref: '#/components/parameters/x_token'
       requestBody:
         required: true
         content:
@@ -140,7 +140,7 @@ paths:
           $ref: "#/components/responses/InternalServerError"
   /x/v1/sources/{source_id}:
     get:
-      summary: List all sources
+      summary: Get source details
       description: ...
       tags:
         - Admin API
@@ -162,11 +162,11 @@ paths:
           $ref: "#/components/responses/InternalServerError"
   /x/v1/sources/{source_id}/token:
     post:
-      summary: Create source token
+      summary: Create token
       description: ...
       tags:
         - Admin API
-      operationId: createSourceToken
+      operationId: createToken
       security:
         - BearerAuth: []
       parameters:
@@ -181,8 +181,12 @@ paths:
                 name:
                   type: string
       responses:
-        "204":
-          description: Event created successfully
+        "201":
+          description: Token created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Token"
         default:
           $ref: "#/components/responses/InternalServerError"
   /x/v1/sources/{source_id}/token/{token_id}:
@@ -325,7 +329,7 @@ paths:
 
 components:
   parameters:
-    token:
+    x_token:
       name: x-token
       in: header
       required: true
@@ -519,6 +523,22 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EventType'
+    Token:
+      required: [ value, name, source_id, created_at ]
+      properties:
+        value:
+          type: string
+          x-order: 1
+        name:
+          type: string
+          x-order: 2
+        source_id:
+          type: string
+          x-order: 3
+        created_at:
+          type: string
+          format: date-time
+          x-order: 4
 
     # Pagination
     Pagination:
