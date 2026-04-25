@@ -83,6 +83,7 @@ func (s *Service) Run() error {
 			EventTypeByAction: query.NewEventTypeByActionHandler(eventTypeRepository),
 			Events:            nil,
 			EventByID:         nil,
+			AllSources:        query.NewAllSourcesHandler(sourcesRepository),
 		},
 	}
 

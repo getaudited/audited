@@ -48,12 +48,12 @@ func loggerMiddleware(logger *logs.Logger, isDebug bool) echo.MiddlewareFunc {
 	})
 }
 
-func bearerAuthMiddleware(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
+func bearerAuthMiddleware(_ context.Context, _ *openapi3filter.AuthenticationInput) error {
 	// implement me
 	return nil
 }
 
-func tokenAuthMiddleware(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
+func tokenAuthMiddleware(_ context.Context, input *openapi3filter.AuthenticationInput) error {
 	token := input.RequestValidationInput.Request.Header.Get("x-token")
 	if token == strings.TrimSpace(token) {
 		return errors.New("missing token")

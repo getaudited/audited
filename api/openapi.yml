@@ -376,7 +376,7 @@ components:
       schema:
         type: integer
         minimum: 1
-        maximum: 15
+        maximum: 100
     pagination_page:
       name: page
       description: The page number
@@ -483,7 +483,7 @@ components:
         pagination:
           $ref: '#/components/schemas/Pagination'
         data:
-          type: string
+          type: array
           items:
             $ref: '#/components/schemas/Source'
     # Event type

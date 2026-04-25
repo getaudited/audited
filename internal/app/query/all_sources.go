@@ -1,0 +1,25 @@
+package query
+
+import (
+	"context"
+
+	"github.com/firminochangani/audited/internal/domain"
+)
+
+type AllSources struct {
+	PaginationParams PaginationParams
+}
+
+type AllSourcesHandler struct {
+	finder sourcesFinder
+}
+
+func NewAllSourcesHandler(finder sourcesFinder) AllSourcesHandler {
+	return AllSourcesHandler{
+		finder: finder,
+	}
+}
+
+func (e AllSourcesHandler) Execute(ctx context.Context, q AllSources) (Pagination[domain.Source], error) {
+	return e.finder.QueryAll(ctx, q.PaginationParams)
+}

@@ -34,11 +34,6 @@ func (h handlers) GetEvents(ctx echo.Context, params GetEventsParams) error {
 	return nil
 }
 
-func (h handlers) GetSources(ctx echo.Context, params GetSourcesParams) error {
-	//TODO implement me
-	return nil
-}
-
 func (h handlers) GetSourceByID(ctx echo.Context, sourceId SourceId) error {
 	//TODO implement me
 	return nil
