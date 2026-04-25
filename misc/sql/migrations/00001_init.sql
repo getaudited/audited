@@ -21,6 +21,14 @@ CREATE TABLE event_types (
     CONSTRAINT un_event_type_name UNIQUE (action)
 );
 
+CREATE TABLE tokens (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    source_id TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT fk_token_belongs_to_source FOREIGN KEY (source_id) REFERENCES sources (id)
+);
+
 -- TODO: add event_type_schemas
 
 CREATE TABLE events (
@@ -53,6 +61,7 @@ CREATE TABLE event_targets (
 
 -- +goose Down
 -- +goose StatementBegin
+DROP TABLE tokens;
 DROP TABLE event_targets;
 DROP TABLE events;
 DROP TABLE event_types;

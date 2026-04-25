@@ -81,3 +81,12 @@ func mapDomainSourceToModelSource(source *domain.Source) *models.Source {
 		UpdatedAt: source.UpdatedAt(),
 	}
 }
+
+func mapDomainTokenToModelToken(token domain.Token) *models.Token {
+	return &models.Token{
+		ID:        token.ID().String(),
+		SourceID:  token.SourceID().String(),
+		Name:      token.Name(),
+		CreatedAt: token.CreatedAt(),
+	}
+}

@@ -117,6 +117,14 @@ type Target struct {
 	TargetType string                  `json:"target_type"`
 }
 
+// Token defines model for Token.
+type Token struct {
+	Value     string    `json:"value"`
+	Name      string    `json:"name"`
+	SourceId  string    `json:"source_id"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 // EventId defines model for event_id.
 type EventId = string
 
@@ -138,11 +146,11 @@ type SourceId = string
 // SourceIdQuery defines model for source_id_query.
 type SourceIdQuery = string
 
-// Token defines model for token.
-type Token = string
-
 // TokenId defines model for token_id.
 type TokenId = string
+
+// XToken defines model for x_token.
+type XToken = string
 
 // BadRequestError defines model for BadRequestError.
 type BadRequestError = ErrorSchema
@@ -179,7 +187,7 @@ type CreateEventJSONBody struct {
 
 // CreateEventParams defines parameters for CreateEvent.
 type CreateEventParams struct {
-	XToken Token `json:"x-token"`
+	XToken XToken `json:"x-token"`
 }
 
 // CreateEventTypeJSONBody defines parameters for CreateEventType.
@@ -215,8 +223,8 @@ type CreateSourceJSONBody struct {
 	Name string `json:"name"`
 }
 
-// CreateSourceTokenJSONBody defines parameters for CreateSourceToken.
-type CreateSourceTokenJSONBody struct {
+// CreateTokenJSONBody defines parameters for CreateToken.
+type CreateTokenJSONBody struct {
 	Name string `json:"name"`
 }
 
@@ -229,8 +237,8 @@ type CreateEventTypeJSONRequestBody CreateEventTypeJSONBody
 // CreateSourceJSONRequestBody defines body for CreateSource for application/json ContentType.
 type CreateSourceJSONRequestBody CreateSourceJSONBody
 
-// CreateSourceTokenJSONRequestBody defines body for CreateSourceToken for application/json ContentType.
-type CreateSourceTokenJSONRequestBody CreateSourceTokenJSONBody
+// CreateTokenJSONRequestBody defines body for CreateToken for application/json ContentType.
+type CreateTokenJSONRequestBody CreateTokenJSONBody
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -338,10 +346,10 @@ type ClientInterface interface {
 	// GetSourceByID request
 	GetSourceByID(ctx context.Context, sourceId SourceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateSourceTokenWithBody request with any body
-	CreateSourceTokenWithBody(ctx context.Context, sourceId SourceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreateTokenWithBody request with any body
+	CreateTokenWithBody(ctx context.Context, sourceId SourceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	CreateSourceToken(ctx context.Context, sourceId SourceId, body CreateSourceTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateToken(ctx context.Context, sourceId SourceId, body CreateTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteToken request
 	DeleteToken(ctx context.Context, sourceId SourceId, tokenId TokenId, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -491,8 +499,8 @@ func (c *Client) GetSourceByID(ctx context.Context, sourceId SourceId, reqEditor
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateSourceTokenWithBody(ctx context.Context, sourceId SourceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateSourceTokenRequestWithBody(c.Server, sourceId, contentType, body)
+func (c *Client) CreateTokenWithBody(ctx context.Context, sourceId SourceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateTokenRequestWithBody(c.Server, sourceId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -503,8 +511,8 @@ func (c *Client) CreateSourceTokenWithBody(ctx context.Context, sourceId SourceI
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateSourceToken(ctx context.Context, sourceId SourceId, body CreateSourceTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateSourceTokenRequest(c.Server, sourceId, body)
+func (c *Client) CreateToken(ctx context.Context, sourceId SourceId, body CreateTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateTokenRequest(c.Server, sourceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -931,19 +939,19 @@ func NewGetSourceByIDRequest(server string, sourceId SourceId) (*http.Request, e
 	return req, nil
 }
 
-// NewCreateSourceTokenRequest calls the generic CreateSourceToken builder with application/json body
-func NewCreateSourceTokenRequest(server string, sourceId SourceId, body CreateSourceTokenJSONRequestBody) (*http.Request, error) {
+// NewCreateTokenRequest calls the generic CreateToken builder with application/json body
+func NewCreateTokenRequest(server string, sourceId SourceId, body CreateTokenJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateSourceTokenRequestWithBody(server, sourceId, "application/json", bodyReader)
+	return NewCreateTokenRequestWithBody(server, sourceId, "application/json", bodyReader)
 }
 
-// NewCreateSourceTokenRequestWithBody generates requests for CreateSourceToken with any type of body
-func NewCreateSourceTokenRequestWithBody(server string, sourceId SourceId, contentType string, body io.Reader) (*http.Request, error) {
+// NewCreateTokenRequestWithBody generates requests for CreateToken with any type of body
+func NewCreateTokenRequestWithBody(server string, sourceId SourceId, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -1095,10 +1103,10 @@ type ClientWithResponsesInterface interface {
 	// GetSourceByIDWithResponse request
 	GetSourceByIDWithResponse(ctx context.Context, sourceId SourceId, reqEditors ...RequestEditorFn) (*GetSourceByIDResponse, error)
 
-	// CreateSourceTokenWithBodyWithResponse request with any body
-	CreateSourceTokenWithBodyWithResponse(ctx context.Context, sourceId SourceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSourceTokenResponse, error)
+	// CreateTokenWithBodyWithResponse request with any body
+	CreateTokenWithBodyWithResponse(ctx context.Context, sourceId SourceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateTokenResponse, error)
 
-	CreateSourceTokenWithResponse(ctx context.Context, sourceId SourceId, body CreateSourceTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSourceTokenResponse, error)
+	CreateTokenWithResponse(ctx context.Context, sourceId SourceId, body CreateTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateTokenResponse, error)
 
 	// DeleteTokenWithResponse request
 	DeleteTokenWithResponse(ctx context.Context, sourceId SourceId, tokenId TokenId, reqEditors ...RequestEditorFn) (*DeleteTokenResponse, error)
@@ -1315,14 +1323,15 @@ func (r GetSourceByIDResponse) StatusCode() int {
 	return 0
 }
 
-type CreateSourceTokenResponse struct {
+type CreateTokenResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON201      *Token
 	JSONDefault  *InternalServerError
 }
 
 // Status returns HTTPResponse.Status
-func (r CreateSourceTokenResponse) Status() string {
+func (r CreateTokenResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -1330,7 +1339,7 @@ func (r CreateSourceTokenResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r CreateSourceTokenResponse) StatusCode() int {
+func (r CreateTokenResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1464,21 +1473,21 @@ func (c *ClientWithResponses) GetSourceByIDWithResponse(ctx context.Context, sou
 	return ParseGetSourceByIDResponse(rsp)
 }
 
-// CreateSourceTokenWithBodyWithResponse request with arbitrary body returning *CreateSourceTokenResponse
-func (c *ClientWithResponses) CreateSourceTokenWithBodyWithResponse(ctx context.Context, sourceId SourceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSourceTokenResponse, error) {
-	rsp, err := c.CreateSourceTokenWithBody(ctx, sourceId, contentType, body, reqEditors...)
+// CreateTokenWithBodyWithResponse request with arbitrary body returning *CreateTokenResponse
+func (c *ClientWithResponses) CreateTokenWithBodyWithResponse(ctx context.Context, sourceId SourceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateTokenResponse, error) {
+	rsp, err := c.CreateTokenWithBody(ctx, sourceId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateSourceTokenResponse(rsp)
+	return ParseCreateTokenResponse(rsp)
 }
 
-func (c *ClientWithResponses) CreateSourceTokenWithResponse(ctx context.Context, sourceId SourceId, body CreateSourceTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSourceTokenResponse, error) {
-	rsp, err := c.CreateSourceToken(ctx, sourceId, body, reqEditors...)
+func (c *ClientWithResponses) CreateTokenWithResponse(ctx context.Context, sourceId SourceId, body CreateTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateTokenResponse, error) {
+	rsp, err := c.CreateToken(ctx, sourceId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateSourceTokenResponse(rsp)
+	return ParseCreateTokenResponse(rsp)
 }
 
 // DeleteTokenWithResponse request returning *DeleteTokenResponse
@@ -1815,20 +1824,27 @@ func ParseGetSourceByIDResponse(rsp *http.Response) (*GetSourceByIDResponse, err
 	return response, nil
 }
 
-// ParseCreateSourceTokenResponse parses an HTTP response from a CreateSourceTokenWithResponse call
-func ParseCreateSourceTokenResponse(rsp *http.Response) (*CreateSourceTokenResponse, error) {
+// ParseCreateTokenResponse parses an HTTP response from a CreateTokenWithResponse call
+func ParseCreateTokenResponse(rsp *http.Response) (*CreateTokenResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &CreateSourceTokenResponse{
+	response := &CreateTokenResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Token
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest InternalServerError
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -1870,39 +1886,40 @@ func ParseDeleteTokenResponse(rsp *http.Response) (*DeleteTokenResponse, error) 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
-	"GU9ItuFSzX6a/jTFu6fdXwEAAP//AR9TfYwsAAA=",
+	"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",
+	"9v8BAAD//zpUiZHZLQAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
