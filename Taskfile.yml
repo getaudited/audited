@@ -129,3 +129,7 @@ tasks:
         --go_out=./events/go --go_opt=paths=source_relative \
         --go-grpc_out=./events/go --go-grpc_opt=paths=source_relative \
         --proto_path=./events
+
+  git:clean:
+    cmds:
+      - git branch | grep -vE "main" | xargs git branch -D
