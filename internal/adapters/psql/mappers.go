@@ -21,7 +21,7 @@ func mapDomainEventTargetsToModelEventTargets(eventID domain.ID, targets []domai
 
 		targetRows[i] = &models.EventTarget{
 			InternalID: ulid.Make().String(),
-			ID:         target.Id,
+			ID:         target.ID,
 			EventID:    eventID.String(),
 			Name:       null.StringFromPtr(target.Name),
 			Type:       target.TargetType,
@@ -47,7 +47,7 @@ func mapDomainEventToModelEvent(e domain.Event) (models.Event, error) {
 		ID:               e.ID().String(),
 		SourceID:         e.SourceID().String(),
 		Version:          e.Version(),
-		ActorID:          e.Actor().Id,
+		ActorID:          e.Actor().ID,
 		ActorType:        e.Actor().ActorType,
 		ActorName:        null.StringFromPtr(e.Actor().Name),
 		ActorMetadata:    actorMetadata,

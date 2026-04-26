@@ -91,14 +91,14 @@ type Context struct {
 }
 
 type Actor struct {
-	Id        string
+	ID        string
 	ActorType string
 	Name      *string
 	Metadata  *Metadata
 }
 
 type Target struct {
-	Id         string
+	ID         string
 	Name       *string
 	TargetType string
 	Metadata   *Metadata

@@ -29,13 +29,18 @@ type Actor struct {
 	ActorType string                  `json:"actor_type"`
 	Id        string                  `json:"id"`
 	Metadata  *map[string]interface{} `json:"metadata,omitempty"`
-	Name      string                  `json:"name"`
+	Name      *string                 `json:"name,omitempty"`
 }
 
 // Context defines model for Context.
 type Context struct {
 	Location  string  `json:"location"`
 	UserAgent *string `json:"user_agent,omitempty"`
+}
+
+// CursorPagination defines model for CursorPagination.
+type CursorPagination struct {
+	Next string `json:"next"`
 }
 
 // ErrorSchema defines model for ErrorSchema.
@@ -59,12 +64,10 @@ type Event struct {
 	Version    int                     `json:"version"`
 }
 
-// EventStream defines model for EventStream.
-type EventStream struct {
-	Cursor struct {
-		Next *string `json:"next,omitempty"`
-	} `json:"cursor"`
-	Data []Event `json:"data"`
+// EventList defines model for EventList.
+type EventList struct {
+	Cursor CursorPagination `json:"cursor"`
+	Data   []Event          `json:"data"`
 }
 
 // EventType defines model for EventType.
@@ -111,7 +114,7 @@ type SourceList struct {
 type Target struct {
 	Id         string                  `json:"id"`
 	Metadata   *map[string]interface{} `json:"metadata,omitempty"`
-	Name       string                  `json:"name"`
+	Name       *string                 `json:"name,omitempty"`
 	TargetType string                  `json:"target_type"`
 }
 

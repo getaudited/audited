@@ -31,13 +31,18 @@ type Actor struct {
 	ActorType string                  `json:"actor_type"`
 	Id        string                  `json:"id"`
 	Metadata  *map[string]interface{} `json:"metadata,omitempty"`
-	Name      string                  `json:"name"`
+	Name      *string                 `json:"name,omitempty"`
 }
 
 // Context defines model for Context.
 type Context struct {
 	Location  string  `json:"location"`
 	UserAgent *string `json:"user_agent,omitempty"`
+}
+
+// CursorPagination defines model for CursorPagination.
+type CursorPagination struct {
+	Next string `json:"next"`
 }
 
 // ErrorSchema defines model for ErrorSchema.
@@ -61,12 +66,10 @@ type Event struct {
 	Version    int                     `json:"version"`
 }
 
-// EventStream defines model for EventStream.
-type EventStream struct {
-	Cursor struct {
-		Next *string `json:"next,omitempty"`
-	} `json:"cursor"`
-	Data []Event `json:"data"`
+// EventList defines model for EventList.
+type EventList struct {
+	Cursor CursorPagination `json:"cursor"`
+	Data   []Event          `json:"data"`
 }
 
 // EventType defines model for EventType.
@@ -113,7 +116,7 @@ type SourceList struct {
 type Target struct {
 	Id         string                  `json:"id"`
 	Metadata   *map[string]interface{} `json:"metadata,omitempty"`
-	Name       string                  `json:"name"`
+	Name       *string                 `json:"name,omitempty"`
 	TargetType string                  `json:"target_type"`
 }
 
@@ -1234,7 +1237,7 @@ func (r GetEventTypeByIDResponse) StatusCode() int {
 type GetEventsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *EventStream
+	JSON200      *EventList
 	JSONDefault  *InternalServerError
 }
 
@@ -1701,7 +1704,7 @@ func ParseGetEventsResponse(rsp *http.Response) (*GetEventsResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest EventStream
+		var dest EventList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

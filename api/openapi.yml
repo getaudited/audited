@@ -225,7 +225,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EventStream"
+                $ref: "#/components/schemas/EventList"
         default:
           $ref: "#/components/responses/InternalServerError"
   /x/v1/event-types:
@@ -400,7 +400,7 @@ components:
           type: string
           nullable: true
     Target:
-      required: [ id, target_type, name ]
+      required: [ id, target_type ]
       properties:
         id:
           type: string
@@ -413,7 +413,7 @@ components:
           nullable: true
           additionalProperties: true
     Actor:
-      required: [id, actor_type, name]
+      required: [id, actor_type]
       properties:
         id:
           type: string
@@ -449,15 +449,11 @@ components:
         occurred_at:
           type: string
           format: data-time
-    EventStream:
+    EventList:
       required: [data, cursor]
       properties:
         cursor:
-          required: []
-          properties:
-            next:
-              type: string
-              nullable: true
+          $ref: '#/components/schemas/CursorPagination'
         data:
           type: array
           items:
@@ -544,6 +540,11 @@ components:
           x-order: 5
 
     # Pagination
+    CursorPagination:
+      required: [next]
+      properties:
+        next:
+          type: string
     Pagination:
       required: [ total, per_page, current_page, total_pages ]
       properties:

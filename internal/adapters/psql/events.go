@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/firminochangani/audited/internal/app/query"
 	"github.com/firminochangani/audited/internal/domain"
 	"github.com/friendsofgo/errors"
 	"github.com/lib/pq"
@@ -51,4 +52,8 @@ func (a EventsPsqlRepository) Save(ctx context.Context, e domain.Event) error {
 	}
 
 	return nil
+}
+
+func (a EventsPsqlRepository) QueryAll(ctx context.Context, params query.CursorPaginationParams) (query.CursorPaginationResult[domain.Event], error) {
+	return query.CursorPaginationResult[domain.Event]{}, nil
 }

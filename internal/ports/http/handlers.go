@@ -63,11 +63,6 @@ func (h handlers) CreateToken(c echo.Context, sourceId SourceId) error {
 	})
 }
 
-func (h handlers) GetEvents(c echo.Context, params GetEventsParams) error {
-	//TODO implement me
-	return nil
-}
-
 func (h handlers) GetSourceByID(c echo.Context, sourceId SourceId) error {
 	//TODO implement me
 	return nil

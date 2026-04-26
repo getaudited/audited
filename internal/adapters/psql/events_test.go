@@ -38,7 +38,7 @@ func TestEventsPsqlRepository_Save(t *testing.T) {
 	require.Equal(t, event.Version(), storedEvent.Version)
 	require.WithinDuration(t, event.OccurredAt(), storedEvent.OccurredAt, time.Millisecond)
 
-	require.Equal(t, event.Actor().Id, storedEvent.ActorID)
+	require.Equal(t, event.Actor().ID, storedEvent.ActorID)
 	require.Equal(t, event.Actor().ActorType, storedEvent.ActorType)
 	require.Equal(t, event.Actor().Name, storedEvent.ActorName.Ptr())
 	requireEqualMetadata(t, event.Actor().Metadata, storedEvent.ActorMetadata)
@@ -51,9 +51,9 @@ func TestEventsPsqlRepository_Save(t *testing.T) {
 	require.Len(t, storedEvent.R.EventTargets, len(event.Targets()))
 
 	for _, target := range event.Targets() {
-		storedTarget := findStoredTarget(storedEvent.R.EventTargets, target.Id)
-		require.NotNilf(t, storedTarget, "target %s not found in stored event", target.Id)
-		require.Equal(t, target.Id, storedTarget.ID)
+		storedTarget := findStoredTarget(storedEvent.R.EventTargets, target.ID)
+		require.NotNilf(t, storedTarget, "target %s not found in stored event", target.ID)
+		require.Equal(t, target.ID, storedTarget.ID)
 		require.Equal(t, event.ID().String(), storedTarget.EventID)
 		require.Equal(t, target.TargetType, storedTarget.Type)
 		require.Equal(t, target.Name, storedTarget.Name.Ptr())
@@ -121,7 +121,7 @@ func fixtureEvent(t *testing.T, sourceID domain.ID) domain.Event {
 		sourceID,
 		1,
 		domain.Actor{
-			Id:        ulid.Make().String(),
+			ID:        ulid.Make().String(),
 			ActorType: "user",
 			Name:      new(gofakeit.Name()),
 			Metadata: &domain.Metadata{
@@ -130,7 +130,7 @@ func fixtureEvent(t *testing.T, sourceID domain.ID) domain.Event {
 		},
 		[]domain.Target{
 			{
-				Id:         ulid.Make().String(),
+				ID:         ulid.Make().String(),
 				TargetType: "user",
 				Name:       new(gofakeit.Name()),
 				Metadata: &domain.Metadata{
@@ -138,7 +138,7 @@ func fixtureEvent(t *testing.T, sourceID domain.ID) domain.Event {
 				},
 			},
 			{
-				Id:         ulid.Make().String(),
+				ID:         ulid.Make().String(),
 				TargetType: "team",
 				Name:       new(gofakeit.Name()),
 				Metadata: &domain.Metadata{
