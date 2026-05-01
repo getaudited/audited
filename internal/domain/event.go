@@ -83,6 +83,27 @@ func (e *Event) OccurredAt() time.Time {
 	return e.occurredAt
 }
 
+func MarshallToEvent(
+	id, sourceID string,
+	version int,
+	actor Actor,
+	targets []Target,
+	ctx Context,
+	metadata *Metadata,
+	occurredAt time.Time,
+) Event {
+	return Event{
+		id:         ID(id),
+		sourceID:   ID(sourceID),
+		version:    version,
+		actor:      actor,
+		targets:    targets,
+		context:    ctx,
+		metadata:   metadata,
+		occurredAt: occurredAt,
+	}
+}
+
 type Metadata = map[string]interface{}
 
 type Context struct {
@@ -91,14 +112,14 @@ type Context struct {
 }
 
 type Actor struct {
-	Id        string
+	ID        string
 	ActorType string
 	Name      *string
 	Metadata  *Metadata
 }
 
 type Target struct {
-	Id         string
+	ID         string
 	Name       *string
 	TargetType string
 	Metadata   *Metadata

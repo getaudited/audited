@@ -217,7 +217,7 @@ paths:
         - BearerAuth: []
       parameters:
         - $ref: '#/components/parameters/source_id_query'
-        - $ref: '#/components/parameters/pagination_cursor'
+        - $ref: '#/components/parameters/start_from_cursor'
         - $ref: '#/components/parameters/pagination_limit'
       responses:
         "200":
@@ -225,7 +225,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EventStream"
+                $ref: "#/components/schemas/EventList"
         default:
           $ref: "#/components/responses/InternalServerError"
   /x/v1/event-types:
@@ -365,8 +365,8 @@ components:
       required: true
       schema:
         type: string
-    pagination_cursor:
-      name: cursor
+    start_from_cursor:
+      name: start_from
       description: Opaque cursor returned by the previous page. Omit to start from the most recent event.
       in: query
       required: false
@@ -400,7 +400,7 @@ components:
           type: string
           nullable: true
     Target:
-      required: [ id, target_type, name ]
+      required: [ id, target_type ]
       properties:
         id:
           type: string
@@ -413,7 +413,7 @@ components:
           nullable: true
           additionalProperties: true
     Actor:
-      required: [id, actor_type, name]
+      required: [id, actor_type]
       properties:
         id:
           type: string
@@ -430,34 +430,36 @@ components:
       properties:
         id:
           type: string
+          x-order: 1
         source_id:
           type: string
+          x-order: 2
         version:
           type: integer
+          x-order: 3
         actor:
           $ref: '#/components/schemas/Actor'
         targets:
+          x-order: 4
           type: array
           items:
             $ref: '#/components/schemas/Target'
         context:
           $ref: '#/components/schemas/Context'
         metadata:
+          x-order: 5
           type: object
           additionalProperties: true
           nullable: true
         occurred_at:
+          x-order: 6
           type: string
           format: data-time
-    EventStream:
-      required: [data, cursor]
+    EventList:
+      required: [data, last_item_cursor]
       properties:
-        cursor:
-          required: []
-          properties:
-            next:
-              type: string
-              nullable: true
+        last_item_cursor:
+          type: string
         data:
           type: array
           items:

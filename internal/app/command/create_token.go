@@ -7,7 +7,7 @@ import (
 )
 
 type CreateToken struct {
-	Token domain.Token
+	Token *domain.Token
 }
 
 type CreateTokenHandler struct {

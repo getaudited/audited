@@ -32,7 +32,7 @@ type Commands struct {
 type Queries struct {
 	EventTypes        QueryHandler[any, query.Pagination[domain.EventType]]
 	EventTypeByAction QueryHandler[query.EventTypeByAction, *domain.EventType]
-	Events            QueryHandler[any, query.Pagination[domain.Event]]
+	Events            QueryHandler[query.AllEvents, query.CursorPaginationResult[domain.Event]]
 	EventByID         QueryHandler[any, domain.Event]
 	AllSources        QueryHandler[query.AllSources, query.Pagination[domain.Source]]
 }

@@ -18,7 +18,7 @@ func NewTokensPsqlRepository(db *sql.DB) *TokensPsqlRepository {
 	return &TokensPsqlRepository{db: db}
 }
 
-func (t TokensPsqlRepository) Save(ctx context.Context, token domain.Token) error {
+func (t TokensPsqlRepository) Save(ctx context.Context, token *domain.Token) error {
 	row := mapDomainTokenToModelToken(token)
 	return row.Insert(ctx, t.db, boil.Infer())
 }

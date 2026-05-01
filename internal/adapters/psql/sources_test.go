@@ -1,6 +1,7 @@
 package psql_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -46,7 +47,7 @@ func querySourceByID(t *testing.T, id string) *models.Source {
 func fixtureSource(t *testing.T) *domain.Source {
 	t.Helper()
 
-	source, err := domain.NewSource(gofakeit.Word())
+	source, err := domain.NewSource(fmt.Sprintf("svc-%s-%s", gofakeit.AppName(), gofakeit.AppVersion()))
 	require.NoError(t, err)
 
 	return source

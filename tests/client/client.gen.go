@@ -31,7 +31,7 @@ type Actor struct {
 	ActorType string                  `json:"actor_type"`
 	Id        string                  `json:"id"`
 	Metadata  *map[string]interface{} `json:"metadata,omitempty"`
-	Name      string                  `json:"name"`
+	Name      *string                 `json:"name,omitempty"`
 }
 
 // Context defines model for Context.
@@ -51,22 +51,20 @@ type ErrorSchema struct {
 
 // Event defines model for Event.
 type Event struct {
-	Actor      Actor                   `json:"actor"`
-	Context    Context                 `json:"context"`
 	Id         string                  `json:"id"`
+	SourceId   string                  `json:"source_id"`
+	Version    int                     `json:"version"`
+	Targets    []Target                `json:"targets"`
 	Metadata   *map[string]interface{} `json:"metadata,omitempty"`
 	OccurredAt string                  `json:"occurred_at"`
-	SourceId   string                  `json:"source_id"`
-	Targets    []Target                `json:"targets"`
-	Version    int                     `json:"version"`
+	Actor      Actor                   `json:"actor"`
+	Context    Context                 `json:"context"`
 }
 
-// EventStream defines model for EventStream.
-type EventStream struct {
-	Cursor struct {
-		Next *string `json:"next,omitempty"`
-	} `json:"cursor"`
-	Data []Event `json:"data"`
+// EventList defines model for EventList.
+type EventList struct {
+	Data           []Event `json:"data"`
+	LastItemCursor string  `json:"last_item_cursor"`
 }
 
 // EventType defines model for EventType.
@@ -113,7 +111,7 @@ type SourceList struct {
 type Target struct {
 	Id         string                  `json:"id"`
 	Metadata   *map[string]interface{} `json:"metadata,omitempty"`
-	Name       string                  `json:"name"`
+	Name       *string                 `json:"name,omitempty"`
 	TargetType string                  `json:"target_type"`
 }
 
@@ -132,9 +130,6 @@ type EventId = string
 // EventTypeAction defines model for event_type_action.
 type EventTypeAction = string
 
-// PaginationCursor defines model for pagination_cursor.
-type PaginationCursor = string
-
 // PaginationLimit defines model for pagination_limit.
 type PaginationLimit = int
 
@@ -146,6 +141,9 @@ type SourceId = string
 
 // SourceIdQuery defines model for source_id_query.
 type SourceIdQuery = string
+
+// StartFromCursor defines model for start_from_cursor.
+type StartFromCursor = string
 
 // TokenId defines model for token_id.
 type TokenId = string
@@ -203,8 +201,8 @@ type CreateEventTypeJSONBody struct {
 type GetEventsParams struct {
 	SourceId SourceIdQuery `form:"source_id" json:"source_id"`
 
-	// Cursor Opaque cursor returned by the previous page. Omit to start from the most recent event.
-	Cursor *PaginationCursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	// StartFrom Opaque cursor returned by the previous page. Omit to start from the most recent event.
+	StartFrom *StartFromCursor `form:"start_from,omitempty" json:"start_from,omitempty"`
 
 	// Limit The number of items per page
 	Limit *PaginationLimit `form:"limit,omitempty" json:"limit,omitempty"`
@@ -758,9 +756,9 @@ func NewGetEventsRequest(server string, params *GetEventsParams) (*http.Request,
 			}
 		}
 
-		if params.Cursor != nil {
+		if params.StartFrom != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "start_from", *params.StartFrom, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -1234,7 +1232,7 @@ func (r GetEventTypeByIDResponse) StatusCode() int {
 type GetEventsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *EventStream
+	JSON200      *EventList
 	JSONDefault  *InternalServerError
 }
 
@@ -1701,7 +1699,7 @@ func ParseGetEventsResponse(rsp *http.Response) (*GetEventsResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest EventStream
+		var dest EventList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -1886,7 +1884,6 @@ func ParseDeleteTokenResponse(rsp *http.Response) (*DeleteTokenResponse, error) 
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
-
 	"H4sIAAAAAAAC/9RaW4/bNhb+KwR3gb5oLE+TBQo/rZOZFrPbNoOMgX0IBgYtHdvsSqTCizvGwP+94EU3",
 	"i7Itx3HSN8skD8/lO1fpFSc8LzgDpiSevOKCCJKDAmGfYANMzWlqflOGJ7ggao0jzEgOeFIvR1jAZ00F",
 	"pHiihIYIy2QNOTHn1LYwe6USlK3wbhf5Y+b/OUkU5ewg+ea+YfcUZEUZMQfniRaSC7MtBZkIWrhr8YeC",
