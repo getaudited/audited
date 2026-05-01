@@ -39,9 +39,7 @@ func TestTokensPsqlRepository_Save(t *testing.T) {
 func queryTokenByID(t *testing.T, id string) *models.Token {
 	t.Helper()
 
-	row, err := models.Tokens(
-		models.TokenWhere.ID.EQ(id),
-	).One(ctx, db)
+	row, err := models.Tokens(models.TokenWhere.ID.EQ(id)).One(ctx, db)
 	require.NoError(t, err)
 
 	return row
@@ -67,11 +65,11 @@ func TestTokensPsqlRepository_Delete(t *testing.T) {
 	require.False(t, exists)
 }
 
-func fixtureToken(t *testing.T, sourceID domain.ID) domain.Token {
+func fixtureToken(t *testing.T, sourceID domain.ID) *domain.Token {
 	t.Helper()
 
 	token, err := domain.NewToken(sourceID, gofakeit.Word())
 	require.NoError(t, err)
 
-	return *token
+	return token
 }

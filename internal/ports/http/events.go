@@ -62,8 +62,8 @@ func (h handlers) GetEvents(c echo.Context, params GetEventsParams) error {
 	result, err := h.application.Queries.Events.Execute(ctxFromEcho(c), query.AllEvents{
 		SourceID: domain.ID(params.SourceId),
 		CursorPaginationParams: query.CursorPaginationParams{
-			Limit:  params.Limit,
-			Cursor: params.Cursor,
+			Limit:           params.Limit,
+			StartFromCursor: params.StartFrom,
 		},
 	})
 	if err != nil {
@@ -71,10 +71,8 @@ func (h handlers) GetEvents(c echo.Context, params GetEventsParams) error {
 	}
 
 	return c.JSON(http.StatusOK, EventList{
-		Cursor: CursorPagination{
-			Next: result.Cursor.Next,
-		},
-		Data: mapDomainEventsToEvents(result.Data),
+		LastItemCursor: result.LastItemCursor,
+		Data:           mapDomainEventsToEvents(result.Data),
 	})
 }
 

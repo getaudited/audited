@@ -7,12 +7,14 @@ var TableNames = struct {
 	EventTargets string
 	EventTypes   string
 	Events       string
+	People       string
 	Sources      string
 	Tokens       string
 }{
 	EventTargets: "event_targets",
 	EventTypes:   "event_types",
 	Events:       "events",
+	People:       "people",
 	Sources:      "sources",
 	Tokens:       "tokens",
 }

@@ -22,5 +22,5 @@ func NewAllEventsHandler(finder eventsFinder) AllEventsHandler {
 }
 
 func (e AllEventsHandler) Execute(ctx context.Context, q AllEvents) (CursorPaginationResult[domain.Event], error) {
-	return e.finder.QueryAll(ctx, q.CursorPaginationParams)
+	return e.finder.QueryAll(ctx, q.SourceID, q.CursorPaginationParams)
 }

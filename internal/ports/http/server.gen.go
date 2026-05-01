@@ -38,11 +38,6 @@ type Context struct {
 	UserAgent *string `json:"user_agent,omitempty"`
 }
 
-// CursorPagination defines model for CursorPagination.
-type CursorPagination struct {
-	Next string `json:"next"`
-}
-
 // ErrorSchema defines model for ErrorSchema.
 type ErrorSchema struct {
 	// Error Error custom error code such as 'email_in_use'
@@ -54,20 +49,20 @@ type ErrorSchema struct {
 
 // Event defines model for Event.
 type Event struct {
-	Actor      Actor                   `json:"actor"`
-	Context    Context                 `json:"context"`
 	Id         string                  `json:"id"`
+	SourceId   string                  `json:"source_id"`
+	Version    int                     `json:"version"`
+	Targets    []Target                `json:"targets"`
 	Metadata   *map[string]interface{} `json:"metadata,omitempty"`
 	OccurredAt string                  `json:"occurred_at"`
-	SourceId   string                  `json:"source_id"`
-	Targets    []Target                `json:"targets"`
-	Version    int                     `json:"version"`
+	Actor      Actor                   `json:"actor"`
+	Context    Context                 `json:"context"`
 }
 
 // EventList defines model for EventList.
 type EventList struct {
-	Cursor CursorPagination `json:"cursor"`
-	Data   []Event          `json:"data"`
+	Data           []Event `json:"data"`
+	LastItemCursor string  `json:"last_item_cursor"`
 }
 
 // EventType defines model for EventType.
@@ -133,9 +128,6 @@ type EventId = string
 // EventTypeAction defines model for event_type_action.
 type EventTypeAction = string
 
-// PaginationCursor defines model for pagination_cursor.
-type PaginationCursor = string
-
 // PaginationLimit defines model for pagination_limit.
 type PaginationLimit = int
 
@@ -147,6 +139,9 @@ type SourceId = string
 
 // SourceIdQuery defines model for source_id_query.
 type SourceIdQuery = string
+
+// StartFromCursor defines model for start_from_cursor.
+type StartFromCursor = string
 
 // TokenId defines model for token_id.
 type TokenId = string
@@ -204,8 +199,8 @@ type CreateEventTypeJSONBody struct {
 type GetEventsParams struct {
 	SourceId SourceIdQuery `form:"source_id" json:"source_id"`
 
-	// Cursor Opaque cursor returned by the previous page. Omit to start from the most recent event.
-	Cursor *PaginationCursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	// StartFrom Opaque cursor returned by the previous page. Omit to start from the most recent event.
+	StartFrom *StartFromCursor `form:"start_from,omitempty" json:"start_from,omitempty"`
 
 	// Limit The number of items per page
 	Limit *PaginationLimit `form:"limit,omitempty" json:"limit,omitempty"`
@@ -388,11 +383,11 @@ func (w *ServerInterfaceWrapper) GetEvents(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter source_id: %s", err))
 	}
 
-	// ------------- Optional query parameter "cursor" -------------
+	// ------------- Optional query parameter "start_from" -------------
 
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", ctx.QueryParams(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "start_from", ctx.QueryParams(), &params.StartFrom, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter cursor: %s", err))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter start_from: %s", err))
 	}
 
 	// ------------- Optional query parameter "limit" -------------

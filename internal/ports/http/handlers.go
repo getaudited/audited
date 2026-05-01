@@ -48,7 +48,7 @@ func (h handlers) CreateToken(c echo.Context, sourceId SourceId) error {
 	}
 
 	err = h.application.Commands.CreateToken.Execute(ctxFromEcho(c), command.CreateToken{
-		Token: *token,
+		Token: token,
 	})
 	if err != nil {
 		return NewHandlerError(err, "error-creating-token")

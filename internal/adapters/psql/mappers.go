@@ -1,8 +1,10 @@
 package psql
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/aarondl/null/v8"
 	"github.com/firminochangani/audited/internal/adapters/models"
@@ -82,12 +84,135 @@ func mapDomainSourceToModelSource(source *domain.Source) *models.Source {
 	}
 }
 
-func mapDomainTokenToModelToken(token domain.Token) *models.Token {
+func mapDomainTokenToModelToken(token *domain.Token) *models.Token {
 	return &models.Token{
 		ID:        token.ID().String(),
-		SourceID:  token.SourceID().String(),
 		Name:      token.Name(),
 		Value:     token.Value().String(),
+		SourceID:  token.SourceID().String(),
 		CreatedAt: token.CreatedAt(),
 	}
+}
+
+func unmarshallCursor(encodedCursor string) (Cursor, error) {
+	decodedCursor, err := base64.StdEncoding.DecodeString(encodedCursor)
+	if err != nil {
+		return Cursor{}, fmt.Errorf("error decoding cursor '%s': %v", encodedCursor, err)
+	}
+
+	var cursor Cursor
+	err = json.Unmarshal(decodedCursor, &cursor)
+	if err != nil {
+		return Cursor{}, fmt.Errorf("error unmarshalling cursor '%s': %v", encodedCursor, err)
+	}
+
+	return cursor, nil
+}
+
+func marshallCursor(eventID string, occurredAt time.Time) (string, error) {
+	cursor := Cursor{
+		EventID:    eventID,
+		OccurredAt: occurredAt,
+	}
+
+	marshalledCursor, err := json.Marshal(cursor)
+	if err != nil {
+		return "", fmt.Errorf("error marshalling cursor: %v", err)
+	}
+
+	return base64.StdEncoding.EncodeToString(marshalledCursor), nil
+}
+
+func mapJsonToDomainMetadata(jsonMetadata null.JSON) (domain.Metadata, error) {
+	var metadata domain.Metadata
+
+	if jsonMetadata.IsZero() {
+		return metadata, nil
+	}
+
+	err := json.Unmarshal(jsonMetadata.JSON, &metadata)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshalling metadata: %v", err)
+	}
+
+	return metadata, nil
+}
+
+func mapRowsToDomainEvents(rows []*models.Event) ([]domain.Event, error) {
+	events := make([]domain.Event, len(rows))
+
+	for i, row := range rows {
+		metadata, err := mapJsonToDomainMetadata(row.Metadata)
+		if err != nil {
+			return nil, fmt.Errorf("error unmarshalling event metadata: %v", err)
+		}
+
+		actorMetadata, err := mapJsonToDomainMetadata(row.ActorMetadata)
+		if err != nil {
+			return nil, fmt.Errorf("error unmarshalling actor metadata: %v", err)
+		}
+
+		targets, err := mapRowsToDomainTargets(row.R.EventTargets)
+		if err != nil {
+			return nil, err
+		}
+
+		events[i] = domain.MarshallToEvent(
+			row.ID,
+			row.SourceID,
+			row.Version,
+			domain.Actor{
+				ID:        row.ActorID,
+				ActorType: row.ActorType,
+				Name:      row.ActorName.Ptr(),
+				Metadata:  &actorMetadata,
+			},
+			targets,
+			domain.Context{
+				Location:  row.ContextLocation,
+				UserAgent: row.ContextUserAgent.Ptr(),
+			},
+			&metadata,
+			row.OccurredAt,
+		)
+	}
+
+	return events, nil
+}
+
+func mapRowsToDomainTargets(rows []*models.EventTarget) ([]domain.Target, error) {
+	targets := make([]domain.Target, len(rows))
+
+	for i, row := range rows {
+		metadata, err := mapJsonToDomainMetadata(row.Metadata)
+		if err != nil {
+			return nil, err
+		}
+
+		targets[i] = domain.Target{
+			ID:         row.ID,
+			Name:       row.Name.Ptr(),
+			TargetType: row.Type,
+			Metadata:   &metadata,
+		}
+	}
+
+	return targets, nil
+}
+
+func mapToLimit(limit *int) int {
+	if limit == nil {
+		return 50
+	}
+
+	return *limit
+}
+
+func mapLastItemCursor(rows []*models.Event) (string, error) {
+	if len(rows) == 0 {
+		return "", nil
+	}
+
+	lastRow := rows[len(rows)-1]
+	return marshallCursor(lastRow.ID, lastRow.OccurredAt)
 }
