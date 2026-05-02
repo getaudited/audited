@@ -91,6 +91,7 @@ func registerMiddlewares(router *echo.Echo, spec *openapi3.T, config Config) {
 			echo.HeaderContentType,
 			echo.HeaderAccept,
 			echo.HeaderAuthorization,
+			"x-token",
 		},
 	}))
 

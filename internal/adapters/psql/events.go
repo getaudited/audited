@@ -29,7 +29,12 @@ func NewEventsPsqlRepository(db boil.ContextExecutor) EventsPsqlRepository {
 	}
 }
 
-func (r EventsPsqlRepository) Save(ctx context.Context, e domain.Event) error {
+func (r EventsPsqlRepository) Save(ctx context.Context, e domain.Event, token domain.TokenValue) error {
+	err := r.validateToken(ctx, token, e.SourceID())
+	if err != nil {
+		return err
+	}
+
 	row, err := mapDomainEventToModelEvent(e)
 	if err != nil {
 		return err
@@ -52,6 +57,22 @@ func (r EventsPsqlRepository) Save(ctx context.Context, e domain.Event) error {
 	err = row.AddEventTargets(ctx, r.db, true, targetRows...)
 	if err != nil {
 		return fmt.Errorf("error saving event_targets: %v", err)
+	}
+
+	return nil
+}
+
+func (r EventsPsqlRepository) validateToken(ctx context.Context, token domain.TokenValue, sourceID domain.ID) error {
+	exists, err := models.Tokens(
+		models.TokenWhere.Value.EQ(token.String()),
+		models.TokenWhere.SourceID.EQ(sourceID.String()),
+	).Exists(ctx, r.db)
+	if err != nil {
+		return fmt.Errorf("error validating token: %v", err)
+	}
+
+	if !exists {
+		return domain.ErrTokenNotFound
 	}
 
 	return nil

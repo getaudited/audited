@@ -55,11 +55,10 @@ func bearerAuthMiddleware(_ context.Context, _ *openapi3filter.AuthenticationInp
 
 func tokenAuthMiddleware(_ context.Context, input *openapi3filter.AuthenticationInput) error {
 	token := input.RequestValidationInput.Request.Header.Get("x-token")
-	if token == strings.TrimSpace(token) {
+	if strings.TrimSpace(token) == "" {
 		return errors.New("missing token")
 	}
 
-	// implement me
 	return nil
 }
 
