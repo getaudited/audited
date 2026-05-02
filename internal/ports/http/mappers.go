@@ -40,3 +40,33 @@ func mapToSource(s domain.Source) Source {
 		UpdatedAt: s.UpdatedAt(),
 	}
 }
+
+func mapRequestToDomainEvent(body CreateEventJSONBody) (domain.Event, error) {
+	targets := make([]domain.Target, len(body.Targets))
+	for i, target := range body.Targets {
+		targets[i] = domain.Target{
+			ID:         target.Id,
+			Name:       target.Name,
+			TargetType: target.Type,
+			Metadata:   target.Metadata,
+		}
+	}
+
+	return domain.NewEvent(
+		domain.ID(body.SourceId),
+		body.Version,
+		domain.Actor{
+			ID:        body.Actor.Id,
+			ActorType: body.Actor.Type,
+			Name:      body.Actor.Name,
+			Metadata:  body.Actor.Metadata,
+		},
+		targets,
+		domain.Context{
+			Location:  body.Context.Location,
+			UserAgent: body.Context.UserAgent,
+		},
+		body.Metadata,
+		body.OccurredAt,
+	)
+}

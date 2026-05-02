@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+var ErrTokenNotFound = errors.New("token not found")
+
 type TokenValue string
 
 func (t TokenValue) String() string {

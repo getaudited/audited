@@ -8,6 +8,7 @@ import (
 
 type CreateEvent struct {
 	Event domain.Event
+	Token domain.TokenValue
 }
 
 type CreateEventHandler struct {
@@ -21,5 +22,5 @@ func NewCreateEventHandler(repo domain.EventRepository) CreateEventHandler {
 }
 
 func (c CreateEventHandler) Execute(ctx context.Context, cmd CreateEvent) error {
-	return c.repo.Save(ctx, cmd.Event)
+	return c.repo.Save(ctx, cmd.Event, cmd.Token)
 }

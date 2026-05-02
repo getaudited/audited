@@ -7,5 +7,5 @@ type EventTypeRepository interface {
 }
 
 type EventRepository interface {
-	Save(ctx context.Context, evt Event) error
+	Save(ctx context.Context, evt Event, token TokenValue) error
 }

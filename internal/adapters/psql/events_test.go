@@ -22,12 +22,14 @@ func TestEventsPsqlRepository_Save(t *testing.T) {
 
 	// GIVEN
 	source := fixtureSource(t)
+	token := fixtureToken(t, source.ID())
 	storeSource(t, source)
+	storeToken(t, token)
 
 	event := fixtureEvent(t, source.ID())
 
 	// WHEN
-	err := repo.Save(context.Background(), event)
+	err := repo.Save(context.Background(), event, token.Value())
 	require.NoError(t, err)
 
 	// THEN
@@ -61,19 +63,20 @@ func TestEventsPsqlRepository_Save(t *testing.T) {
 	}
 }
 
-func TestEventsPsqlRepository_SaveErrSourceNotFoundWhileSavingEvent(t *testing.T) {
+func TestEventsPsqlRepository_SaveErrTokenNotFound(t *testing.T) {
 	repo := psql.NewEventsPsqlRepository(db)
 
 	// GIVEN
 	nonExistentSourceID := domain.NewID()
+	nonExistentToken := domain.TokenValue("some-value")
 
 	event := fixtureEvent(t, nonExistentSourceID)
 
 	// WHEN
-	err := repo.Save(context.Background(), event)
+	err := repo.Save(context.Background(), event, nonExistentToken)
 
 	// THEN
-	require.ErrorIs(t, err, domain.ErrSourceNotFoundWhileSavingEvent)
+	require.ErrorIs(t, err, domain.ErrTokenNotFound)
 }
 
 func requireEqualMetadata(t *testing.T, expected *domain.Metadata, actual null.JSON) {
@@ -104,6 +107,11 @@ func findStoredTarget(targets []*models.EventTarget, id string) *models.EventTar
 func storeSource(t *testing.T, source *domain.Source) {
 	repo := psql.NewSourcesPsqlRepository(db)
 	require.NoError(t, repo.Save(ctx, source))
+}
+
+func storeToken(t *testing.T, token *domain.Token) {
+	repo := psql.NewTokensPsqlRepository(db)
+	require.NoError(t, repo.Save(ctx, token))
 }
 
 func queryEventByID(t *testing.T, eventID domain.ID) *models.Event {
