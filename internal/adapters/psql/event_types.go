@@ -3,13 +3,14 @@ package psql
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
+
 	"github.com/firminochangani/audited/internal/adapters/models"
 	"github.com/firminochangani/audited/internal/domain"
-	"github.com/friendsofgo/errors"
 )
 
 type EventTypePsqlRepository struct {
@@ -41,9 +42,7 @@ func (r EventTypePsqlRepository) Save(ctx context.Context, et domain.EventType) 
 }
 
 func (r EventTypePsqlRepository) FindByAction(ctx context.Context, action string) (*domain.EventType, error) {
-	row, err := models.EventTypes(
-		models.EventTypeWhere.Action.EQ(action),
-	).One(ctx, r.db)
+	row, err := models.EventTypes(models.EventTypeWhere.Action.EQ(action)).One(ctx, r.db)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrEventTypeNotFound
 	}
@@ -68,6 +67,6 @@ func (r EventTypePsqlRepository) Delete(ctx context.Context, action string) erro
 	if err != nil {
 		return fmt.Errorf("error deleting event_type with action '%s' due to: %v", action, err)
 	}
-	
+
 	return nil
 }
