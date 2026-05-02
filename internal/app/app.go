@@ -23,6 +23,7 @@ type QueryHandler[Q, R any] interface {
 type Commands struct {
 	CreateEvent     CommandHandler[command.CreateEvent]
 	CreateEventType CommandHandler[command.CreateEventType]
+	DeleteEventType CommandHandler[command.DeleteEventType]
 	CreateExport    CommandHandler[any]
 	CreateSource    CommandHandler[command.CreateSource]
 	CreateToken     CommandHandler[command.CreateToken]
@@ -31,7 +32,7 @@ type Commands struct {
 
 type Queries struct {
 	EventTypes        QueryHandler[any, query.Pagination[domain.EventType]]
-	EventTypeByAction QueryHandler[query.EventTypeByAction, *domain.EventType]
+	EventTypeByAction QueryHandler[query.EventTypeByName, *domain.EventType]
 	Events            QueryHandler[query.AllEvents, query.CursorPaginationResult[domain.Event]]
 	EventByID         QueryHandler[any, domain.Event]
 	AllSources        QueryHandler[query.AllSources, query.Pagination[domain.Source]]

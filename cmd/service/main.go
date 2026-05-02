@@ -76,6 +76,7 @@ func (s *Service) Run() error {
 	application := &app.App{
 		Commands: app.Commands{
 			CreateEventType: command.NewCreateEventTypeHandler(eventTypeRepository),
+			DeleteEventType: command.NewDeleteEventTypeHandler(eventTypeRepository),
 			CreateEvent:     command.NewCreateEventHandler(eventsRepository),
 			CreateSource:    command.NewCreateSourceHandler(sourcesRepository),
 			CreateToken:     command.NewCreateTokenHandler(tokensRepository),

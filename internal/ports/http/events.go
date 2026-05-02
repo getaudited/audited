@@ -23,7 +23,7 @@ func (h handlers) CreateEvent(c echo.Context, params CreateEventParams) error {
 		return NewBadRequestError(err, "unable to create event")
 	}
 
-	err = h.application.Commands.CreateEvent.Execute(ctxFromEcho(c), command.CreateEvent{
+	err = h.application.Commands.CreateEvent.Execute(mapEchoCtxToCtx(c), command.CreateEvent{
 		Event: event,
 		Token: domain.TokenValue(params.XToken),
 	})
@@ -38,7 +38,7 @@ func (h handlers) CreateEvent(c echo.Context, params CreateEventParams) error {
 }
 
 func (h handlers) GetEvents(c echo.Context, params GetEventsParams) error {
-	result, err := h.application.Queries.Events.Execute(ctxFromEcho(c), query.AllEvents{
+	result, err := h.application.Queries.Events.Execute(mapEchoCtxToCtx(c), query.AllEvents{
 		SourceID: domain.ID(params.SourceId),
 		CursorPaginationParams: query.CursorPaginationParams{
 			Limit:           params.Limit,

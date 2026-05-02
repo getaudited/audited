@@ -6,7 +6,7 @@ import (
 	"github.com/firminochangani/audited/internal/domain"
 )
 
-type EventTypeByAction struct {
+type EventTypeByName struct {
 	Action string
 }
 
@@ -20,6 +20,6 @@ func NewEventTypeByActionHandler(finder eventTypeFinder) EventTypeByActionHandle
 	}
 }
 
-func (e EventTypeByActionHandler) Execute(ctx context.Context, q EventTypeByAction) (*domain.EventType, error) {
+func (e EventTypeByActionHandler) Execute(ctx context.Context, q EventTypeByName) (*domain.EventType, error) {
 	return e.finder.FindByAction(ctx, q.Action)
 }

@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"net/http"
 	"time"
 
@@ -36,7 +35,7 @@ func (h handlers) CreateEventType(c echo.Context) error {
 		UpdatedAt:                    time.Now(),
 	}
 
-	err = h.application.Commands.CreateEventType.Execute(ctxFromEcho(c), command.CreateEventType{
+	err = h.application.Commands.CreateEventType.Execute(mapEchoCtxToCtx(c), command.CreateEventType{
 		EventType: eventType,
 	})
 	if err != nil {
@@ -54,9 +53,9 @@ func (h handlers) CreateEventType(c echo.Context) error {
 	})
 }
 
-func (h handlers) GetEventTypeByID(c echo.Context, eventTypeAction EventTypeAction) error {
-	et, err := h.application.Queries.EventTypeByAction.Execute(ctxFromEcho(c), query.EventTypeByAction{
-		Action: eventTypeAction,
+func (h handlers) GetEventTypeByID(c echo.Context, action EventTypeAction) error {
+	et, err := h.application.Queries.EventTypeByAction.Execute(mapEchoCtxToCtx(c), query.EventTypeByName{
+		Action: action,
 	})
 	if errors.Is(err, domain.ErrEventTypeNotFound) {
 		return NewNotFoundError(err, "event-type-not-found")
@@ -78,6 +77,13 @@ func (h handlers) GetEventTypeByID(c echo.Context, eventTypeAction EventTypeActi
 	})
 }
 
-func ctxFromEcho(c echo.Context) context.Context {
-	return c.Request().Context()
+func (h handlers) DeleteEventType(c echo.Context, action EventTypeAction) error {
+	err := h.application.Commands.DeleteEventType.Execute(mapEchoCtxToCtx(c), command.DeleteEventType{
+		Action: action,
+	})
+	if err != nil {
+		return NewHandlerError(err, "error-deleting-event-type")
+	}
+
+	return c.NoContent(http.StatusNoContent)
 }

@@ -63,7 +63,7 @@ func TestEventsPsqlRepository_Save(t *testing.T) {
 	}
 }
 
-func TestEventsPsqlRepository_SaveErrTokenNotFound(t *testing.T) {
+func TestEventsPsqlRepository_Save_ErrTokenNotFound(t *testing.T) {
 	repo := psql.NewEventsPsqlRepository(db)
 
 	// GIVEN
