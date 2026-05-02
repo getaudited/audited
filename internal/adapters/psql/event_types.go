@@ -3,13 +3,14 @@ package psql
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
+
 	"github.com/firminochangani/audited/internal/adapters/models"
 	"github.com/firminochangani/audited/internal/domain"
-	"github.com/friendsofgo/errors"
 )
 
 type EventTypePsqlRepository struct {
@@ -20,7 +21,7 @@ func NewEventTypePsqlRepository(db boil.ContextExecutor) EventTypePsqlRepository
 	return EventTypePsqlRepository{db: db}
 }
 
-func (a EventTypePsqlRepository) Save(ctx context.Context, et domain.EventType) error {
+func (r EventTypePsqlRepository) Save(ctx context.Context, et domain.EventType) error {
 	row := models.EventType{
 		ID:                           et.Id,
 		Version:                      et.Version,
@@ -32,7 +33,7 @@ func (a EventTypePsqlRepository) Save(ctx context.Context, et domain.EventType) 
 		UpdatedAt:                    et.UpdatedAt,
 	}
 
-	err := row.Insert(ctx, a.db, boil.Infer())
+	err := row.Insert(ctx, r.db, boil.Infer())
 	if err != nil {
 		return fmt.Errorf("unable to save event type: %v", err)
 	}
@@ -40,10 +41,8 @@ func (a EventTypePsqlRepository) Save(ctx context.Context, et domain.EventType) 
 	return nil
 }
 
-func (a EventTypePsqlRepository) FindByAction(ctx context.Context, action string) (*domain.EventType, error) {
-	row, err := models.EventTypes(
-		models.EventTypeWhere.Action.EQ(action),
-	).One(ctx, a.db)
+func (r EventTypePsqlRepository) FindByAction(ctx context.Context, action string) (*domain.EventType, error) {
+	row, err := models.EventTypes(models.EventTypeWhere.Action.EQ(action)).One(ctx, r.db)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrEventTypeNotFound
 	}
@@ -61,4 +60,13 @@ func (a EventTypePsqlRepository) FindByAction(ctx context.Context, action string
 		CreatedAt:                    row.CreatedAt,
 		UpdatedAt:                    row.UpdatedAt,
 	}, nil
+}
+
+func (r EventTypePsqlRepository) Delete(ctx context.Context, action string) error {
+	_, err := models.EventTypes(models.EventTypeWhere.Action.EQ(action)).DeleteAll(ctx, r.db)
+	if err != nil {
+		return fmt.Errorf("error deleting event_type with action '%s' due to: %v", action, err)
+	}
+
+	return nil
 }

@@ -3,7 +3,8 @@ package domain
 import "context"
 
 type EventTypeRepository interface {
-	Save(ctx context.Context, evt EventType) error
+	Delete(ctx context.Context, action string) error
+	Save(ctx context.Context, eventType EventType) error
 }
 
 type EventRepository interface {

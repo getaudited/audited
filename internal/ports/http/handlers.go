@@ -15,16 +15,12 @@ type handlers struct {
 	application *app.App
 }
 
-func (h handlers) ArchiveEventType(c echo.Context, eventId EventId) error {
-	return nil
-}
-
 func (h handlers) GetEventTypes(c echo.Context) error {
 	return nil
 }
 
 func (h handlers) DeleteToken(c echo.Context, sourceId SourceId, tokenId TokenId) error {
-	err := h.application.Commands.DeleteToken.Execute(ctxFromEcho(c), command.DeleteToken{
+	err := h.application.Commands.DeleteToken.Execute(mapEchoCtxToCtx(c), command.DeleteToken{
 		TokenID:  domain.ID(tokenId),
 		SourceID: domain.ID(sourceId),
 	})
@@ -47,7 +43,7 @@ func (h handlers) CreateToken(c echo.Context, sourceId SourceId) error {
 		return NewBadRequestError(err, "error-validating-data")
 	}
 
-	err = h.application.Commands.CreateToken.Execute(ctxFromEcho(c), command.CreateToken{
+	err = h.application.Commands.CreateToken.Execute(mapEchoCtxToCtx(c), command.CreateToken{
 		Token: token,
 	})
 	if err != nil {

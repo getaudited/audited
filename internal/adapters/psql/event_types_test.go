@@ -1,6 +1,7 @@
 package psql_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -71,6 +72,32 @@ func TestEventTypePsqlRepository_FindByAction(t *testing.T) {
 	})
 }
 
+func TestEventTypePsqlRepository_Delete(t *testing.T) {
+	repo := psql.NewEventTypePsqlRepository(db)
+
+	t.Run("deletes existing event type", func(t *testing.T) {
+		// GIVEN
+		et := fixtureEventType()
+		require.NoError(t, repo.Save(ctx, et))
+
+		// WHEN
+		err := repo.Delete(ctx, et.Action)
+		require.NoError(t, err)
+
+		// THEN
+		_, err = repo.FindByAction(ctx, et.Action)
+		require.ErrorIs(t, err, domain.ErrEventTypeNotFound)
+	})
+
+	t.Run("no error when action does not exist", func(t *testing.T) {
+		// WHEN
+		err := repo.Delete(ctx, gofakeit.Word())
+
+		// THEN
+		require.NoError(t, err)
+	})
+}
+
 func queryEventTypeByID(t *testing.T, id string) *models.EventType {
 	t.Helper()
 
@@ -87,7 +114,7 @@ func fixtureEventType() domain.EventType {
 	return domain.EventType{
 		Id:                           ulid.Make().String(),
 		Version:                      1,
-		Action:                       gofakeit.Word(),
+		Action:                       fmt.Sprintf("%s_%d", gofakeit.Word(), time.Now().UnixMilli()),
 		TargetTypes:                  []string{"user", "team"},
 		ShouldValidateMetadataSchema: false,
 		Schema:                       nil,

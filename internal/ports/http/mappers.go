@@ -1,8 +1,11 @@
 package http
 
 import (
+	"context"
+
 	"github.com/firminochangani/audited/internal/app/query"
 	"github.com/firminochangani/audited/internal/domain"
+	"github.com/labstack/echo/v4"
 )
 
 func mapToQueryPaginationParams(page, limit *int) query.PaginationParams {
@@ -69,4 +72,8 @@ func mapRequestToDomainEvent(body CreateEventJSONBody) (domain.Event, error) {
 		body.Metadata,
 		body.OccurredAt,
 	)
+}
+
+func mapEchoCtxToCtx(c echo.Context) context.Context {
+	return c.Request().Context()
 }

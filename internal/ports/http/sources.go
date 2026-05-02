@@ -21,7 +21,7 @@ func (h handlers) CreateSource(c echo.Context) error {
 		return err
 	}
 
-	err = h.application.Commands.CreateSource.Execute(ctxFromEcho(c), command.CreateSource{
+	err = h.application.Commands.CreateSource.Execute(mapEchoCtxToCtx(c), command.CreateSource{
 		Source: source,
 	})
 	if err != nil {
@@ -37,7 +37,7 @@ func (h handlers) CreateSource(c echo.Context) error {
 }
 
 func (h handlers) GetSources(c echo.Context, params GetSourcesParams) error {
-	result, err := h.application.Queries.AllSources.Execute(ctxFromEcho(c), query.AllSources{
+	result, err := h.application.Queries.AllSources.Execute(mapEchoCtxToCtx(c), query.AllSources{
 		PaginationParams: mapToQueryPaginationParams(params.Page, params.Limit),
 	})
 	if err != nil {
