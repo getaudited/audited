@@ -90,8 +90,6 @@ func (s *Service) Run() error {
 		},
 	}
 
-	fmt.Println("config.AllowedCorsOrigin", config.AllowedCorsOrigin)
-
 	httpPort, err := http.NewServer(http.Config{
 		Application:       application,
 		Port:              config.HttpPort,
