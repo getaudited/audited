@@ -2,12 +2,17 @@ package main
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
+	"github.com/friendsofgo/errors"
 	"github.com/kelseyhightower/envconfig"
 	_ "github.com/lib/pq"
 	"golang.org/x/sync/errgroup"
@@ -39,6 +44,7 @@ type Config struct {
 	AllowedCorsOrigin []string `envconfig:"ALLOWED_CORS_ORIGIN"`
 	DebugMode         bool     `envconfig:"DEBUG_MODE"`
 	AmqpUrl           string   `envconfig:"AMQP_URL"`
+	JWTPublicKey      string   `envconfig:"JWT_PUBLIC_KEY" required:"true"`
 }
 
 type Service struct {
@@ -91,6 +97,11 @@ func (s *Service) Run() error {
 		},
 	}
 
+	jwtPublicKey, err := s.parsePublicKey(config.JWTPublicKey)
+	if err != nil {
+		return err
+	}
+
 	httpPort, err := http.NewServer(http.Config{
 		Application:       application,
 		Port:              config.HttpPort,
@@ -98,6 +109,7 @@ func (s *Service) Run() error {
 		Logger:            logger,
 		IsDebug:           config.DebugMode,
 		Context:           ctx,
+		JwtPublicKey:      jwtPublicKey,
 	})
 	if err != nil {
 		return err
@@ -140,4 +152,25 @@ func (s *Service) loadEnvVariables() (*Config, error) {
 	}
 
 	return config, nil
+}
+
+func (s *Service) parsePublicKey(content string) (*ecdsa.PublicKey, error) {
+	content = strings.ReplaceAll(content, `\n`, "\n")
+
+	block, _ := pem.Decode([]byte(content))
+	if block == nil || block.Type != "PUBLIC KEY" {
+		return nil, errors.New("error decoding public key's PEM block")
+	}
+
+	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing public key: %v", err)
+	}
+
+	parsedPublicKey, ok := pub.(*ecdsa.PublicKey)
+	if !ok {
+		return nil, errors.New("the key provided is not an ECDS public key")
+	}
+
+	return parsedPublicKey, nil
 }
