@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"net"
@@ -30,6 +31,7 @@ type Config struct {
 	Logger            *logs.Logger
 	IsDebug           bool
 	Context           context.Context
+	JwtPublicKey      *ecdsa.PublicKey
 }
 
 func NewServer(config Config) (*Server, error) {
@@ -96,6 +98,9 @@ func registerMiddlewares(router *echo.Echo, spec *openapi3.T, config Config) {
 	}))
 
 	spec.Servers = nil
+
+	jwtMiddleware := NewJWTMiddleware(config.JwtPublicKey)
+
 	router.Use(oapimiddleware.OapiRequestValidatorWithOptions(
 		spec,
 		&oapimiddleware.Options{
@@ -103,7 +108,7 @@ func registerMiddlewares(router *echo.Echo, spec *openapi3.T, config Config) {
 			Options: openapi3filter.Options{
 				AuthenticationFunc: func(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
 					if input.SecuritySchemeName == strings.TrimSuffix(BearerAuthScopes, ".Scopes") {
-						return bearerAuthMiddleware(ctx, input)
+						return jwtMiddleware.Authenticate(ctx, input)
 					}
 
 					if input.SecuritySchemeName == strings.TrimSuffix(TokenAuthScopes, ".Scopes") {

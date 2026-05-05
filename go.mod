@@ -9,6 +9,7 @@ require (
 	github.com/brianvoe/gofakeit/v7 v7.14.1
 	github.com/friendsofgo/errors v0.9.2
 	github.com/getkin/kin-openapi v0.135.0
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/labstack/echo/v4 v4.15.1
 	github.com/lib/pq v1.12.3

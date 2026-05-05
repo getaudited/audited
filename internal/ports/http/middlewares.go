@@ -2,6 +2,8 @@ package http
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -9,6 +11,7 @@ import (
 	"github.com/firminochangani/audited/internal/common/logs"
 	"github.com/friendsofgo/errors"
 	"github.com/getkin/kin-openapi/openapi3filter"
+	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -48,8 +51,34 @@ func loggerMiddleware(logger *logs.Logger, isDebug bool) echo.MiddlewareFunc {
 	})
 }
 
-func bearerAuthMiddleware(_ context.Context, _ *openapi3filter.AuthenticationInput) error {
-	// implement me
+type JWTMiddleware struct {
+	publicKey *ecdsa.PublicKey
+}
+
+func NewJWTMiddleware(publicKey *ecdsa.PublicKey) *JWTMiddleware {
+	return &JWTMiddleware{
+		publicKey: publicKey,
+	}
+}
+
+func (m *JWTMiddleware) Authenticate(_ context.Context, input *openapi3filter.AuthenticationInput) error {
+	authToken := input.RequestValidationInput.Request.Header.Get(echo.HeaderAuthorization)
+	if strings.TrimSpace(authToken) == "" {
+		return errors.New("missing token")
+	}
+
+	_, err := jwt.Parse(strings.TrimPrefix(authToken, "Bearer "), func(token *jwt.Token) (interface{}, error) {
+		fmt.Println("TOKEN", token, m.publicKey)
+		if _, ok := token.Method.(*jwt.SigningMethodECDSA); !ok {
+			return nil, errors.New("incorrect signing method")
+		}
+
+		return m.publicKey, nil
+	})
+	if err != nil {
+		return fmt.Errorf("error parsing the JWT provided: %v", err)
+	}
+
 	return nil
 }
 

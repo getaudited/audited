@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 	ctx, cancel = context.WithTimeout(context.Background(), time.Minute*2)
 	defer cancel()
 
-	// Wait for postgres and rabbitmq and other default dependencies running in containers
+	// Wait for postgres and other dependencies running in containers
 	wait_for.Run()
 
 	db, err = postgres.Connect(ctx, os.Getenv("DATABASE_URL"))
