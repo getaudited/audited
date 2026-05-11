@@ -68,7 +68,6 @@ func (m *JWTMiddleware) Authenticate(_ context.Context, input *openapi3filter.Au
 	}
 
 	_, err := jwt.Parse(strings.TrimPrefix(authToken, "Bearer "), func(token *jwt.Token) (interface{}, error) {
-		fmt.Println("TOKEN", token, m.publicKey)
 		if _, ok := token.Method.(*jwt.SigningMethodECDSA); !ok {
 			return nil, errors.New("incorrect signing method")
 		}
