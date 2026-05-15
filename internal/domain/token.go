@@ -10,6 +10,8 @@ import (
 
 var ErrTokenNotFound = errors.New("token not found")
 
+const tokenMaxUnmaskedCharacters = 8
+
 type TokenValue string
 
 func (t TokenValue) String() string {
@@ -58,6 +60,16 @@ func (t *Token) Value() TokenValue {
 	return t.value
 }
 
+func (t *Token) MaskedValue() string {
+	result := ""
+
+	for i := 0; i < len(t.value)-tokenMaxUnmaskedCharacters; i++ {
+		result += "*"
+	}
+
+	return result + t.value.String()[len(t.value)-tokenMaxUnmaskedCharacters:]
+}
+
 func (t *Token) Name() string {
 	return t.name
 }
@@ -79,4 +91,5 @@ func MarshallToToken(id, sourceID, value, name string, createdAt time.Time) *Tok
 type TokenRepository interface {
 	Save(ctx context.Context, token *Token) error
 	Delete(ctx context.Context, id, sourceID ID) error
+	QueryAll(ctx context.Context, sourceID ID) ([]*Token, error)
 }

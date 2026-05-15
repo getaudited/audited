@@ -74,6 +74,22 @@ func mapRequestToDomainEvent(body CreateEventJSONBody) (domain.Event, error) {
 	)
 }
 
+func mapToTokens(tokens []*domain.Token) []Token {
+	r := make([]Token, len(tokens))
+
+	for i, token := range tokens {
+		r[i] = Token{
+			Id:        token.ID().String(),
+			Value:     token.MaskedValue(),
+			Name:      token.Name(),
+			SourceId:  token.SourceID().String(),
+			CreatedAt: token.CreatedAt(),
+		}
+	}
+
+	return r
+}
+
 func mapEchoCtxToCtx(c echo.Context) context.Context {
 	return c.Request().Context()
 }

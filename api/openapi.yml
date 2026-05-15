@@ -161,6 +161,25 @@ paths:
         default:
           $ref: "#/components/responses/InternalServerError"
   /x/v1/sources/{source_id}/token:
+    get:
+      summary: List tokens
+      description: ...
+      tags:
+        - Admin API
+      operationId: getTokens
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - $ref: '#/components/parameters/source_id'
+      responses:
+        "200":
+          description: Return a list of tokens per source
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenList"
+        default:
+          $ref: "#/components/responses/InternalServerError"
     post:
       summary: Create token
       description: ...
@@ -542,6 +561,13 @@ components:
           type: string
           format: date-time
           x-order: 5
+    TokenList:
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Token'
 
     # Pagination
     Pagination:

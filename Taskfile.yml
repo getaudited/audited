@@ -135,3 +135,7 @@ tasks:
   git:clean:
     cmds:
       - git branch | grep -vE "main" | xargs git branch -D
+
+  jwt:
+    cmds:
+      - go run ./cmd/jwt-generator
