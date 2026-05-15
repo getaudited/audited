@@ -36,6 +36,7 @@ type Queries struct {
 	Events            QueryHandler[query.AllEvents, query.CursorPaginationResult[domain.Event]]
 	EventByID         QueryHandler[any, domain.Event]
 	AllSources        QueryHandler[query.AllSources, query.Pagination[domain.Source]]
+	AllTokens         QueryHandler[query.AllTokens, []*domain.Token]
 }
 
 type App struct {

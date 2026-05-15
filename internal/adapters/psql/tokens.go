@@ -18,20 +18,29 @@ func NewTokensPsqlRepository(db *sql.DB) *TokensPsqlRepository {
 	return &TokensPsqlRepository{db: db}
 }
 
-func (t TokensPsqlRepository) Save(ctx context.Context, token *domain.Token) error {
+func (r TokensPsqlRepository) Save(ctx context.Context, token *domain.Token) error {
 	row := mapDomainTokenToModelToken(token)
-	return row.Insert(ctx, t.db, boil.Infer())
+	return row.Insert(ctx, r.db, boil.Infer())
 }
 
-func (t TokensPsqlRepository) Delete(ctx context.Context, id, sourceID domain.ID) error {
+func (r TokensPsqlRepository) Delete(ctx context.Context, id, sourceID domain.ID) error {
 	row := models.Token{
 		ID:       id.String(),
 		SourceID: sourceID.String(),
 	}
-	_, err := row.Delete(ctx, t.db)
+	_, err := row.Delete(ctx, r.db)
 	if err != nil {
 		return fmt.Errorf("error deleting token with id '%s': %v", id, err)
 	}
 
 	return nil
+}
+
+func (r TokensPsqlRepository) QueryAll(ctx context.Context, sourceID domain.ID) ([]*domain.Token, error) {
+	rows, err := models.Tokens(models.TokenWhere.SourceID.EQ(sourceID.String())).All(ctx, r.db)
+	if err != nil {
+		return nil, fmt.Errorf("error querying tokens by project_id '%s': %v", sourceID, err)
+	}
+
+	return mapRowsToDomainTokens(rows), nil
 }

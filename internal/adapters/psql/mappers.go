@@ -216,3 +216,13 @@ func mapLastItemCursor(rows []*models.Event) (string, error) {
 	lastRow := rows[len(rows)-1]
 	return marshallCursor(lastRow.ID, lastRow.OccurredAt)
 }
+
+func mapRowsToDomainTokens(rows []*models.Token) []*domain.Token {
+	r := make([]*domain.Token, len(rows))
+
+	for i, row := range rows {
+		r[i] = domain.MarshallToToken(row.ID, row.SourceID, row.Value, row.Name, row.CreatedAt)
+	}
+
+	return r
+}

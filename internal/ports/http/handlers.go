@@ -5,6 +5,7 @@ import (
 
 	"github.com/firminochangani/audited/internal/app"
 	"github.com/firminochangani/audited/internal/app/command"
+	"github.com/firminochangani/audited/internal/app/query"
 	"github.com/firminochangani/audited/internal/domain"
 	"github.com/labstack/echo/v4"
 )
@@ -56,6 +57,19 @@ func (h handlers) CreateToken(c echo.Context, sourceId SourceId) error {
 		Id:        token.ID().String(),
 		Value:     token.Value().String(),
 		CreatedAt: token.CreatedAt(),
+	})
+}
+
+func (h handlers) GetTokens(c echo.Context, sourceId SourceId) error {
+	tokens, err := h.application.Queries.AllTokens.Execute(mapEchoCtxToCtx(c), query.AllTokens{
+		SourceID: domain.ID(sourceId),
+	})
+	if err != nil {
+		return NewHandlerError(err, "error-querying-tokens")
+	}
+
+	return c.JSON(http.StatusOK, TokenList{
+		Data: mapToTokens(tokens),
 	})
 }
 
