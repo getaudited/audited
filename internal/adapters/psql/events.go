@@ -87,7 +87,6 @@ func (r EventsPsqlRepository) QueryAll(
 	params query.AllEventsParams,
 	pagination query.CursorPaginationParams,
 ) (query.CursorPaginationResult[domain.Event], error) {
-	boil.DebugMode = true
 	opts := []qm.QueryMod{
 		qm.Limit(mapToLimit(pagination.Limit)),
 		qm.OrderBy("occurred_at DESC, id DESC"),
