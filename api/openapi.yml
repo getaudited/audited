@@ -238,6 +238,11 @@ paths:
         - $ref: '#/components/parameters/source_id_query'
         - $ref: '#/components/parameters/start_from_cursor'
         - $ref: '#/components/parameters/pagination_limit'
+        - $ref: '#/components/parameters/events_by_actor_id'
+        - $ref: '#/components/parameters/events_by_actor_name'
+        - $ref: '#/components/parameters/events_by_target_id'
+        - $ref: '#/components/parameters/events_start_date'
+        - $ref: '#/components/parameters/events_end_date'
       responses:
         "200":
           description: Event stream using cursor-based pagination.
@@ -389,6 +394,38 @@ components:
       required: false
       schema:
         type: string
+    events_by_actor_name:
+      name: actor_name
+      in: query
+      required: false
+      schema:
+        type: string
+    events_by_actor_id:
+      name: actor_id
+      in: query
+      required: false
+      schema:
+        type: string
+    events_by_target_id:
+      name: target_id
+      in: query
+      required: false
+      schema:
+        type: string
+    events_start_date:
+      name: start_date
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+    events_end_date:
+      name: end_date
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
     pagination_limit:
       name: limit
       description: The number of items per page

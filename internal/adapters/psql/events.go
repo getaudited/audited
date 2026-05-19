@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/aarondl/sqlboiler/v4/queries/qm"
 	"github.com/lib/pq"
@@ -15,9 +16,12 @@ import (
 	"github.com/firminochangani/audited/internal/domain"
 )
 
-const (
-	FkEventBelongsToSource = "fk_event_belongs_to_source"
-)
+const FkEventBelongsToSource = "fk_event_belongs_to_source"
+
+type Cursor struct {
+	OccurredAt time.Time `json:"occurred_at"`
+	EventID    string    `json:"event_id"`
+}
 
 type EventsPsqlRepository struct {
 	db boil.ContextExecutor
@@ -80,28 +84,55 @@ func (r EventsPsqlRepository) validateToken(ctx context.Context, token domain.To
 
 func (r EventsPsqlRepository) QueryAll(
 	ctx context.Context,
-	sourceID domain.ID,
-	params query.CursorPaginationParams,
+	params query.AllEventsParams,
+	pagination query.CursorPaginationParams,
 ) (query.CursorPaginationResult[domain.Event], error) {
-	queryOptions := []qm.QueryMod{
-		qm.Limit(mapToLimit(params.Limit)),
+	opts := []qm.QueryMod{
+		qm.Limit(mapToLimit(pagination.Limit)),
 		qm.OrderBy("occurred_at DESC, id DESC"),
-		qm.Load(models.EventRels.EventTargets),
-		models.EventWhere.SourceID.EQ(sourceID.String()),
+		models.EventWhere.SourceID.EQ(params.SourceID.String()),
 	}
 
-	if params.StartFromCursor != nil {
-		cursor, err := unmarshallCursor(*params.StartFromCursor)
+	if !params.ActorID.Empty() {
+		opts = append(opts, models.EventWhere.ActorID.EQ(params.ActorID.String()))
+	}
+
+	if params.ActorName != nil {
+		opts = append(opts, models.EventWhere.ActorName.ILIKE(null.StringFromPtr(params.ActorName)))
+	}
+
+	if params.TargetID.Empty() {
+		opts = append(opts, qm.Load(models.EventRels.EventTargets))
+	} else {
+		opts = append(
+			opts,
+			// Fetch only events by the given target_id;
+			qm.InnerJoin("event_targets et ON et.event_id = events.id AND et.id = ?", params.TargetID.String()),
+			// Fetch the events targets in a separate SQL call by providing ids of the previously fetched events;
+			qm.Load(models.EventRels.EventTargets, models.EventTargetWhere.ID.EQ(params.TargetID.String())),
+		)
+	}
+
+	if params.StartDate != nil {
+		opts = append(opts, models.EventWhere.OccurredAt.GTE(*params.StartDate))
+	}
+
+	if params.EndDate != nil {
+		opts = append(opts, models.EventWhere.OccurredAt.LTE(*params.EndDate))
+	}
+
+	if pagination.StartFromCursor != nil {
+		cursor, err := unmarshallCursor(*pagination.StartFromCursor)
 		if err != nil {
 			return query.CursorPaginationResult[domain.Event]{}, err
 		}
 
-		queryOptions = append(queryOptions, qm.Where("(occurred_at, id) < (?, ?)", cursor.OccurredAt, cursor.EventID))
+		opts = append(opts, qm.Where("(occurred_at, id) < (?, ?)", cursor.OccurredAt, cursor.EventID))
 	}
 
-	rows, err := models.Events(queryOptions...).All(ctx, r.db)
+	rows, err := models.Events(opts...).All(ctx, r.db)
 	if err != nil {
-		return query.CursorPaginationResult[domain.Event]{}, fmt.Errorf("error querying events for source_id '%s': %v", sourceID, err)
+		return query.CursorPaginationResult[domain.Event]{}, fmt.Errorf("error querying events for source_id '%s': %v", params.SourceID, err)
 	}
 
 	lastItemCursor, err := mapLastItemCursor(rows)
@@ -118,9 +149,4 @@ func (r EventsPsqlRepository) QueryAll(
 		Data:           events,
 		LastItemCursor: lastItemCursor,
 	}, nil
-}
-
-type Cursor struct {
-	OccurredAt time.Time `json:"occurred_at"`
-	EventID    string    `json:"event_id"`
 }

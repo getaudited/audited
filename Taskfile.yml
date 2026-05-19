@@ -82,7 +82,7 @@ tasks:
       - go clean -testcache
       - go test -v -race ./tests/components/...
 
-  test:cov:
+  coverage:
     cmds:
       - go test -coverprofile=coverage.out {{.CLI_ARGS}}
       - go tool cover -html=coverage.out
@@ -139,3 +139,7 @@ tasks:
   jwt:
     cmds:
       - go run ./cmd/jwt-generator
+
+  seed-events:
+    cmds:
+      - go run ./cmd/events-generator
