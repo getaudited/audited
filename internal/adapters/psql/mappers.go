@@ -152,9 +152,12 @@ func mapRowsToDomainEvents(rows []*models.Event) ([]domain.Event, error) {
 			return nil, fmt.Errorf("error unmarshalling actor metadata: %v", err)
 		}
 
-		targets, err := mapRowsToDomainTargets(row.R.EventTargets)
-		if err != nil {
-			return nil, err
+		var targets []domain.Target
+		if row.R != nil {
+			targets, err = mapRowsToDomainTargets(row.R.EventTargets)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		events[i] = domain.MarshallToEvent(

@@ -16,7 +16,7 @@ import (
 	"github.com/firminochangani/audited/internal/domain"
 )
 
-const maxEvents = 500
+const maxEvents = 5
 
 var (
 	locations   = []string{"US", "EU", "APAC", "BR", "UK"}
@@ -25,17 +25,6 @@ var (
 )
 
 func main() {
-	count := new(500)
-	// flag.Int("count", maxEvents, "number of events to insert (1–500)")
-	// flag.Parse()
-
-	if *count < 1 {
-		*count = 1
-	}
-	if *count > maxEvents {
-		*count = maxEvents
-	}
-
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		log.Fatal("DATABASE_URL environment variable is required")
@@ -51,9 +40,11 @@ func main() {
 
 	sourcesRepo := psql.NewSourcesPsqlRepository(db)
 	eventsRepo := psql.NewEventsPsqlRepository(db)
+	tokensRepo := psql.NewTokensPsqlRepository(db)
 
 	createSource := command.NewCreateSourceHandler(sourcesRepo)
 	createEvent := command.NewCreateEventHandler(eventsRepo)
+	createToken := command.NewCreateTokenHandler(tokensRepo)
 
 	source, err := domain.NewSource(fmt.Sprintf("%s (generator)", gofakeit.Company()))
 	if err != nil {
@@ -65,12 +56,31 @@ func main() {
 	}
 	fmt.Printf("source created  id=%-26s  name=%s\n", source.ID(), source.Name())
 
+	token, err := domain.NewToken(source.ID(), fmt.Sprintf("Event Generator Token %s", time.Now()))
+	if err != nil {
+		log.Fatalf("error creating token: %v", err)
+	}
+
+	err = createToken.Execute(ctx, command.CreateToken{
+		Token: token,
+	})
+	if err != nil {
+		log.Fatalf("error saving token: %v", err)
+	}
+
 	since := time.Now().AddDate(0, -6, 0)
 
 	inserted := 0
-	for i := range *count {
+
+	targetName := gofakeit.ProductName()
+	target := domain.Target{
+		ID:         gofakeit.UUID(),
+		TargetType: pick(targetTypes),
+		Name:       &targetName,
+	}
+
+	for i := range maxEvents {
 		actorName := gofakeit.Name()
-		targetName := gofakeit.ProductName()
 		ua := gofakeit.UserAgent()
 
 		event, err := domain.NewEvent(
@@ -82,11 +92,7 @@ func main() {
 				Name:      &actorName,
 			},
 			[]domain.Target{
-				{
-					ID:         gofakeit.UUID(),
-					TargetType: pick(targetTypes),
-					Name:       &targetName,
-				},
+				target,
 			},
 			domain.Context{
 				Location:  pick(locations),
@@ -102,14 +108,18 @@ func main() {
 			log.Fatalf("build event %d: %v", i+1, err)
 		}
 
-		if err := createEvent.Execute(ctx, command.CreateEvent{Event: event}); err != nil {
+		err = createEvent.Execute(ctx, command.CreateEvent{
+			Event: event,
+			Token: token.Value(),
+		})
+		if err != nil {
 			log.Printf("insert event %d: %v", i+1, err)
 			continue
 		}
 		inserted++
 	}
 
-	fmt.Printf("done  inserted=%d  total=%d  source=%s\n", inserted, *count, source.ID())
+	fmt.Printf("done  inserted=%d  total=%d  source=%s\n", inserted, maxEvents, source.ID())
 }
 
 func pick(s []string) string {

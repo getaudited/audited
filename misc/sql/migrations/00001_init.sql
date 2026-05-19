@@ -58,6 +58,9 @@ CREATE TABLE event_targets (
 
     CONSTRAINT fk_event_target_belongs_to_event FOREIGN KEY (event_id) REFERENCES events (id)
 );
+
+CREATE INDEX idx_events_source_occurred_id ON events(source_id, occurred_at DESC, id DESC);
+CREATE INDEX idx_event_targets_id ON event_targets(id);
 -- +goose StatementEnd
 
 -- +goose Down

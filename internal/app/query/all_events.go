@@ -2,13 +2,23 @@ package query
 
 import (
 	"context"
+	"time"
 
 	"github.com/firminochangani/audited/internal/domain"
 )
 
 type AllEvents struct {
-	SourceID               domain.ID
+	Params                 AllEventsParams
 	CursorPaginationParams CursorPaginationParams
+}
+
+type AllEventsParams struct {
+	SourceID  domain.ID
+	StartDate *time.Time
+	EndDate   *time.Time
+	ActorID   domain.ID
+	ActorName *string
+	TargetID  domain.ID
 }
 
 type AllEventsHandler struct {
@@ -22,5 +32,5 @@ func NewAllEventsHandler(finder eventsFinder) AllEventsHandler {
 }
 
 func (e AllEventsHandler) Execute(ctx context.Context, q AllEvents) (CursorPaginationResult[domain.Event], error) {
-	return e.finder.QueryAll(ctx, q.SourceID, q.CursorPaginationParams)
+	return e.finder.QueryAll(ctx, q.Params, q.CursorPaginationParams)
 }

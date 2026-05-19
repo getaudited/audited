@@ -38,8 +38,26 @@ func (h handlers) CreateEvent(c echo.Context, params CreateEventParams) error {
 }
 
 func (h handlers) GetEvents(c echo.Context, params GetEventsParams) error {
+	var actorID domain.ID
+	var targetID domain.ID
+
+	if params.ActorId != nil {
+		actorID = domain.ID(*params.ActorId)
+	}
+
+	if params.TargetId != nil {
+		targetID = domain.ID(*params.TargetId)
+	}
+
 	result, err := h.application.Queries.Events.Execute(mapEchoCtxToCtx(c), query.AllEvents{
-		SourceID: domain.ID(params.SourceId),
+		Params: query.AllEventsParams{
+			SourceID:  domain.ID(params.SourceId),
+			StartDate: params.StartDate,
+			EndDate:   params.EndDate,
+			ActorID:   actorID,
+			ActorName: params.ActorName,
+			TargetID:  targetID,
+		},
 		CursorPaginationParams: query.CursorPaginationParams{
 			Limit:           params.Limit,
 			StartFromCursor: params.StartFrom,
