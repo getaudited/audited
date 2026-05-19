@@ -66,10 +66,6 @@ func requireEqualMetadata(t *testing.T, expected *domain.Metadata, actual null.J
 // Test utils
 //
 
-func ptr[T any](v T) *T {
-	return &v
-}
-
 func findStoredTarget(targets []*models.EventTarget, id string) *models.EventTarget {
 	for _, t := range targets {
 		if t.ID == id {
