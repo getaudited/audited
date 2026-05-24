@@ -73,11 +73,6 @@ func (h handlers) GetTokens(c echo.Context, sourceId SourceId) error {
 	})
 }
 
-func (h handlers) GetSourceByID(c echo.Context, sourceId SourceId) error {
-	//TODO implement me
-	return nil
-}
-
 func (h handlers) HealthCheck(c echo.Context) error {
 	return c.String(http.StatusOK, "ok")
 }

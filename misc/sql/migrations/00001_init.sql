@@ -3,9 +3,11 @@
 
 CREATE TABLE sources (
     id TEXT NOT NULL PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    CONSTRAINT un_source_name UNIQUE (name)
 );
 
 CREATE TABLE event_types (
