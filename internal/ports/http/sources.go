@@ -61,7 +61,7 @@ func (h handlers) GetSources(c echo.Context, params GetSourcesParams) error {
 
 func (h handlers) GetSourceByID(c echo.Context, sourceId SourceId) error {
 	source, err := h.application.Queries.SourceByID.Execute(mapEchoCtxToCtx(c), query.SourceByID{
-		ID: string(sourceId),
+		ID: sourceId,
 	})
 	if errors.Is(err, domain.ErrSourceNotFound) {
 		return NewNotFoundError(err, "source-not-found")
