@@ -6,6 +6,7 @@ import (
 	"github.com/firminochangani/audited/internal/app/command"
 	"github.com/firminochangani/audited/internal/app/query"
 	"github.com/firminochangani/audited/internal/domain"
+	"github.com/friendsofgo/errors"
 	"github.com/labstack/echo/v4"
 )
 
@@ -24,6 +25,9 @@ func (h handlers) CreateSource(c echo.Context) error {
 	err = h.application.Commands.CreateSource.Execute(mapEchoCtxToCtx(c), command.CreateSource{
 		Source: source,
 	})
+	if errors.Is(err, domain.ErrSourceWithProvidedNameExists) {
+		return NewHandlerErrorWithStatus(err, "error-source-exists", http.StatusConflict)
+	}
 	if err != nil {
 		return NewHandlerError(err, "error-creating-source")
 	}
@@ -53,4 +57,18 @@ func (h handlers) GetSources(c echo.Context, params GetSourcesParams) error {
 			TotalPages:  result.TotalPages,
 		},
 	})
+}
+
+func (h handlers) GetSourceByID(c echo.Context, sourceId SourceId) error {
+	source, err := h.application.Queries.SourceByID.Execute(mapEchoCtxToCtx(c), query.SourceByID{
+		ID: string(sourceId),
+	})
+	if errors.Is(err, domain.ErrSourceNotFound) {
+		return NewNotFoundError(err, "source-not-found")
+	}
+	if err != nil {
+		return NewHandlerError(err, "error-retrieving-source")
+	}
+
+	return c.JSON(http.StatusOK, mapToSource(*source))
 }
