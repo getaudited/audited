@@ -160,7 +160,7 @@ paths:
           $ref: "#/components/responses/NotFoundError"
         default:
           $ref: "#/components/responses/InternalServerError"
-  /x/v1/sources/{source_id}/token:
+  /x/v1/sources/{source_id}/tokens:
     get:
       summary: List tokens
       description: ...
@@ -208,7 +208,7 @@ paths:
                 $ref: "#/components/schemas/Token"
         default:
           $ref: "#/components/responses/InternalServerError"
-  /x/v1/sources/{source_id}/token/{token_id}:
+  /x/v1/sources/{source_id}/tokens/{token_id}:
     delete:
       summary: Delete token
       description: ...
