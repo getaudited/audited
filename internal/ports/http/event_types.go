@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -11,6 +12,19 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/oklog/ulid/v2"
 )
+
+func (h handlers) GetEventTypes(c echo.Context, params GetEventTypesParams) error {
+	result, err := h.application.Queries.AllEventTypes.Execute(mapEchoCtxToCtx(c), query.AllEventTypes{
+		PaginationParams: mapToQueryPaginationParams(params.Page, params.Limit),
+	})
+	if err != nil {
+		return NewHandlerError(err, "unable-to-retrieve-event-types")
+	}
+
+	fmt.Println(result)
+
+	return c.JSON(http.StatusOK, mapToEventTypeList(result))
+}
 
 func (h handlers) CreateEventType(c echo.Context) error {
 	var body CreateEventTypeJSONBody

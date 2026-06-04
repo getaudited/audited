@@ -4,10 +4,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/aarondl/null/v8"
 	"github.com/firminochangani/audited/internal/adapters/models"
+	"github.com/firminochangani/audited/internal/app/query"
 	"github.com/firminochangani/audited/internal/domain"
 	"github.com/oklog/ulid/v2"
 )
@@ -228,4 +230,55 @@ func mapRowsToDomainTokens(rows []*models.Token) []*domain.Token {
 	}
 
 	return r
+}
+
+func mapPaginationParamsToOffset(params query.PaginationParams) int {
+	if params.Page == 1 {
+		return 0
+	}
+
+	return (params.Page - 1) * params.Limit
+}
+
+func mapToPaginationResult[T any](params query.PaginationParams, totalRows int64, data []T) query.Pagination[T] {
+	return query.Pagination[T]{
+		Data:        data,
+		Total:       int(totalRows),
+		PerPage:     params.Limit,
+		CurrentPage: params.Page,
+		TotalPages:  int(math.Ceil(float64(totalRows) / float64(params.Limit))),
+	}
+}
+
+func mapRowsToSources(rows []*models.Source) []domain.Source {
+	result := make([]domain.Source, len(rows))
+
+	for i, row := range rows {
+		result[i] = domain.MarshallToSource(row.ID, row.Name, row.CreatedAt, row.UpdatedAt)
+	}
+
+	return result
+}
+
+func mapRowToEventType(row *models.EventType) *domain.EventType {
+	return &domain.EventType{
+		Id:                           row.ID,
+		Version:                      row.Version,
+		Action:                       row.Action,
+		TargetTypes:                  row.TargetTypes,
+		ShouldValidateMetadataSchema: row.ShouldValidateMetadataSchema,
+		Schema:                       row.EventSchema.JSON,
+		CreatedAt:                    row.CreatedAt,
+		UpdatedAt:                    row.UpdatedAt,
+	}
+}
+
+func mapRowsToEventTypes(rows []*models.EventType) []*domain.EventType {
+	result := make([]*domain.EventType, len(rows))
+
+	for i, row := range rows {
+		result[i] = mapRowToEventType(row)
+	}
+
+	return result
 }

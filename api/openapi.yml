@@ -259,6 +259,9 @@ paths:
       tags:
         - Admin API
       operationId: GetEventTypes
+      parameters:
+        - $ref: '#/components/parameters/pagination_limit'
+        - $ref: '#/components/parameters/pagination_page'
       security:
         - BearerAuth: []
       responses:

@@ -206,6 +206,15 @@ type CreateEventParams struct {
 	XToken XToken `json:"x-token"`
 }
 
+// GetEventTypesParams defines parameters for GetEventTypes.
+type GetEventTypesParams struct {
+	// Limit The number of items per page
+	Limit *PaginationLimit `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Page The page number
+	Page *PaginationPage `form:"page,omitempty" json:"page,omitempty"`
+}
+
 // CreateEventTypeJSONBody defines parameters for CreateEventType.
 type CreateEventTypeJSONBody struct {
 	Action                       string   `json:"action"`
@@ -340,7 +349,7 @@ type ClientInterface interface {
 	CreateEvent(ctx context.Context, params *CreateEventParams, body CreateEventJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetEventTypes request
-	GetEventTypes(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetEventTypes(ctx context.Context, params *GetEventTypesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateEventTypeWithBody request with any body
 	CreateEventTypeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -403,8 +412,8 @@ func (c *Client) CreateEvent(ctx context.Context, params *CreateEventParams, bod
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetEventTypes(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetEventTypesRequest(c.Server)
+func (c *Client) GetEventTypes(ctx context.Context, params *GetEventTypesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetEventTypesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -625,7 +634,7 @@ func NewCreateEventRequestWithBody(server string, params *CreateEventParams, con
 }
 
 // NewGetEventTypesRequest generates requests for GetEventTypes
-func NewGetEventTypesRequest(server string) (*http.Request, error) {
+func NewGetEventTypesRequest(server string, params *GetEventTypesParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -641,6 +650,44 @@ func NewGetEventTypesRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
@@ -1226,7 +1273,7 @@ type ClientWithResponsesInterface interface {
 	CreateEventWithResponse(ctx context.Context, params *CreateEventParams, body CreateEventJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEventResponse, error)
 
 	// GetEventTypesWithResponse request
-	GetEventTypesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetEventTypesResponse, error)
+	GetEventTypesWithResponse(ctx context.Context, params *GetEventTypesParams, reqEditors ...RequestEditorFn) (*GetEventTypesResponse, error)
 
 	// CreateEventTypeWithBodyWithResponse request with any body
 	CreateEventTypeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEventTypeResponse, error)
@@ -1562,8 +1609,8 @@ func (c *ClientWithResponses) CreateEventWithResponse(ctx context.Context, param
 }
 
 // GetEventTypesWithResponse request returning *GetEventTypesResponse
-func (c *ClientWithResponses) GetEventTypesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetEventTypesResponse, error) {
-	rsp, err := c.GetEventTypes(ctx, reqEditors...)
+func (c *ClientWithResponses) GetEventTypesWithResponse(ctx context.Context, params *GetEventTypesParams, reqEditors ...RequestEditorFn) (*GetEventTypesResponse, error) {
+	rsp, err := c.GetEventTypes(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -2104,42 +2151,42 @@ func ParseDeleteTokenResponse(rsp *http.Response) (*DeleteTokenResponse, error) 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
-	"JNlwqWY/T3+e4v3z/u8AAAD//4IUaqKkMgAA",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
