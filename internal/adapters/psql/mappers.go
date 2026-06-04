@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/aarondl/null/v8"
-	"github.com/firminochangani/audited/internal/adapters/models"
-	"github.com/firminochangani/audited/internal/app/query"
-	"github.com/firminochangani/audited/internal/domain"
+	"github.com/getaudited/audited/internal/adapters/models"
+	"github.com/getaudited/audited/internal/app/query"
+	"github.com/getaudited/audited/internal/domain"
 	"github.com/oklog/ulid/v2"
 )
 

@@ -3,8 +3,8 @@ package http
 import (
 	"context"
 
-	"github.com/firminochangani/audited/internal/app/query"
-	"github.com/firminochangani/audited/internal/domain"
+	"github.com/getaudited/audited/internal/app/query"
+	"github.com/getaudited/audited/internal/domain"
 	"github.com/labstack/echo/v4"
 )
 

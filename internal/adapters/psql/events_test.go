@@ -8,9 +8,9 @@ import (
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
-	"github.com/firminochangani/audited/internal/adapters/psql"
-	"github.com/firminochangani/audited/internal/app/query"
-	"github.com/firminochangani/audited/internal/domain"
+	"github.com/getaudited/audited/internal/adapters/psql"
+	"github.com/getaudited/audited/internal/app/query"
+	"github.com/getaudited/audited/internal/domain"
 )
 
 func TestEventsPsqlRepository_Save(t *testing.T) {

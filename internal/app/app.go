@@ -3,9 +3,9 @@ package app
 import (
 	"context"
 
-	"github.com/firminochangani/audited/internal/app/command"
-	"github.com/firminochangani/audited/internal/app/query"
-	"github.com/firminochangani/audited/internal/domain"
+	"github.com/getaudited/audited/internal/app/command"
+	"github.com/getaudited/audited/internal/app/query"
+	"github.com/getaudited/audited/internal/domain"
 )
 
 type CommandHandler[C any] interface {

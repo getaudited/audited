@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/firminochangani/audited/internal/app"
-	"github.com/firminochangani/audited/internal/common/logs"
+	"github.com/getaudited/audited/internal/app"
+	"github.com/getaudited/audited/internal/common/logs"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/labstack/echo/v4"

@@ -17,13 +17,13 @@ import (
 	_ "github.com/lib/pq"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/firminochangani/audited/internal/adapters/psql"
-	"github.com/firminochangani/audited/internal/app"
-	"github.com/firminochangani/audited/internal/app/command"
-	"github.com/firminochangani/audited/internal/app/query"
-	"github.com/firminochangani/audited/internal/common/logs"
-	"github.com/firminochangani/audited/internal/common/postgres"
-	"github.com/firminochangani/audited/internal/ports/http"
+	"github.com/getaudited/audited/internal/adapters/psql"
+	"github.com/getaudited/audited/internal/app"
+	"github.com/getaudited/audited/internal/app/command"
+	"github.com/getaudited/audited/internal/app/query"
+	"github.com/getaudited/audited/internal/common/logs"
+	"github.com/getaudited/audited/internal/common/postgres"
+	"github.com/getaudited/audited/internal/ports/http"
 )
 
 func main() {

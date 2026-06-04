@@ -11,9 +11,9 @@ import (
 	"github.com/aarondl/sqlboiler/v4/queries/qm"
 	"github.com/lib/pq"
 
-	"github.com/firminochangani/audited/internal/adapters/models"
-	"github.com/firminochangani/audited/internal/app/query"
-	"github.com/firminochangani/audited/internal/domain"
+	"github.com/getaudited/audited/internal/adapters/models"
+	"github.com/getaudited/audited/internal/app/query"
+	"github.com/getaudited/audited/internal/domain"
 )
 
 const FkEventBelongsToSource = "fk_event_belongs_to_source"
