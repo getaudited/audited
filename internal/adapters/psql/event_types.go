@@ -9,11 +9,11 @@ import (
 	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/aarondl/sqlboiler/v4/queries/qm"
-	"github.com/firminochangani/audited/internal/app/query"
+	"github.com/getaudited/audited/internal/app/query"
 	"github.com/lib/pq"
 
-	"github.com/firminochangani/audited/internal/adapters/models"
-	"github.com/firminochangani/audited/internal/domain"
+	"github.com/getaudited/audited/internal/adapters/models"
+	"github.com/getaudited/audited/internal/domain"
 )
 
 const ConstraintEventTypeActionIsUnique = "un_event_type_name"

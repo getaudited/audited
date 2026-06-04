@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/aarondl/sqlboiler/v4/boil"
-	"github.com/firminochangani/audited/internal/adapters/models"
-	"github.com/firminochangani/audited/internal/domain"
+	"github.com/getaudited/audited/internal/adapters/models"
+	"github.com/getaudited/audited/internal/domain"
 )
 
 type TokensPsqlRepository struct {

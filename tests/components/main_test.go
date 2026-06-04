@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/firminochangani/audited/internal/common/logs"
-	"github.com/firminochangani/audited/misc/tools/wait/wait_for"
-	"github.com/firminochangani/audited/tests/client"
+	"github.com/getaudited/audited/internal/common/logs"
+	"github.com/getaudited/audited/misc/tools/wait/wait_for"
+	"github.com/getaudited/audited/tests/client"
 	"github.com/stretchr/testify/require"
 )
 

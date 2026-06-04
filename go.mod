@@ -1,4 +1,4 @@
-module github.com/firminochangani/audited
+module github.com/getaudited/audited
 
 go 1.26
 

@@ -10,10 +10,10 @@ import (
 	"github.com/brianvoe/gofakeit/v7"
 	_ "github.com/lib/pq"
 
-	"github.com/firminochangani/audited/internal/adapters/psql"
-	"github.com/firminochangani/audited/internal/app/command"
-	"github.com/firminochangani/audited/internal/common/postgres"
-	"github.com/firminochangani/audited/internal/domain"
+	"github.com/getaudited/audited/internal/adapters/psql"
+	"github.com/getaudited/audited/internal/app/command"
+	"github.com/getaudited/audited/internal/common/postgres"
+	"github.com/getaudited/audited/internal/domain"
 )
 
 const maxEvents = 5

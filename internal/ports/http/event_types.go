@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/firminochangani/audited/internal/app/command"
-	"github.com/firminochangani/audited/internal/app/query"
-	"github.com/firminochangani/audited/internal/domain"
 	"github.com/friendsofgo/errors"
+	"github.com/getaudited/audited/internal/app/command"
+	"github.com/getaudited/audited/internal/app/query"
+	"github.com/getaudited/audited/internal/domain"
 	"github.com/labstack/echo/v4"
 	"github.com/oklog/ulid/v2"
 )

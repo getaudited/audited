@@ -7,9 +7,9 @@ import (
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/stretchr/testify/require"
 
-	"github.com/firminochangani/audited/internal/adapters/models"
-	"github.com/firminochangani/audited/internal/adapters/psql"
-	"github.com/firminochangani/audited/internal/domain"
+	"github.com/getaudited/audited/internal/adapters/models"
+	"github.com/getaudited/audited/internal/adapters/psql"
+	"github.com/getaudited/audited/internal/domain"
 )
 
 func TestTokensPsqlRepository_Save(t *testing.T) {

@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/firminochangani/audited/internal/common/logs"
 	"github.com/friendsofgo/errors"
+	"github.com/getaudited/audited/internal/common/logs"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"

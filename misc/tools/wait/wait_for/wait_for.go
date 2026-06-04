@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/firminochangani/audited/internal/common/logs"
-	"github.com/firminochangani/audited/internal/common/postgres"
+	"github.com/getaudited/audited/internal/common/logs"
+	"github.com/getaudited/audited/internal/common/postgres"
 	_ "github.com/lib/pq"
 	"github.com/rabbitmq/amqp091-go"
 )

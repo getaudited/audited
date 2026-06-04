@@ -3,7 +3,7 @@ package query
 import (
 	"context"
 
-	"github.com/firminochangani/audited/internal/domain"
+	"github.com/getaudited/audited/internal/domain"
 )
 
 type EventTypeByName struct {
