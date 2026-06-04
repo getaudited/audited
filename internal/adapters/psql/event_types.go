@@ -8,10 +8,15 @@ import (
 
 	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
+	"github.com/firminochangani/audited/internal/app/query"
+	"github.com/lib/pq"
 
 	"github.com/firminochangani/audited/internal/adapters/models"
 	"github.com/firminochangani/audited/internal/domain"
 )
+
+const ConstraintEventTypeActionIsUnique = "un_event_type_name"
 
 type EventTypePsqlRepository struct {
 	db boil.ContextExecutor
@@ -34,6 +39,10 @@ func (r EventTypePsqlRepository) Save(ctx context.Context, et domain.EventType) 
 	}
 
 	err := row.Insert(ctx, r.db, boil.Infer())
+	fmt.Println("err", err)
+	if pqErr, ok := errors.AsType[*pq.Error](err); ok && pqErr.Constraint == ConstraintEventTypeActionIsUnique {
+		return domain.ErrEventTypeExists
+	}
 	if err != nil {
 		return fmt.Errorf("unable to save event type: %v", err)
 	}
@@ -50,16 +59,7 @@ func (r EventTypePsqlRepository) FindByAction(ctx context.Context, action string
 		return nil, fmt.Errorf("error querying for event_type by action '%s': %v", action, err)
 	}
 
-	return &domain.EventType{
-		Id:                           row.ID,
-		Version:                      row.Version,
-		Action:                       row.Action,
-		TargetTypes:                  row.TargetTypes, //,,
-		ShouldValidateMetadataSchema: row.ShouldValidateMetadataSchema,
-		Schema:                       nil, // TODO: fetch from event_type_schemas
-		CreatedAt:                    row.CreatedAt,
-		UpdatedAt:                    row.UpdatedAt,
-	}, nil
+	return mapRowToEventType(row), nil
 }
 
 func (r EventTypePsqlRepository) Delete(ctx context.Context, action string) error {
@@ -69,4 +69,24 @@ func (r EventTypePsqlRepository) Delete(ctx context.Context, action string) erro
 	}
 
 	return nil
+}
+
+func (r EventTypePsqlRepository) QueryAll(ctx context.Context, params query.PaginationParams) (query.Pagination[*domain.EventType], error) {
+	count, err := models.EventTypes().Count(ctx, r.db)
+	if err != nil {
+		return query.Pagination[*domain.EventType]{}, fmt.Errorf("unable to count event types: %v", err)
+	}
+	boil.DebugMode = true
+	rows, err := models.EventTypes(
+		qm.Limit(params.Limit),
+		qm.Offset(mapPaginationParamsToOffset(params)),
+		qm.OrderBy("created_at DESC"),
+	).All(ctx, r.db)
+	if err != nil {
+		return query.Pagination[*domain.EventType]{}, fmt.Errorf("unable to query event types: %v", err)
+	}
+
+	fmt.Println("###", rows)
+
+	return mapToPaginationResult[*domain.EventType](params, count, mapRowsToEventTypes(rows)), nil
 }

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -11,6 +12,19 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/oklog/ulid/v2"
 )
+
+func (h handlers) GetEventTypes(c echo.Context, params GetEventTypesParams) error {
+	result, err := h.application.Queries.AllEventTypes.Execute(mapEchoCtxToCtx(c), query.AllEventTypes{
+		PaginationParams: mapToQueryPaginationParams(params.Page, params.Limit),
+	})
+	if err != nil {
+		return NewHandlerError(err, "unable-to-retrieve-event-types")
+	}
+
+	fmt.Println(result)
+
+	return c.JSON(http.StatusOK, mapToEventTypeList(result))
+}
 
 func (h handlers) CreateEventType(c echo.Context) error {
 	var body CreateEventTypeJSONBody
@@ -38,6 +52,9 @@ func (h handlers) CreateEventType(c echo.Context) error {
 	err = h.application.Commands.CreateEventType.Execute(mapEchoCtxToCtx(c), command.CreateEventType{
 		EventType: eventType,
 	})
+	if errors.Is(err, domain.ErrEventTypeExists) {
+		return NewHandlerErrorWithStatus(err, "error-event-type-exists", http.StatusConflict)
+	}
 	if err != nil {
 		return NewBadRequestError(err, "unable-to-create-event-type")
 	}

@@ -16,10 +16,6 @@ type handlers struct {
 	application *app.App
 }
 
-func (h handlers) GetEventTypes(c echo.Context) error {
-	return nil
-}
-
 func (h handlers) DeleteToken(c echo.Context, sourceId SourceId, tokenId TokenId) error {
 	err := h.application.Commands.DeleteToken.Execute(mapEchoCtxToCtx(c), command.DeleteToken{
 		TokenID:  domain.ID(tokenId),

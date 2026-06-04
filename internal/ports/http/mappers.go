@@ -90,6 +90,42 @@ func mapToTokens(tokens []*domain.Token) []Token {
 	return r
 }
 
+func mapToEventType(et *domain.EventType) EventType {
+	var schema *string
+	if len(et.Schema) > 0 {
+		s := string(et.Schema)
+		schema = new(s)
+	}
+
+	return EventType{
+		Id:                           et.Id,
+		Version:                      et.Version,
+		Action:                       et.Action,
+		TargetTypes:                  et.TargetTypes,
+		ShouldValidateMetadataSchema: et.ShouldValidateMetadataSchema,
+		Schema:                       schema,
+		CreatedAt:                    et.CreatedAt,
+		UpdatedAt:                    et.UpdatedAt,
+	}
+}
+
+func mapToEventTypeList(result query.Pagination[*domain.EventType]) EventTypeList {
+	data := make([]EventType, len(result.Data))
+	for i, et := range result.Data {
+		data[i] = mapToEventType(et)
+	}
+
+	return EventTypeList{
+		Data: data,
+		Pagination: Pagination{
+			Total:       result.Total,
+			PerPage:     result.PerPage,
+			CurrentPage: result.CurrentPage,
+			TotalPages:  result.TotalPages,
+		},
+	}
+}
+
 func mapEchoCtxToCtx(c echo.Context) context.Context {
 	return c.Request().Context()
 }

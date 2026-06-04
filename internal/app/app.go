@@ -35,9 +35,10 @@ type Queries struct {
 	EventTypeByAction QueryHandler[query.EventTypeByName, *domain.EventType]
 	Events            QueryHandler[query.AllEvents, query.CursorPaginationResult[domain.Event]]
 	EventByID         QueryHandler[any, domain.Event]
-	AllSources        QueryHandler[query.AllSources, query.Pagination[domain.Source]]
 	SourceByID        QueryHandler[query.SourceByID, *domain.Source]
+	AllSources        QueryHandler[query.AllSources, query.Pagination[domain.Source]]
 	AllTokens         QueryHandler[query.AllTokens, []*domain.Token]
+	AllEventTypes     QueryHandler[query.AllEventTypes, query.Pagination[*domain.EventType]]
 }
 
 type App struct {

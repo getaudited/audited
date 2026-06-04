@@ -96,6 +96,7 @@ func (s *Service) Run() error {
 			AllSources:        query.NewAllSourcesHandler(sourcesRepository),
 			SourceByID:        query.NewSourceByIDHandler(sourcesRepository),
 			AllTokens:         query.NewAllTokensHandler(tokensRepository),
+			AllEventTypes:     query.NewAllEventTypesHandler(eventTypeRepository),
 		},
 	}
 
