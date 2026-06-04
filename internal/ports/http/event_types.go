@@ -38,6 +38,9 @@ func (h handlers) CreateEventType(c echo.Context) error {
 	err = h.application.Commands.CreateEventType.Execute(mapEchoCtxToCtx(c), command.CreateEventType{
 		EventType: eventType,
 	})
+	if errors.Is(err, domain.ErrEventTypeExists) {
+		return NewHandlerErrorWithStatus(err, "error-event-type-exists", http.StatusConflict)
+	}
 	if err != nil {
 		return NewBadRequestError(err, "unable-to-create-event-type")
 	}

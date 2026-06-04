@@ -8,10 +8,13 @@ import (
 
 	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/lib/pq"
 
 	"github.com/firminochangani/audited/internal/adapters/models"
 	"github.com/firminochangani/audited/internal/domain"
 )
+
+const ConstraintEventTypeActionIsUnique = "un_event_type_name"
 
 type EventTypePsqlRepository struct {
 	db boil.ContextExecutor
@@ -34,6 +37,10 @@ func (r EventTypePsqlRepository) Save(ctx context.Context, et domain.EventType) 
 	}
 
 	err := row.Insert(ctx, r.db, boil.Infer())
+	fmt.Println("err", err)
+	if pqErr, ok := errors.AsType[*pq.Error](err); ok && pqErr.Constraint == ConstraintEventTypeActionIsUnique {
+		return domain.ErrEventTypeExists
+	}
 	if err != nil {
 		return fmt.Errorf("unable to save event type: %v", err)
 	}
