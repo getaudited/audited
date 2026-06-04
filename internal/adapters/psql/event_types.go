@@ -75,7 +75,6 @@ func (r EventTypePsqlRepository) QueryAll(ctx context.Context, params query.Pagi
 	count, err := models.EventTypes().Count(ctx, r.db)
 	if err != nil {
 		return query.Pagination[*domain.EventType]{}, fmt.Errorf("unable to count event types: %v", err)
-
 	}
 	boil.DebugMode = true
 	rows, err := models.EventTypes(
