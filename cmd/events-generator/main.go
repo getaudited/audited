@@ -9,6 +9,7 @@ import (
 
 	"github.com/brianvoe/gofakeit/v7"
 	_ "github.com/lib/pq"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/getaudited/audited/internal/adapters/psql"
 	"github.com/getaudited/audited/internal/app/command"
@@ -41,20 +42,42 @@ func main() {
 	sourcesRepo := psql.NewSourcesPsqlRepository(db)
 	eventsRepo := psql.NewEventsPsqlRepository(db)
 	tokensRepo := psql.NewTokensPsqlRepository(db)
+	eventsTypeRepo := psql.NewEventTypePsqlRepository(db)
 
 	createSource := command.NewCreateSourceHandler(sourcesRepo)
 	createEvent := command.NewCreateEventHandler(eventsRepo)
 	createToken := command.NewCreateTokenHandler(tokensRepo)
+	createEventType := command.NewCreateEventTypeHandler(eventsTypeRepo)
 
 	source, err := domain.NewSource(fmt.Sprintf("%s (generator)", gofakeit.Company()))
 	if err != nil {
 		log.Fatalf("build source: %v", err)
 	}
 
-	if err := createSource.Execute(ctx, command.CreateSource{Source: source}); err != nil {
+	err = createSource.Execute(ctx, command.CreateSource{
+		Source: source,
+	})
+	if err != nil {
 		log.Fatalf("save source: %v", err)
 	}
 	fmt.Printf("source created  id=%-26s  name=%s\n", source.ID(), source.Name())
+
+	eventType := domain.EventType{
+		Id:                           ulid.Make().String(),
+		Version:                      1,
+		Action:                       fmt.Sprintf("users.%d", time.Now().UnixMilli()),
+		TargetTypes:                  []string{"user"},
+		ShouldValidateMetadataSchema: false,
+		Schema:                       nil,
+		CreatedAt:                    time.Now(),
+		UpdatedAt:                    time.Now(),
+	}
+	err = createEventType.Execute(ctx, command.CreateEventType{
+		EventType: eventType,
+	})
+	if err != nil {
+		log.Fatalf("error creating event type: %v", err)
+	}
 
 	token, err := domain.NewToken(source.ID(), fmt.Sprintf("Event Generator Token %s", time.Now()))
 	if err != nil {
@@ -76,7 +99,7 @@ func main() {
 	target := domain.Target{
 		ID:         gofakeit.UUID(),
 		TargetType: pick(targetTypes),
-		Name:       &targetName,
+		Name:       new(targetName),
 	}
 
 	for i := range maxEvents {
@@ -86,6 +109,7 @@ func main() {
 		event, err := domain.NewEvent(
 			source.ID(),
 			i+1,
+			eventType.Action,
 			domain.Actor{
 				ID:        gofakeit.UUID(),
 				ActorType: pick(actorTypes),
