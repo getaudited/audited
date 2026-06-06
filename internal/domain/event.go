@@ -2,6 +2,7 @@ package domain
 
 import (
 	"errors"
+	"strings"
 	"time"
 )
 
@@ -13,6 +14,7 @@ type Event struct {
 	id         ID
 	sourceID   ID
 	version    int
+	action     string
 	actor      Actor
 	targets    []Target
 	context    Context
@@ -23,6 +25,7 @@ type Event struct {
 func NewEvent(
 	sourceID ID,
 	version int,
+	action string,
 	actor Actor,
 	targets []Target,
 	context Context,
@@ -37,11 +40,14 @@ func NewEvent(
 		return Event{}, errors.New("version cannot be less than 1")
 	}
 
-	// TODO: add more validations
+	if strings.TrimSpace(action) == "" {
+		return Event{}, errors.New("action cannot be empty")
+	}
 
 	return Event{
 		id:         NewID(),
 		sourceID:   sourceID,
+		action:     action,
 		version:    version,
 		actor:      actor,
 		targets:    targets,
@@ -61,6 +67,10 @@ func (e *Event) SourceID() ID {
 
 func (e *Event) Version() int {
 	return e.version
+}
+
+func (e *Event) Action() string {
+	return e.action
 }
 
 func (e *Event) Actor() Actor {

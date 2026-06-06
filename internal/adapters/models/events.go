@@ -27,6 +27,7 @@ type Event struct {
 	ID               string      `boil:"id" json:"id" toml:"id" yaml:"id"`
 	SourceID         string      `boil:"source_id" json:"source_id" toml:"source_id" yaml:"source_id"`
 	Version          int         `boil:"version" json:"version" toml:"version" yaml:"version"`
+	Action           string      `boil:"action" json:"action" toml:"action" yaml:"action"`
 	ActorID          string      `boil:"actor_id" json:"actor_id" toml:"actor_id" yaml:"actor_id"`
 	ActorType        string      `boil:"actor_type" json:"actor_type" toml:"actor_type" yaml:"actor_type"`
 	ActorName        null.String `boil:"actor_name" json:"actor_name,omitempty" toml:"actor_name" yaml:"actor_name,omitempty"`
@@ -44,6 +45,7 @@ var EventColumns = struct {
 	ID               string
 	SourceID         string
 	Version          string
+	Action           string
 	ActorID          string
 	ActorType        string
 	ActorName        string
@@ -56,6 +58,7 @@ var EventColumns = struct {
 	ID:               "id",
 	SourceID:         "source_id",
 	Version:          "version",
+	Action:           "action",
 	ActorID:          "actor_id",
 	ActorType:        "actor_type",
 	ActorName:        "actor_name",
@@ -70,6 +73,7 @@ var EventTableColumns = struct {
 	ID               string
 	SourceID         string
 	Version          string
+	Action           string
 	ActorID          string
 	ActorType        string
 	ActorName        string
@@ -82,6 +86,7 @@ var EventTableColumns = struct {
 	ID:               "events.id",
 	SourceID:         "events.source_id",
 	Version:          "events.version",
+	Action:           "events.action",
 	ActorID:          "events.actor_id",
 	ActorType:        "events.actor_type",
 	ActorName:        "events.actor_name",
@@ -98,6 +103,7 @@ var EventWhere = struct {
 	ID               whereHelperstring
 	SourceID         whereHelperstring
 	Version          whereHelperint
+	Action           whereHelperstring
 	ActorID          whereHelperstring
 	ActorType        whereHelperstring
 	ActorName        whereHelpernull_String
@@ -110,6 +116,7 @@ var EventWhere = struct {
 	ID:               whereHelperstring{field: "\"events\".\"id\""},
 	SourceID:         whereHelperstring{field: "\"events\".\"source_id\""},
 	Version:          whereHelperint{field: "\"events\".\"version\""},
+	Action:           whereHelperstring{field: "\"events\".\"action\""},
 	ActorID:          whereHelperstring{field: "\"events\".\"actor_id\""},
 	ActorType:        whereHelperstring{field: "\"events\".\"actor_type\""},
 	ActorName:        whereHelpernull_String{field: "\"events\".\"actor_name\""},
@@ -122,17 +129,20 @@ var EventWhere = struct {
 
 // EventRels is where relationship names are stored.
 var EventRels = struct {
-	Source       string
-	EventTargets string
+	Source          string
+	ActionEventType string
+	EventTargets    string
 }{
-	Source:       "Source",
-	EventTargets: "EventTargets",
+	Source:          "Source",
+	ActionEventType: "ActionEventType",
+	EventTargets:    "EventTargets",
 }
 
 // eventR is where relationships are stored.
 type eventR struct {
-	Source       *Source          `boil:"Source" json:"Source" toml:"Source" yaml:"Source"`
-	EventTargets EventTargetSlice `boil:"EventTargets" json:"EventTargets" toml:"EventTargets" yaml:"EventTargets"`
+	Source          *Source          `boil:"Source" json:"Source" toml:"Source" yaml:"Source"`
+	ActionEventType *EventType       `boil:"ActionEventType" json:"ActionEventType" toml:"ActionEventType" yaml:"ActionEventType"`
+	EventTargets    EventTargetSlice `boil:"EventTargets" json:"EventTargets" toml:"EventTargets" yaml:"EventTargets"`
 }
 
 // NewStruct creates a new relationship struct
@@ -156,6 +166,22 @@ func (r *eventR) GetSource() *Source {
 	return r.Source
 }
 
+func (o *Event) GetActionEventType() *EventType {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetActionEventType()
+}
+
+func (r *eventR) GetActionEventType() *EventType {
+	if r == nil {
+		return nil
+	}
+
+	return r.ActionEventType
+}
+
 func (o *Event) GetEventTargets() EventTargetSlice {
 	if o == nil {
 		return nil
@@ -176,8 +202,8 @@ func (r *eventR) GetEventTargets() EventTargetSlice {
 type eventL struct{}
 
 var (
-	eventAllColumns            = []string{"id", "source_id", "version", "actor_id", "actor_type", "actor_name", "actor_metadata", "context_location", "context_user_agent", "metadata", "occurred_at"}
-	eventColumnsWithoutDefault = []string{"id", "source_id", "version", "actor_id", "actor_type", "context_location"}
+	eventAllColumns            = []string{"id", "source_id", "version", "action", "actor_id", "actor_type", "actor_name", "actor_metadata", "context_location", "context_user_agent", "metadata", "occurred_at"}
+	eventColumnsWithoutDefault = []string{"id", "source_id", "version", "action", "actor_id", "actor_type", "context_location"}
 	eventColumnsWithDefault    = []string{"actor_name", "actor_metadata", "context_user_agent", "metadata", "occurred_at"}
 	eventPrimaryKeyColumns     = []string{"id"}
 	eventGeneratedColumns      = []string{}
@@ -499,6 +525,17 @@ func (o *Event) Source(mods ...qm.QueryMod) sourceQuery {
 	return Sources(queryMods...)
 }
 
+// ActionEventType pointed to by the foreign key.
+func (o *Event) ActionEventType(mods ...qm.QueryMod) eventTypeQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"action\" = ?", o.Action),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return EventTypes(queryMods...)
+}
+
 // EventTargets retrieves all the event_target's EventTargets with an executor.
 func (o *Event) EventTargets(mods ...qm.QueryMod) eventTargetQuery {
 	var queryMods []qm.QueryMod
@@ -625,6 +662,126 @@ func (eventL) LoadSource(ctx context.Context, e boil.ContextExecutor, singular b
 					foreign.R = &sourceR{}
 				}
 				foreign.R.Events = append(foreign.R.Events, local)
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadActionEventType allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for an N-1 relationship.
+func (eventL) LoadActionEventType(ctx context.Context, e boil.ContextExecutor, singular bool, maybeEvent any, mods queries.Applicator) error {
+	var slice []*Event
+	var object *Event
+
+	if singular {
+		var ok bool
+		object, ok = maybeEvent.(*Event)
+		if !ok {
+			object = new(Event)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeEvent)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeEvent))
+			}
+		}
+	} else {
+		s, ok := maybeEvent.(*[]*Event)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeEvent)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeEvent))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &eventR{}
+		}
+		args[object.Action] = struct{}{}
+
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &eventR{}
+			}
+
+			args[obj.Action] = struct{}{}
+
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`event_types`),
+		qm.WhereIn(`event_types.action in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load EventType")
+	}
+
+	var resultSlice []*EventType
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice EventType")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for event_types")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for event_types")
+	}
+
+	if len(eventTypeAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.ActionEventType = foreign
+		if foreign.R == nil {
+			foreign.R = &eventTypeR{}
+		}
+		foreign.R.ActionEvents = append(foreign.R.ActionEvents, object)
+		return nil
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if local.Action == foreign.Action {
+				local.R.ActionEventType = foreign
+				if foreign.R == nil {
+					foreign.R = &eventTypeR{}
+				}
+				foreign.R.ActionEvents = append(foreign.R.ActionEvents, local)
 				break
 			}
 		}
@@ -788,6 +945,53 @@ func (o *Event) SetSource(ctx context.Context, exec boil.ContextExecutor, insert
 		}
 	} else {
 		related.R.Events = append(related.R.Events, o)
+	}
+
+	return nil
+}
+
+// SetActionEventType of the event to the related item.
+// Sets o.R.ActionEventType to related.
+// Adds o to related.R.ActionEvents.
+func (o *Event) SetActionEventType(ctx context.Context, exec boil.ContextExecutor, insert bool, related *EventType) error {
+	var err error
+	if insert {
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	}
+
+	updateQuery := fmt.Sprintf(
+		"UPDATE \"events\" SET %s WHERE %s",
+		strmangle.SetParamNames("\"", "\"", 1, []string{"action"}),
+		strmangle.WhereClause("\"", "\"", 2, eventPrimaryKeyColumns),
+	)
+	values := []any{related.Action, o.ID}
+
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, updateQuery)
+		fmt.Fprintln(writer, values)
+	}
+	if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	o.Action = related.Action
+	if o.R == nil {
+		o.R = &eventR{
+			ActionEventType: related,
+		}
+	} else {
+		o.R.ActionEventType = related
+	}
+
+	if related.R == nil {
+		related.R = &eventTypeR{
+			ActionEvents: EventSlice{o},
+		}
+	} else {
+		related.R.ActionEvents = append(related.R.ActionEvents, o)
 	}
 
 	return nil

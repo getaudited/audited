@@ -19,10 +19,12 @@ func TestEventsPsqlRepository_Save(t *testing.T) {
 	// GIVEN
 	source := fixtureSource(t)
 	token := fixtureToken(t, source.ID())
+	eventType := fixtureEventType()
 	storeSource(t, source)
 	storeToken(t, token)
+	storeEventType(t, eventType)
 
-	event := fixtureEvent(t, source.ID())
+	event := fixtureEvent(t, source.ID(), eventType.Action)
 
 	// WHEN
 	err := repo.Save(context.Background(), event, token.Value())
@@ -65,8 +67,10 @@ func TestEventsPsqlRepository_QueryAll(t *testing.T) {
 	// dedicated source + token
 	source := fixtureSource(t)
 	token := fixtureToken(t, source.ID())
+	eventType := fixtureEventType()
 	storeSource(t, source)
 	storeToken(t, token)
+	storeEventType(t, eventType)
 
 	// separate source to verify SourceID isolation
 	otherSource := fixtureSource(t)
@@ -81,28 +85,40 @@ func TestEventsPsqlRepository_QueryAll(t *testing.T) {
 	baseTime := time.Now().UTC().Truncate(time.Millisecond)
 
 	// event1: oldest, with known actor + target
-	event1 := fixtureEventWith(t, source.ID(),
+	event1 := fixtureEventWith(
+		t,
+		eventType.Action,
+		source.ID(),
 		domain.Actor{ID: knownActorID, ActorType: "user", Name: &knownActorName},
 		[]domain.Target{{ID: knownTargetID, TargetType: "resource"}},
 		baseTime.Add(-2*time.Hour),
 	)
 
 	// event2: middle timestamp, random actor + target
-	event2 := fixtureEventWith(t, source.ID(),
+	event2 := fixtureEventWith(
+		t,
+		eventType.Action,
+		source.ID(),
 		domain.Actor{ID: ulid.Make().String(), ActorType: "user"},
 		[]domain.Target{{ID: ulid.Make().String(), TargetType: "resource"}},
 		baseTime.Add(-time.Hour),
 	)
 
 	// event3: newest, random actor + target
-	event3 := fixtureEventWith(t, source.ID(),
+	event3 := fixtureEventWith(
+		t,
+		eventType.Action,
+		source.ID(),
 		domain.Actor{ID: ulid.Make().String(), ActorType: "system"},
 		[]domain.Target{{ID: ulid.Make().String(), TargetType: "resource"}},
 		baseTime,
 	)
 
 	// event for another source — must never appear in source-scoped queries
-	eventOtherSource := fixtureEventWith(t, otherSource.ID(),
+	eventOtherSource := fixtureEventWith(
+		t,
+		eventType.Action,
+		otherSource.ID(),
 		domain.Actor{ID: ulid.Make().String(), ActorType: "user"},
 		[]domain.Target{{ID: ulid.Make().String(), TargetType: "resource"}},
 		baseTime,
@@ -237,7 +253,7 @@ func TestEventsPsqlRepository_Save_ErrTokenNotFound(t *testing.T) {
 	nonExistentSourceID := domain.NewID()
 	nonExistentToken := domain.TokenValue("some-value")
 
-	event := fixtureEvent(t, nonExistentSourceID)
+	event := fixtureEvent(t, nonExistentSourceID, "users.created")
 
 	// WHEN
 	err := repo.Save(context.Background(), event, nonExistentToken)

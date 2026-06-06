@@ -58,6 +58,7 @@ func mapRequestToDomainEvent(body CreateEventJSONBody) (domain.Event, error) {
 	return domain.NewEvent(
 		domain.ID(body.SourceId),
 		body.Version,
+		"users.created",
 		domain.Actor{
 			ID:        body.Actor.Id,
 			ActorType: body.Actor.Type,

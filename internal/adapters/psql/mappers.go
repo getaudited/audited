@@ -51,6 +51,7 @@ func mapDomainEventToModelEvent(e domain.Event) (models.Event, error) {
 		ID:               e.ID().String(),
 		SourceID:         e.SourceID().String(),
 		Version:          e.Version(),
+		Action:           e.Action(),
 		ActorID:          e.Actor().ID,
 		ActorType:        e.Actor().ActorType,
 		ActorName:        null.StringFromPtr(e.Actor().Name),
