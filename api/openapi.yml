@@ -36,12 +36,16 @@ paths:
         content:
           application/json:
             schema:
-              required: [ source_id, version, actor, targets, context, occurred_at ]
+              required: [ source_id, version, action, actor, targets, context, occurred_at ]
               properties:
                 source_id:
                   type: string
                 version:
                   type: integer
+                  default: 1
+                action:
+                  type: string
+                  description: Event type action
                 actor:
                   type: object
                   required: [ id, type ]

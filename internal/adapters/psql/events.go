@@ -16,7 +16,10 @@ import (
 	"github.com/getaudited/audited/internal/domain"
 )
 
-const FkEventBelongsToSource = "fk_event_belongs_to_source"
+const (
+	FkEventBelongsToSource    = "fk_event_belongs_to_source"
+	FkEventHasEventTypeAction = "fk_event_has_action"
+)
 
 type Cursor struct {
 	OccurredAt time.Time `json:"occurred_at"`
@@ -45,8 +48,13 @@ func (r EventsPsqlRepository) Save(ctx context.Context, e domain.Event, token do
 	}
 
 	err = row.Insert(ctx, r.db, boil.Infer())
-	if pqErr, ok := errors.AsType[*pq.Error](err); ok && pqErr.Constraint == FkEventBelongsToSource {
-		return domain.ErrSourceNotFoundWhileSavingEvent
+	if pqErr, ok := errors.AsType[*pq.Error](err); ok {
+		switch pqErr.Constraint {
+		case FkEventBelongsToSource:
+			return domain.ErrSourceNotFoundWhileSavingEvent
+		case FkEventHasEventTypeAction:
+			return domain.ErrEventTypeNotFound
+		}
 	}
 
 	if err != nil {
