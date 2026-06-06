@@ -1,10 +1,4 @@
 services:
-  rabbitmq:
-    image: heidiks/rabbitmq-delayed-message-exchange:3.9.13-management
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-
   postgres:
     image: postgres:16.3-alpine
     environment:
