@@ -41,6 +41,7 @@ func (c LogInHandler) Execute(ctx context.Context, cmd LogIn) (string, error) {
 	now := time.Now()
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, jwt.StandardClaims{
 		IssuedAt:  now.Unix(),
+		Subject:   user.ID().String(),
 		ExpiresAt: now.Add(24 * time.Hour).Unix(),
 	})
 

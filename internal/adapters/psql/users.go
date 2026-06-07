@@ -6,15 +6,20 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/getaudited/audited/internal/adapters/models"
 	"github.com/getaudited/audited/internal/domain"
 )
 
+const (
+	ConstraintUniqueUserEmail = "un_email"
+)
+
 type UserPsqlRepository struct {
-	db *sql.DB
+	db boil.ContextExecutor
 }
 
-func NewUsersPsqlRepository(db *sql.DB) UserPsqlRepository {
+func NewUsersPsqlRepository(db boil.ContextExecutor) UserPsqlRepository {
 	return UserPsqlRepository{
 		db: db,
 	}
@@ -30,4 +35,20 @@ func (u UserPsqlRepository) FindByEmail(ctx context.Context, email domain.Email)
 	}
 
 	return domain.MarshallToUser(row.ID, row.Email, row.Password, row.Role, row.CreatedAt), nil
+}
+
+func (u UserPsqlRepository) Save(ctx context.Context, user *domain.User) error {
+	row := models.User{
+		ID:        user.ID().String(),
+		Email:     user.Email().String(),
+		Password:  user.Password().String(),
+		Role:      user.Role().String(),
+		CreatedAt: user.CreatedAt(),
+	}
+	err := row.Upsert(ctx, u.db, false, []string{"email"}, boil.Infer(), boil.Infer())
+	if err != nil {
+		return fmt.Errorf("error saving user: %w", err)
+	}
+
+	return nil
 }

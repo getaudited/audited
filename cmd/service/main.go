@@ -14,9 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/friendsofgo/errors"
-	"github.com/getaudited/audited/internal/adapters/models"
 	"github.com/getaudited/audited/internal/domain"
 	"github.com/kelseyhightower/envconfig"
 	_ "github.com/lib/pq"
@@ -40,8 +38,8 @@ type Config struct {
 	AmqpUrl           string   `envconfig:"AMQP_URL"`
 	JWTPublicKey      string   `envconfig:"JWT_PUBLIC_KEY" required:"true"`
 	JWTPrivateKey     string   `envconfig:"JWT_PRIVATE_KEY" required:"true"`
-	AdminEmail        string   `envconfig:"ADMIN_EMAIL"`
-	AdminPassword     string   `envconfig:"ADMIN_PASSWORD"`
+	AdminEmail        string   `envconfig:"ADMIN_EMAIL" required:"true"`
+	AdminPassword     string   `envconfig:"ADMIN_PASSWORD" required:"true"`
 }
 
 type Service struct {
@@ -98,6 +96,7 @@ func (s *Service) Run() error {
 			CreateToken:     command.NewCreateTokenHandler(tokensRepository),
 			DeleteToken:     command.NewDeleteTokenHandler(tokensRepository),
 			LogIn:           command.NewLogInHandler(usersRepository, jwtPrivateKey),
+			CreateAdminUser: command.NewCreateAdminUserHandler(usersRepository),
 		},
 		Queries: app.Queries{
 			EventTypes:        nil,
@@ -139,10 +138,6 @@ func (s *Service) Run() error {
 			terminationCtxCancel()
 			cancel()
 		}()
-
-		if err != nil {
-			return fmt.Errorf("error closing messaging: %w", err)
-		}
 
 		err = httpPort.Stop(terminationCtx)
 		if err != nil {
@@ -203,17 +198,14 @@ func (s *Service) createAdminUserIfNotExists(ctx context.Context, db *sql.DB) er
 		return err
 	}
 
-	row := models.User{
-		ID:        user.ID().String(),
-		Email:     user.Email().String(),
-		Password:  user.Password().String(),
-		Role:      user.Role().String(),
-		CreatedAt: user.CreatedAt(),
-	}
+	usersRepository := psql.NewUsersPsqlRepository(db)
+	handler := command.NewCreateAdminUserHandler(usersRepository)
 
-	err = row.Upsert(ctx, db, false, []string{"email"}, boil.Infer(), boil.Infer())
+	err = handler.Execute(ctx, command.CreateAdminUser{
+		User: user,
+	})
 	if err != nil {
-		return fmt.Errorf("error saving admin user: %w", err)
+		return err
 	}
 
 	s.logger.Debug("Admin user set up successfully")

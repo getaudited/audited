@@ -3,7 +3,6 @@ package logs
 import (
 	"log/slog"
 	"os"
-	"strings"
 )
 
 type Logger struct {
@@ -24,16 +23,12 @@ func (l *Logger) Fatal(msg string, args ...any) {
 	os.Exit(1)
 }
 
-var levels map[string]slog.Level = map[string]slog.Level{
-	"INFO":  slog.LevelInfo,
-	"DEBUG": slog.LevelDebug,
-}
-
 func mapLogLevel(level string) slog.Level {
-	v, exists := levels[strings.ToUpper(level)]
-	if !exists {
-		return slog.LevelInfo
+	var mappedLevel slog.Level
+	err := mappedLevel.UnmarshalText([]byte(level))
+	if err != nil {
+		mappedLevel = slog.LevelInfo
 	}
 
-	return v
+	return mappedLevel
 }

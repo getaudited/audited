@@ -29,6 +29,7 @@ type Commands struct {
 	CreateToken     CommandHandler[command.CreateToken]
 	DeleteToken     CommandHandler[command.DeleteToken]
 	LogIn           CommandWithResultHandler[command.LogIn, string]
+	CreateAdminUser CommandHandler[command.CreateAdminUser]
 }
 
 type Queries struct {

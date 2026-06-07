@@ -13,6 +13,7 @@ import (
 
 var (
 	ErrUserNotFound                            = errors.New("user not being found")
+	ErrUserExists                              = errors.New("user exists")
 	ErrAuthenticationFailedCredentialsMismatch = errors.New("authentication failed due to credentials mismatch")
 )
 
@@ -144,4 +145,5 @@ var (
 
 type UserRepository interface {
 	FindByEmail(ctx context.Context, email Email) (*User, error)
+	Save(ctx context.Context, user *User) error
 }

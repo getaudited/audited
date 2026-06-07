@@ -26,10 +26,10 @@ func (h handlers) LogIn(c echo.Context) error {
 		PlainTextPassword: body.Password,
 	})
 	if errors.Is(err, domain.ErrUserNotFound) {
-		return NewHandlerErrorWithStatus(err, "authentication-failed-user-not-found", http.StatusUnauthorized)
+		return NewHandlerErrorWithStatus(err, "authentication-failed", http.StatusUnauthorized)
 	}
 	if errors.Is(err, domain.ErrAuthenticationFailedCredentialsMismatch) {
-		return NewHandlerErrorWithStatus(err, "authentication-failed-credentials-mismatch", http.StatusUnauthorized)
+		return NewHandlerErrorWithStatus(err, "authentication-failed", http.StatusUnauthorized)
 	}
 	if err != nil {
 		return NewHandlerError(err, "error-authenticating")
