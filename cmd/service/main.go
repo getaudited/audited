@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/x509"
+	"database/sql"
 	"encoding/pem"
 	"fmt"
 	"os"
@@ -12,7 +13,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/friendsofgo/errors"
+	"github.com/getaudited/audited/internal/adapters/models"
+	"github.com/getaudited/audited/internal/domain"
 	"github.com/kelseyhightower/envconfig"
 	_ "github.com/lib/pq"
 	"golang.org/x/sync/errgroup"
@@ -45,9 +49,12 @@ type Config struct {
 	DebugMode         bool     `envconfig:"DEBUG_MODE"`
 	AmqpUrl           string   `envconfig:"AMQP_URL"`
 	JWTPublicKey      string   `envconfig:"JWT_PUBLIC_KEY" required:"true"`
+	AdminEmail        string   `envconfig:"ADMIN_EMAIL"`
+	AdminPassword     string   `envconfig:"ADMIN_PASSWORD"`
 }
 
 type Service struct {
+	config *Config
 	logger *logs.Logger
 }
 
@@ -59,6 +66,7 @@ func (s *Service) Run() error {
 	if err != nil {
 		return err
 	}
+	s.config = config
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	g, ctx := errgroup.WithContext(ctx)
@@ -70,6 +78,12 @@ func (s *Service) Run() error {
 	defer func() { _ = db.Close() }()
 
 	err = postgres.ApplyMigrations(db, "misc/sql/migrations")
+	if err != nil {
+		return err
+	}
+
+	// Set up Admin user
+	err = s.createAdminUserIfNotExists(ctx, db)
 	if err != nil {
 		return err
 	}
@@ -118,9 +132,7 @@ func (s *Service) Run() error {
 		return err
 	}
 
-	g.Go(func() error {
-		return httpPort.Start()
-	})
+	g.Go(httpPort.Start)
 
 	g.Go(func() error {
 		<-ctx.Done()
@@ -176,4 +188,38 @@ func (s *Service) parsePublicKey(content string) (*ecdsa.PublicKey, error) {
 	}
 
 	return parsedPublicKey, nil
+}
+
+func (s *Service) createAdminUserIfNotExists(ctx context.Context, db *sql.DB) error {
+	email, err := domain.NewEmail(s.config.AdminEmail)
+	if err != nil {
+		return err
+	}
+
+	password, err := domain.NewPassword(s.config.AdminPassword)
+	if err != nil {
+		return err
+	}
+
+	user, err := domain.NewUser(email, password, domain.UserRoleAdmin)
+	if err != nil {
+		return err
+	}
+
+	row := models.User{
+		ID:        user.ID().String(),
+		Email:     user.Email().String(),
+		Password:  user.Password().String(),
+		Role:      user.Role().String(),
+		CreatedAt: user.CreatedAt(),
+	}
+
+	err = row.Upsert(ctx, db, false, []string{"email"}, boil.Infer(), boil.Infer())
+	if err != nil {
+		return fmt.Errorf("error saving admin user: %w", err)
+	}
+
+	s.logger.Info("Admin user set up successfully")
+
+	return nil
 }

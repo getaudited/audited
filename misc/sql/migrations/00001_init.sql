@@ -1,5 +1,16 @@
 -- +goose Up
 -- +goose StatementBegin
+CREATE TYPE UserRole AS ENUM('admin', 'member');
+
+CREATE TABLE users (
+    id TEXT NOT NULL PRIMARY KEY,
+    email TEXT NOT NULL,
+    password TEXT NOT NULL,
+    role UserRole NOT NULL DEFAULT 'member',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    CONSTRAINT un_email UNIQUE (email)
+);
 
 CREATE TABLE sources (
     id TEXT NOT NULL PRIMARY KEY,
@@ -69,9 +80,11 @@ CREATE INDEX idx_event_targets_id ON event_targets(id);
 
 -- +goose Down
 -- +goose StatementBegin
+DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS tokens;
 DROP TABLE IF EXISTS event_targets;
 DROP TABLE IF EXISTS events;
 DROP TABLE IF EXISTS event_types;
 DROP TABLE IF EXISTS sources;
+DROP TYPE IF EXISTS UserRole;
 -- +goose StatementEnd
