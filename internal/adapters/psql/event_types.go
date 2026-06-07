@@ -39,12 +39,11 @@ func (r EventTypePsqlRepository) Save(ctx context.Context, et domain.EventType) 
 	}
 
 	err := row.Insert(ctx, r.db, boil.Infer())
-	fmt.Println("err", err)
 	if pqErr, ok := errors.AsType[*pq.Error](err); ok && pqErr.Constraint == ConstraintEventTypeActionIsUnique {
 		return domain.ErrEventTypeExists
 	}
 	if err != nil {
-		return fmt.Errorf("unable to save event type: %v", err)
+		return fmt.Errorf("unable to save event type: %w", err)
 	}
 
 	return nil
@@ -56,7 +55,7 @@ func (r EventTypePsqlRepository) FindByAction(ctx context.Context, action string
 		return nil, domain.ErrEventTypeNotFound
 	}
 	if err != nil {
-		return nil, fmt.Errorf("error querying for event_type by action '%s': %v", action, err)
+		return nil, fmt.Errorf("error querying for event_type by action '%s': %w", action, err)
 	}
 
 	return mapRowToEventType(row), nil
@@ -65,7 +64,7 @@ func (r EventTypePsqlRepository) FindByAction(ctx context.Context, action string
 func (r EventTypePsqlRepository) Delete(ctx context.Context, action string) error {
 	_, err := models.EventTypes(models.EventTypeWhere.Action.EQ(action)).DeleteAll(ctx, r.db)
 	if err != nil {
-		return fmt.Errorf("error deleting event_type with action '%s' due to: %v", action, err)
+		return fmt.Errorf("error deleting event_type with action '%s' due to: %w", action, err)
 	}
 
 	return nil
@@ -74,7 +73,7 @@ func (r EventTypePsqlRepository) Delete(ctx context.Context, action string) erro
 func (r EventTypePsqlRepository) QueryAll(ctx context.Context, params query.PaginationParams) (query.Pagination[*domain.EventType], error) {
 	count, err := models.EventTypes().Count(ctx, r.db)
 	if err != nil {
-		return query.Pagination[*domain.EventType]{}, fmt.Errorf("unable to count event types: %v", err)
+		return query.Pagination[*domain.EventType]{}, fmt.Errorf("unable to count event types: %w", err)
 	}
 	boil.DebugMode = true
 	rows, err := models.EventTypes(
@@ -83,7 +82,7 @@ func (r EventTypePsqlRepository) QueryAll(ctx context.Context, params query.Pagi
 		qm.OrderBy("created_at DESC"),
 	).All(ctx, r.db)
 	if err != nil {
-		return query.Pagination[*domain.EventType]{}, fmt.Errorf("unable to query event types: %v", err)
+		return query.Pagination[*domain.EventType]{}, fmt.Errorf("unable to query event types: %w", err)
 	}
 
 	fmt.Println("###", rows)

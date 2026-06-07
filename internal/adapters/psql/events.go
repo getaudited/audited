@@ -16,7 +16,10 @@ import (
 	"github.com/getaudited/audited/internal/domain"
 )
 
-const FkEventBelongsToSource = "fk_event_belongs_to_source"
+const (
+	FkEventBelongsToSource    = "fk_event_belongs_to_source"
+	FkEventHasEventTypeAction = "fk_event_has_action"
+)
 
 type Cursor struct {
 	OccurredAt time.Time `json:"occurred_at"`
@@ -45,12 +48,16 @@ func (r EventsPsqlRepository) Save(ctx context.Context, e domain.Event, token do
 	}
 
 	err = row.Insert(ctx, r.db, boil.Infer())
-	if pqErr, ok := errors.AsType[*pq.Error](err); ok && pqErr.Constraint == FkEventBelongsToSource {
-		return domain.ErrSourceNotFoundWhileSavingEvent
+	if pqErr, ok := errors.AsType[*pq.Error](err); ok {
+		switch pqErr.Constraint {
+		case FkEventBelongsToSource:
+			return domain.ErrSourceNotFoundWhileSavingEvent
+		case FkEventHasEventTypeAction:
+			return domain.ErrEventTypeActionNotFound
+		}
 	}
-
 	if err != nil {
-		return fmt.Errorf("error saving event: %v", err)
+		return fmt.Errorf("error saving event: %w", err)
 	}
 
 	targetRows, err := mapDomainEventTargetsToModelEventTargets(e.ID(), e.Targets())
@@ -60,7 +67,7 @@ func (r EventsPsqlRepository) Save(ctx context.Context, e domain.Event, token do
 
 	err = row.AddEventTargets(ctx, r.db, true, targetRows...)
 	if err != nil {
-		return fmt.Errorf("error saving event_targets: %v", err)
+		return fmt.Errorf("error saving event_targets: %w", err)
 	}
 
 	return nil
@@ -72,7 +79,7 @@ func (r EventsPsqlRepository) validateToken(ctx context.Context, token domain.To
 		models.TokenWhere.SourceID.EQ(sourceID.String()),
 	).Exists(ctx, r.db)
 	if err != nil {
-		return fmt.Errorf("error validating token: %v", err)
+		return fmt.Errorf("error validating token: %w", err)
 	}
 
 	if !exists {
@@ -132,7 +139,7 @@ func (r EventsPsqlRepository) QueryAll(
 
 	rows, err := models.Events(opts...).All(ctx, r.db)
 	if err != nil {
-		return query.CursorPaginationResult[domain.Event]{}, fmt.Errorf("error querying events for source_id '%s': %v", params.SourceID, err)
+		return query.CursorPaginationResult[domain.Event]{}, fmt.Errorf("error querying events for source_id '%s': %w", params.SourceID, err)
 	}
 
 	lastItemCursor, err := mapLastItemCursor(rows)

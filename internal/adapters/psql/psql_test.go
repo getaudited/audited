@@ -102,17 +102,34 @@ func queryEventByID(t *testing.T, eventID domain.ID) *models.Event {
 	return row
 }
 
-func fixtureEventWith(t *testing.T, sourceID domain.ID, actor domain.Actor, targets []domain.Target, occurredAt time.Time) domain.Event {
+func fixtureEventWith(
+	t *testing.T,
+	eventTypeAction string,
+	sourceID domain.ID,
+	actor domain.Actor,
+	targets []domain.Target,
+	occurredAt time.Time,
+) domain.Event {
 	t.Helper()
-	e, err := domain.NewEvent(sourceID, 1, actor, targets, domain.Context{Location: gofakeit.IPv4Address()}, nil, occurredAt)
+	e, err := domain.NewEvent(
+		sourceID,
+		1,
+		eventTypeAction,
+		actor,
+		targets,
+		domain.Context{Location: gofakeit.IPv4Address()},
+		nil,
+		occurredAt,
+	)
 	require.NoError(t, err)
 	return e
 }
 
-func fixtureEvent(t *testing.T, sourceID domain.ID) domain.Event {
+func fixtureEvent(t *testing.T, sourceID domain.ID, eventTypeAction string) domain.Event {
 	event, err := domain.NewEvent(
 		sourceID,
 		1,
+		eventTypeAction,
 		domain.Actor{
 			ID:        ulid.Make().String(),
 			ActorType: "user",

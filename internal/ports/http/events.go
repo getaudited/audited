@@ -30,6 +30,9 @@ func (h handlers) CreateEvent(c echo.Context, params CreateEventParams) error {
 	if errors.Is(err, domain.ErrTokenNotFound) {
 		return NewHandlerErrorWithStatus(err, "token-not-found", http.StatusUnauthorized)
 	}
+	if errors.Is(err, domain.ErrEventTypeActionNotFound) {
+		return NewHandlerErrorWithStatus(err, "event-type-action-not-found", http.StatusNotFound)
+	}
 	if err != nil {
 		return NewHandlerError(err, "unable-to-create-event")
 	}
@@ -71,46 +74,4 @@ func (h handlers) GetEvents(c echo.Context, params GetEventsParams) error {
 		LastItemCursor: result.LastItemCursor,
 		Data:           mapDomainEventsToEvents(result.Data),
 	})
-}
-
-func mapDomainEventsToEvents(events []domain.Event) []Event {
-	r := make([]Event, len(events))
-
-	for i, e := range events {
-		r[i] = mapDomainEventToEvent(e)
-	}
-
-	return r
-}
-
-func mapDomainEventToEvent(e domain.Event) Event {
-	targets := make([]Target, len(e.Targets()))
-
-	for i, t := range e.Targets() {
-		targets[i] = Target{
-			Id:         t.ID,
-			Name:       t.Name,
-			Metadata:   t.Metadata,
-			TargetType: t.TargetType,
-		}
-	}
-
-	return Event{
-		Id:       e.ID().String(),
-		Metadata: e.Metadata(),
-		SourceId: e.SourceID().String(),
-		Actor: Actor{
-			Id:        e.Actor().ID,
-			Name:      e.Actor().Name,
-			ActorType: e.Actor().ActorType,
-			Metadata:  e.Actor().Metadata,
-		},
-		Context: Context{
-			Location:  e.Context().Location,
-			UserAgent: e.Context().UserAgent,
-		},
-		Targets:    targets,
-		Version:    e.Version(),
-		OccurredAt: e.OccurredAt().String(),
-	}
 }

@@ -38,6 +38,7 @@ CREATE TABLE events (
     id TEXT NOT NULL PRIMARY KEY,
     source_id TEXT NOT NULL,
     version INT NOT NULL,
+    action TEXT NOT NULL,
     actor_id TEXT NOT NULL,
     actor_type TEXT NOT NULL,
     actor_name TEXT,
@@ -47,7 +48,8 @@ CREATE TABLE events (
     metadata JSONB,
     occurred_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    CONSTRAINT fk_event_belongs_to_source FOREIGN KEY (source_id) REFERENCES sources (id)
+    CONSTRAINT fk_event_belongs_to_source FOREIGN KEY (source_id) REFERENCES sources (id),
+    CONSTRAINT fk_event_has_action FOREIGN KEY (action) REFERENCES event_types (action)
 );
 
 CREATE TABLE event_targets (
@@ -67,9 +69,9 @@ CREATE INDEX idx_event_targets_id ON event_targets(id);
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE tokens;
-DROP TABLE event_targets;
-DROP TABLE events;
-DROP TABLE event_types;
-DROP TABLE sources;
+DROP TABLE IF EXISTS tokens;
+DROP TABLE IF EXISTS event_targets;
+DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS event_types;
+DROP TABLE IF EXISTS sources;
 -- +goose StatementEnd

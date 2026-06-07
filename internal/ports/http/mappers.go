@@ -58,6 +58,7 @@ func mapRequestToDomainEvent(body CreateEventJSONBody) (domain.Event, error) {
 	return domain.NewEvent(
 		domain.ID(body.SourceId),
 		body.Version,
+		body.Action,
 		domain.Actor{
 			ID:        body.Actor.Id,
 			ActorType: body.Actor.Type,
@@ -128,4 +129,47 @@ func mapToEventTypeList(result query.Pagination[*domain.EventType]) EventTypeLis
 
 func mapEchoCtxToCtx(c echo.Context) context.Context {
 	return c.Request().Context()
+}
+
+func mapDomainEventsToEvents(events []domain.Event) []Event {
+	r := make([]Event, len(events))
+
+	for i, e := range events {
+		r[i] = mapDomainEventToEvent(e)
+	}
+
+	return r
+}
+
+func mapDomainEventToEvent(e domain.Event) Event {
+	targets := make([]Target, len(e.Targets()))
+
+	for i, t := range e.Targets() {
+		targets[i] = Target{
+			Id:         t.ID,
+			Name:       t.Name,
+			Metadata:   t.Metadata,
+			TargetType: t.TargetType,
+		}
+	}
+
+	return Event{
+		Id:       e.ID().String(),
+		Metadata: e.Metadata(),
+		SourceId: e.SourceID().String(),
+		Action:   e.Action(),
+		Actor: Actor{
+			Id:        e.Actor().ID,
+			Name:      e.Actor().Name,
+			ActorType: e.Actor().ActorType,
+			Metadata:  e.Actor().Metadata,
+		},
+		Context: Context{
+			Location:  e.Context().Location,
+			UserAgent: e.Context().UserAgent,
+		},
+		Targets:    targets,
+		Version:    e.Version(),
+		OccurredAt: e.OccurredAt().String(),
+	}
 }

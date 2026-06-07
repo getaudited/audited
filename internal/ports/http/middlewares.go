@@ -75,7 +75,7 @@ func (m *JWTMiddleware) Authenticate(_ context.Context, input *openapi3filter.Au
 		return m.publicKey, nil
 	})
 	if err != nil {
-		return fmt.Errorf("error parsing the JWT provided: %v", err)
+		return fmt.Errorf("error parsing the JWT provided: %w", err)
 	}
 
 	return nil

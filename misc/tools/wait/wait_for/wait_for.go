@@ -9,7 +9,6 @@ import (
 	"github.com/getaudited/audited/internal/common/logs"
 	"github.com/getaudited/audited/internal/common/postgres"
 	_ "github.com/lib/pq"
-	"github.com/rabbitmq/amqp091-go"
 )
 
 type WaitFor struct {
@@ -25,18 +24,15 @@ func NewWaitFor(logger *logs.Logger) *WaitFor {
 }
 
 func (w *WaitFor) Do(handler func() error, svcName string, timeout time.Duration) {
-	w.wg.Add(1)
-
 	w.logger.Info("⏱️WaitFor started", "service", svcName)
 
-	go func() {
+	w.wg.Go(func() {
 		until := time.NewTimer(timeout)
 
 		for {
 			select {
 			case <-until.C:
 				w.logger.Error("⛔Timeout reached", "service", svcName)
-				w.wg.Done()
 
 				// Exit with an error because the checks must be all or nothing.
 				os.Exit(1)
@@ -50,12 +46,11 @@ func (w *WaitFor) Do(handler func() error, svcName string, timeout time.Duration
 
 				if err == nil {
 					w.logger.Info("✅Ready", "service", svcName)
-					w.wg.Done()
 					return
 				}
 			}
 		}
-	}()
+	})
 }
 
 func (w *WaitFor) Wait() {
@@ -73,15 +68,6 @@ func Run() {
 
 		return db.Ping()
 	}, "postgres", time.Second*30)
-
-	w.Do(func() error {
-		_, err := amqp091.Dial(os.Getenv("AMQP_URL"))
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}, "rabbitmq", time.Second*30)
 
 	w.Wait()
 }

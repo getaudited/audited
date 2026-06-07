@@ -122,3 +122,8 @@ func fixtureEventType() domain.EventType {
 		UpdatedAt:                    now,
 	}
 }
+
+func storeEventType(t *testing.T, eventType domain.EventType) {
+	repo := psql.NewEventTypePsqlRepository(db)
+	require.NoError(t, repo.Save(ctx, eventType))
+}
