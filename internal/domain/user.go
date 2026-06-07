@@ -13,7 +13,6 @@ import (
 
 var (
 	ErrUserNotFound                            = errors.New("user not being found")
-	ErrUserExists                              = errors.New("user exists")
 	ErrAuthenticationFailedCredentialsMismatch = errors.New("authentication failed due to credentials mismatch")
 )
 
@@ -105,6 +104,7 @@ type Password struct {
 }
 
 func NewPassword(plainTextPassword string) (Password, error) {
+	// TODO: extract bcrypt out of the doamin
 	hash, err := bcrypt.GenerateFromPassword([]byte(plainTextPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return Password{}, fmt.Errorf("error generating password: %w", err)
@@ -124,6 +124,7 @@ func (p Password) Empty() bool {
 }
 
 func (p Password) IsEqual(plainTextPassword string) bool {
+	// TODO: extract bcrypt out of the domain
 	err := bcrypt.CompareHashAndPassword(p.value, []byte(plainTextPassword))
 	return err == nil
 }

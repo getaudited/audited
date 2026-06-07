@@ -183,9 +183,20 @@ func (s *Service) parsePublicKey(content string) (*ecdsa.PublicKey, error) {
 }
 
 func (s *Service) createAdminUserIfNotExists(ctx context.Context, db *sql.DB) error {
+	usersRepository := psql.NewUsersPsqlRepository(db)
+
 	email, err := domain.NewEmail(s.config.AdminEmail)
 	if err != nil {
 		return err
+	}
+
+	adminUser, err := usersRepository.FindByEmail(ctx, email)
+	if err != nil && !errors.Is(err, domain.ErrUserNotFound) {
+		return err
+	}
+	if adminUser != nil {
+		s.logger.Debug("Admin user exists")
+		return nil
 	}
 
 	password, err := domain.NewPassword(s.config.AdminPassword)
@@ -198,7 +209,6 @@ func (s *Service) createAdminUserIfNotExists(ctx context.Context, db *sql.DB) er
 		return err
 	}
 
-	usersRepository := psql.NewUsersPsqlRepository(db)
 	handler := command.NewCreateAdminUserHandler(usersRepository)
 
 	err = handler.Execute(ctx, command.CreateAdminUser{

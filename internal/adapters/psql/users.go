@@ -11,10 +11,6 @@ import (
 	"github.com/getaudited/audited/internal/domain"
 )
 
-const (
-	ConstraintUniqueUserEmail = "un_email"
-)
-
 type UserPsqlRepository struct {
 	db boil.ContextExecutor
 }
