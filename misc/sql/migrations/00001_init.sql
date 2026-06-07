@@ -69,9 +69,9 @@ CREATE INDEX idx_event_targets_id ON event_targets(id);
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE tokens;
-DROP TABLE event_targets;
-DROP TABLE events;
-DROP TABLE event_types;
-DROP TABLE sources;
+DROP TABLE IF EXISTS tokens;
+DROP TABLE IF EXISTS event_targets;
+DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS event_types;
+DROP TABLE IF EXISTS sources;
 -- +goose StatementEnd
