@@ -94,7 +94,7 @@ func (e *Event) OccurredAt() time.Time {
 }
 
 func MarshallToEvent(
-	id, sourceID string,
+	id, sourceID, action string,
 	version int,
 	actor Actor,
 	targets []Target,
@@ -105,6 +105,7 @@ func MarshallToEvent(
 	return Event{
 		id:         ID(id),
 		sourceID:   ID(sourceID),
+		action:     action,
 		version:    version,
 		actor:      actor,
 		targets:    targets,

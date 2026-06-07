@@ -30,6 +30,9 @@ func (h handlers) CreateEvent(c echo.Context, params CreateEventParams) error {
 	if errors.Is(err, domain.ErrTokenNotFound) {
 		return NewHandlerErrorWithStatus(err, "token-not-found", http.StatusUnauthorized)
 	}
+	if errors.Is(err, domain.ErrEventTypeActionNotFound) {
+		return NewHandlerErrorWithStatus(err, "event-type-action-not-found", http.StatusNotFound)
+	}
 	if err != nil {
 		return NewHandlerError(err, "unable-to-create-event")
 	}

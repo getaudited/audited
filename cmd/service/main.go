@@ -132,7 +132,7 @@ func (s *Service) Run() error {
 		}()
 
 		if err != nil {
-			return fmt.Errorf("error closing messaging: %v", err)
+			return fmt.Errorf("error closing messaging: %w", err)
 		}
 
 		err = httpPort.Stop(terminationCtx)
@@ -151,7 +151,7 @@ func (s *Service) loadEnvVariables() (*Config, error) {
 
 	err := envconfig.Process("", config)
 	if err != nil {
-		return nil, fmt.Errorf("unable to load environment variables: %v", err)
+		return nil, fmt.Errorf("unable to load environment variables: %w", err)
 	}
 
 	return config, nil
@@ -167,7 +167,7 @@ func (s *Service) parsePublicKey(content string) (*ecdsa.PublicKey, error) {
 
 	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing public key: %v", err)
+		return nil, fmt.Errorf("error parsing public key: %w", err)
 	}
 
 	parsedPublicKey, ok := pub.(*ecdsa.PublicKey)

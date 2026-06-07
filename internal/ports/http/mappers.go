@@ -157,6 +157,7 @@ func mapDomainEventToEvent(e domain.Event) Event {
 		Id:       e.ID().String(),
 		Metadata: e.Metadata(),
 		SourceId: e.SourceID().String(),
+		Action:   e.Action(),
 		Actor: Actor{
 			Id:        e.Actor().ID,
 			Name:      e.Actor().Name,

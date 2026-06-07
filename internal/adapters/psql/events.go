@@ -53,12 +53,12 @@ func (r EventsPsqlRepository) Save(ctx context.Context, e domain.Event, token do
 		case FkEventBelongsToSource:
 			return domain.ErrSourceNotFoundWhileSavingEvent
 		case FkEventHasEventTypeAction:
-			return domain.ErrEventTypeNotFound
+			return domain.ErrEventTypeActionNotFound
 		}
 	}
 
 	if err != nil {
-		return fmt.Errorf("error saving event: %v", err)
+		return fmt.Errorf("error saving event: %w", err)
 	}
 
 	targetRows, err := mapDomainEventTargetsToModelEventTargets(e.ID(), e.Targets())
@@ -68,7 +68,7 @@ func (r EventsPsqlRepository) Save(ctx context.Context, e domain.Event, token do
 
 	err = row.AddEventTargets(ctx, r.db, true, targetRows...)
 	if err != nil {
-		return fmt.Errorf("error saving event_targets: %v", err)
+		return fmt.Errorf("error saving event_targets: %w", err)
 	}
 
 	return nil
@@ -80,7 +80,7 @@ func (r EventsPsqlRepository) validateToken(ctx context.Context, token domain.To
 		models.TokenWhere.SourceID.EQ(sourceID.String()),
 	).Exists(ctx, r.db)
 	if err != nil {
-		return fmt.Errorf("error validating token: %v", err)
+		return fmt.Errorf("error validating token: %w", err)
 	}
 
 	if !exists {
@@ -140,7 +140,7 @@ func (r EventsPsqlRepository) QueryAll(
 
 	rows, err := models.Events(opts...).All(ctx, r.db)
 	if err != nil {
-		return query.CursorPaginationResult[domain.Event]{}, fmt.Errorf("error querying events for source_id '%s': %v", params.SourceID, err)
+		return query.CursorPaginationResult[domain.Event]{}, fmt.Errorf("error querying events for source_id '%s': %w", params.SourceID, err)
 	}
 
 	lastItemCursor, err := mapLastItemCursor(rows)

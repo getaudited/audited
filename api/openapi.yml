@@ -356,6 +356,7 @@ paths:
           $ref: '#/components/responses/BadRequestError'
         default:
           $ref: "#/components/responses/InternalServerError"
+
 components:
   parameters:
     x_token:
@@ -487,7 +488,7 @@ components:
           nullable: true
           additionalProperties: true
     Event:
-      required: [id, source_id, version, actor, targets, context, occurred_at]
+      required: [id, source_id, action, version, actor, targets, context, occurred_at]
       properties:
         id:
           type: string
@@ -495,25 +496,28 @@ components:
         source_id:
           type: string
           x-order: 2
+        action:
+          type: string
+          x-order: 3
         version:
           type: integer
-          x-order: 3
+          x-order: 4
         actor:
           $ref: '#/components/schemas/Actor'
         targets:
-          x-order: 4
+          x-order: 5
           type: array
           items:
             $ref: '#/components/schemas/Target'
         context:
           $ref: '#/components/schemas/Context'
         metadata:
-          x-order: 5
+          x-order: 6
           type: object
           additionalProperties: true
           nullable: true
         occurred_at:
-          x-order: 6
+          x-order: 7
           type: string
           format: data-time
     EventList:
@@ -525,6 +529,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Event'
+
     # Source
     Source:
       type: object
@@ -553,6 +558,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Source'
+
     # Event type
     EventType:
       required: [id, action, version, target_types, should_validate_metadata_schema, created_at, updated_at]

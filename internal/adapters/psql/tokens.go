@@ -30,7 +30,7 @@ func (r TokensPsqlRepository) Delete(ctx context.Context, id, sourceID domain.ID
 	}
 	_, err := row.Delete(ctx, r.db)
 	if err != nil {
-		return fmt.Errorf("error deleting token with id '%s': %v", id, err)
+		return fmt.Errorf("error deleting token with id '%s': %w", id, err)
 	}
 
 	return nil
@@ -39,7 +39,7 @@ func (r TokensPsqlRepository) Delete(ctx context.Context, id, sourceID domain.ID
 func (r TokensPsqlRepository) QueryAll(ctx context.Context, sourceID domain.ID) ([]*domain.Token, error) {
 	rows, err := models.Tokens(models.TokenWhere.SourceID.EQ(sourceID.String())).All(ctx, r.db)
 	if err != nil {
-		return nil, fmt.Errorf("error querying tokens by project_id '%s': %v", sourceID, err)
+		return nil, fmt.Errorf("error querying tokens by project_id '%s': %w", sourceID, err)
 	}
 
 	return mapRowsToDomainTokens(rows), nil

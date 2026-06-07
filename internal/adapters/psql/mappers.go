@@ -72,7 +72,7 @@ func mapMetadataToJSON(metadata *domain.Metadata) (null.JSON, error) {
 
 	data, err := json.Marshal(*metadata)
 	if err != nil {
-		return null.JSON{}, fmt.Errorf("error mapping metadata into json: %v", err)
+		return null.JSON{}, fmt.Errorf("error mapping metadata into json: %w", err)
 	}
 
 	return null.JSONFrom(data), nil
@@ -100,13 +100,13 @@ func mapDomainTokenToModelToken(token *domain.Token) *models.Token {
 func unmarshallCursor(encodedCursor string) (Cursor, error) {
 	decodedCursor, err := base64.StdEncoding.DecodeString(encodedCursor)
 	if err != nil {
-		return Cursor{}, fmt.Errorf("error decoding cursor '%s': %v", encodedCursor, err)
+		return Cursor{}, fmt.Errorf("error decoding cursor '%s': %w", encodedCursor, err)
 	}
 
 	var cursor Cursor
 	err = json.Unmarshal(decodedCursor, &cursor)
 	if err != nil {
-		return Cursor{}, fmt.Errorf("error unmarshalling cursor '%s': %v", encodedCursor, err)
+		return Cursor{}, fmt.Errorf("error unmarshalling cursor '%s': %w", encodedCursor, err)
 	}
 
 	return cursor, nil
@@ -120,7 +120,7 @@ func marshallCursor(eventID string, occurredAt time.Time) (string, error) {
 
 	marshalledCursor, err := json.Marshal(cursor)
 	if err != nil {
-		return "", fmt.Errorf("error marshalling cursor: %v", err)
+		return "", fmt.Errorf("error marshalling cursor: %w", err)
 	}
 
 	return base64.StdEncoding.EncodeToString(marshalledCursor), nil
@@ -135,7 +135,7 @@ func mapJsonToDomainMetadata(jsonMetadata null.JSON) (domain.Metadata, error) {
 
 	err := json.Unmarshal(jsonMetadata.JSON, &metadata)
 	if err != nil {
-		return nil, fmt.Errorf("error unmarshalling metadata: %v", err)
+		return nil, fmt.Errorf("error unmarshalling metadata: %w", err)
 	}
 
 	return metadata, nil
@@ -147,12 +147,12 @@ func mapRowsToDomainEvents(rows []*models.Event) ([]domain.Event, error) {
 	for i, row := range rows {
 		metadata, err := mapJsonToDomainMetadata(row.Metadata)
 		if err != nil {
-			return nil, fmt.Errorf("error unmarshalling event metadata: %v", err)
+			return nil, fmt.Errorf("error unmarshalling event metadata: %w", err)
 		}
 
 		actorMetadata, err := mapJsonToDomainMetadata(row.ActorMetadata)
 		if err != nil {
-			return nil, fmt.Errorf("error unmarshalling actor metadata: %v", err)
+			return nil, fmt.Errorf("error unmarshalling actor metadata: %w", err)
 		}
 
 		var targets []domain.Target
@@ -166,6 +166,7 @@ func mapRowsToDomainEvents(rows []*models.Event) ([]domain.Event, error) {
 		events[i] = domain.MarshallToEvent(
 			row.ID,
 			row.SourceID,
+			row.Action,
 			row.Version,
 			domain.Actor{
 				ID:        row.ActorID,

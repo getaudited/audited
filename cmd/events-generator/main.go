@@ -79,7 +79,10 @@ func main() {
 		log.Fatalf("error creating event type: %v", err)
 	}
 
-	token, err := domain.NewToken(source.ID(), fmt.Sprintf("Event Generator Token %s", time.Now()))
+	token, err := domain.NewToken(
+		source.ID(),
+		fmt.Sprintf("Event Generator Token %s", time.Now()),
+	)
 	if err != nil {
 		log.Fatalf("error creating token: %v", err)
 	}
