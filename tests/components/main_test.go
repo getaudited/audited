@@ -34,7 +34,7 @@ func TestMain(m *testing.M) {
 	wait_for.Run()
 
 	// Wait for the backend to be spun up
-	waitFor := wait_for.NewWaitFor(logs.New())
+	waitFor := wait_for.NewWaitFor(logs.New("DEBUG"))
 	waitFor.Do(func() error {
 		req, err := http.Get(fmt.Sprintf("http://localhost:%s/health", os.Getenv("HTTP_PORT")))
 		if err != nil {

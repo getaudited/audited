@@ -59,7 +59,7 @@ func (w *WaitFor) Wait() {
 
 // Run Wait for other containers to start responding before running the service
 func Run() {
-	w := NewWaitFor(logs.New())
+	w := NewWaitFor(logs.New(os.Getenv("LOG_LEVEL")))
 	w.Do(func() error {
 		db, err := postgres.Connect(context.Background(), os.Getenv("DATABASE_URL"))
 		if err != nil {

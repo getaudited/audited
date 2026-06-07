@@ -95,6 +95,36 @@ paths:
           $ref: "#/components/responses/InternalServerError"
 
   # Admin API
+  /x/v1/login:
+    post:
+      summary: Log in
+      description: Allows a user to authenticate via email and password
+      tags:
+        - Admin API
+      operationId: logIn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required: [ email, password ]
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Successful authentication details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogIn"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/InternalServerError"
+
   /x/v1/sources:
     get:
       summary: List all sources
@@ -618,6 +648,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Token'
+
+    # Log In
+    LogIn:
+      required: [jwt]
+      properties:
+        jwt:
+          type: string
 
     # Pagination
     Pagination:

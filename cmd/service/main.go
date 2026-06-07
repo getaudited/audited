@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"crypto/ecdsa"
 	"crypto/x509"
@@ -30,25 +31,15 @@ import (
 	"github.com/getaudited/audited/internal/ports/http"
 )
 
-func main() {
-	logger := logs.New()
-	svc := &Service{
-		logger: logger,
-	}
-
-	if err := svc.Run(); err != nil {
-		logger.Error("service exited with an error", "error", err)
-		os.Exit(1)
-	}
-}
-
 type Config struct {
 	DatabaseURL       string   `envconfig:"DATABASE_URL"`
 	HttpPort          int      `envconfig:"HTTP_PORT"`
 	AllowedCorsOrigin []string `envconfig:"ALLOWED_CORS_ORIGIN"`
 	DebugMode         bool     `envconfig:"DEBUG_MODE"`
+	LogLevel          string   `envconfig:"LOG_LEVEL"`
 	AmqpUrl           string   `envconfig:"AMQP_URL"`
 	JWTPublicKey      string   `envconfig:"JWT_PUBLIC_KEY" required:"true"`
+	JWTPrivateKey     string   `envconfig:"JWT_PRIVATE_KEY" required:"true"`
 	AdminEmail        string   `envconfig:"ADMIN_EMAIL"`
 	AdminPassword     string   `envconfig:"ADMIN_PASSWORD"`
 }
@@ -92,6 +83,11 @@ func (s *Service) Run() error {
 	sourcesRepository := psql.NewSourcesPsqlRepository(db)
 	eventTypeRepository := psql.NewEventTypePsqlRepository(db)
 	tokensRepository := psql.NewTokensPsqlRepository(db)
+	usersRepository := psql.NewUsersPsqlRepository(db)
+	jwtPrivateKey, err := s.parseJwtPrivateKey()
+	if err != nil {
+		return err
+	}
 
 	application := &app.App{
 		Commands: app.Commands{
@@ -101,6 +97,7 @@ func (s *Service) Run() error {
 			CreateSource:    command.NewCreateSourceHandler(sourcesRepository),
 			CreateToken:     command.NewCreateTokenHandler(tokensRepository),
 			DeleteToken:     command.NewDeleteTokenHandler(tokensRepository),
+			LogIn:           command.NewLogInHandler(usersRepository, jwtPrivateKey),
 		},
 		Queries: app.Queries{
 			EventTypes:        nil,
@@ -219,7 +216,40 @@ func (s *Service) createAdminUserIfNotExists(ctx context.Context, db *sql.DB) er
 		return fmt.Errorf("error saving admin user: %w", err)
 	}
 
-	s.logger.Info("Admin user set up successfully")
+	s.logger.Debug("Admin user set up successfully")
 
 	return nil
+}
+
+func (s *Service) parseJwtPrivateKey() (*ecdsa.PrivateKey, error) {
+	block, _ := pem.Decode([]byte(strings.ReplaceAll(s.config.JWTPrivateKey, `\n`, "\n")))
+	if block == nil {
+		return nil, errors.New("failed to decode PEM block from 'JWT_PRIVATE_KEY'")
+	}
+
+	key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse private key: %w", err)
+	}
+
+	ecKey, ok := key.(*ecdsa.PrivateKey)
+	if !ok {
+		return nil, errors.New("private key is not ECDSA")
+	}
+
+	s.logger.Debug("JWT_PRIVATE_KEY loaded successfully")
+
+	return ecKey, nil
+}
+
+func main() {
+	logger := logs.New(cmp.Or(os.Getenv("LOG_LEVEL"), "INFO"))
+	svc := &Service{
+		logger: logger,
+	}
+
+	if err := svc.Run(); err != nil {
+		logger.Error("service exited with an error", "error", err)
+		os.Exit(1)
+	}
 }

@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/mail"
@@ -8,6 +9,11 @@ import (
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
+)
+
+var (
+	ErrUserNotFound                            = errors.New("user not being found")
+	ErrAuthenticationFailedCredentialsMismatch = errors.New("authentication failed due to credentials mismatch")
 )
 
 type User struct {
@@ -58,6 +64,16 @@ func (u *User) Role() UserRole {
 
 func (u *User) CreatedAt() time.Time {
 	return u.createdAt
+}
+
+func MarshallToUser(id, email, password, role string, createdAt time.Time) *User {
+	return &User{
+		id:        ID(id),
+		email:     Email{email},
+		password:  Password{[]byte(password)},
+		role:      UserRole(role),
+		createdAt: createdAt,
+	}
 }
 
 type Email struct {
@@ -125,3 +141,7 @@ var (
 	UserRoleAdmin  = UserRole("admin")
 	UserRoleMember = UserRole("member")
 )
+
+type UserRepository interface {
+	FindByEmail(ctx context.Context, email Email) (*User, error)
+}
