@@ -50,3 +50,16 @@ func makeCacheKey(cols boil.Columns, nzDefaults []string) string {
 	strmangle.PutBuffer(buf)
 	return str
 }
+
+// Enum values for Userrole
+const (
+	UserroleAdmin  string = "admin"
+	UserroleMember string = "member"
+)
+
+func AllUserrole() []string {
+	return []string{
+		UserroleAdmin,
+		UserroleMember,
+	}
+}

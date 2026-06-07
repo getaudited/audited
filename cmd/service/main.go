@@ -1,9 +1,11 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"crypto/ecdsa"
 	"crypto/x509"
+	"database/sql"
 	"encoding/pem"
 	"fmt"
 	"os"
@@ -13,6 +15,7 @@ import (
 	"time"
 
 	"github.com/friendsofgo/errors"
+	"github.com/getaudited/audited/internal/domain"
 	"github.com/kelseyhightower/envconfig"
 	_ "github.com/lib/pq"
 	"golang.org/x/sync/errgroup"
@@ -26,28 +29,21 @@ import (
 	"github.com/getaudited/audited/internal/ports/http"
 )
 
-func main() {
-	logger := logs.New()
-	svc := &Service{
-		logger: logger,
-	}
-
-	if err := svc.Run(); err != nil {
-		logger.Error("service exited with an error", "error", err)
-		os.Exit(1)
-	}
-}
-
 type Config struct {
 	DatabaseURL       string   `envconfig:"DATABASE_URL"`
 	HttpPort          int      `envconfig:"HTTP_PORT"`
 	AllowedCorsOrigin []string `envconfig:"ALLOWED_CORS_ORIGIN"`
 	DebugMode         bool     `envconfig:"DEBUG_MODE"`
+	LogLevel          string   `envconfig:"LOG_LEVEL"`
 	AmqpUrl           string   `envconfig:"AMQP_URL"`
 	JWTPublicKey      string   `envconfig:"JWT_PUBLIC_KEY" required:"true"`
+	JWTPrivateKey     string   `envconfig:"JWT_PRIVATE_KEY" required:"true"`
+	AdminEmail        string   `envconfig:"ADMIN_EMAIL" required:"true"`
+	AdminPassword     string   `envconfig:"ADMIN_PASSWORD" required:"true"`
 }
 
 type Service struct {
+	config *Config
 	logger *logs.Logger
 }
 
@@ -59,6 +55,7 @@ func (s *Service) Run() error {
 	if err != nil {
 		return err
 	}
+	s.config = config
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	g, ctx := errgroup.WithContext(ctx)
@@ -74,10 +71,21 @@ func (s *Service) Run() error {
 		return err
 	}
 
+	// Set up Admin user
+	err = s.createAdminUserIfNotExists(ctx, db)
+	if err != nil {
+		return err
+	}
+
 	eventsRepository := psql.NewEventsPsqlRepository(db)
 	sourcesRepository := psql.NewSourcesPsqlRepository(db)
 	eventTypeRepository := psql.NewEventTypePsqlRepository(db)
 	tokensRepository := psql.NewTokensPsqlRepository(db)
+	usersRepository := psql.NewUsersPsqlRepository(db)
+	jwtPrivateKey, err := s.parseJwtPrivateKey()
+	if err != nil {
+		return err
+	}
 
 	application := &app.App{
 		Commands: app.Commands{
@@ -87,6 +95,8 @@ func (s *Service) Run() error {
 			CreateSource:    command.NewCreateSourceHandler(sourcesRepository),
 			CreateToken:     command.NewCreateTokenHandler(tokensRepository),
 			DeleteToken:     command.NewDeleteTokenHandler(tokensRepository),
+			LogIn:           command.NewLogInHandler(usersRepository, jwtPrivateKey),
+			CreateAdminUser: command.NewCreateAdminUserHandler(usersRepository),
 		},
 		Queries: app.Queries{
 			EventTypes:        nil,
@@ -118,9 +128,7 @@ func (s *Service) Run() error {
 		return err
 	}
 
-	g.Go(func() error {
-		return httpPort.Start()
-	})
+	g.Go(httpPort.Start)
 
 	g.Go(func() error {
 		<-ctx.Done()
@@ -130,10 +138,6 @@ func (s *Service) Run() error {
 			terminationCtxCancel()
 			cancel()
 		}()
-
-		if err != nil {
-			return fmt.Errorf("error closing messaging: %w", err)
-		}
 
 		err = httpPort.Stop(terminationCtx)
 		if err != nil {
@@ -176,4 +180,78 @@ func (s *Service) parsePublicKey(content string) (*ecdsa.PublicKey, error) {
 	}
 
 	return parsedPublicKey, nil
+}
+
+func (s *Service) createAdminUserIfNotExists(ctx context.Context, db *sql.DB) error {
+	usersRepository := psql.NewUsersPsqlRepository(db)
+
+	email, err := domain.NewEmail(s.config.AdminEmail)
+	if err != nil {
+		return err
+	}
+
+	adminUser, err := usersRepository.FindByEmail(ctx, email)
+	if err != nil && !errors.Is(err, domain.ErrUserNotFound) {
+		return err
+	}
+	if adminUser != nil {
+		s.logger.Debug("Admin user exists")
+		return nil
+	}
+
+	password, err := domain.NewPassword(s.config.AdminPassword)
+	if err != nil {
+		return err
+	}
+
+	user, err := domain.NewUser(email, password, domain.UserRoleAdmin)
+	if err != nil {
+		return err
+	}
+
+	handler := command.NewCreateAdminUserHandler(usersRepository)
+
+	err = handler.Execute(ctx, command.CreateAdminUser{
+		User: user,
+	})
+	if err != nil {
+		return err
+	}
+
+	s.logger.Debug("Admin user set up successfully")
+
+	return nil
+}
+
+func (s *Service) parseJwtPrivateKey() (*ecdsa.PrivateKey, error) {
+	block, _ := pem.Decode([]byte(strings.ReplaceAll(s.config.JWTPrivateKey, `\n`, "\n")))
+	if block == nil {
+		return nil, errors.New("failed to decode PEM block from 'JWT_PRIVATE_KEY'")
+	}
+
+	key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse private key: %w", err)
+	}
+
+	ecKey, ok := key.(*ecdsa.PrivateKey)
+	if !ok {
+		return nil, errors.New("private key is not ECDSA")
+	}
+
+	s.logger.Debug("JWT_PRIVATE_KEY loaded successfully")
+
+	return ecKey, nil
+}
+
+func main() {
+	logger := logs.New(cmp.Or(os.Getenv("LOG_LEVEL"), "INFO"))
+	svc := &Service{
+		logger: logger,
+	}
+
+	if err := svc.Run(); err != nil {
+		logger.Error("service exited with an error", "error", err)
+		os.Exit(1)
+	}
 }

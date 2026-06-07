@@ -9,10 +9,12 @@ var TableNames = struct {
 	Events       string
 	Sources      string
 	Tokens       string
+	Users        string
 }{
 	EventTargets: "event_targets",
 	EventTypes:   "event_types",
 	Events:       "events",
 	Sources:      "sources",
 	Tokens:       "tokens",
+	Users:        "users",
 }
