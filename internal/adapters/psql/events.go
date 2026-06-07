@@ -56,7 +56,6 @@ func (r EventsPsqlRepository) Save(ctx context.Context, e domain.Event, token do
 			return domain.ErrEventTypeActionNotFound
 		}
 	}
-
 	if err != nil {
 		return fmt.Errorf("error saving event: %w", err)
 	}

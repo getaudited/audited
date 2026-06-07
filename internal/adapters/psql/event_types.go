@@ -39,7 +39,6 @@ func (r EventTypePsqlRepository) Save(ctx context.Context, et domain.EventType) 
 	}
 
 	err := row.Insert(ctx, r.db, boil.Infer())
-	fmt.Println("err", err)
 	if pqErr, ok := errors.AsType[*pq.Error](err); ok && pqErr.Constraint == ConstraintEventTypeActionIsUnique {
 		return domain.ErrEventTypeExists
 	}

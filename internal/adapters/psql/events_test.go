@@ -261,3 +261,23 @@ func TestEventsPsqlRepository_Save_ErrTokenNotFound(t *testing.T) {
 	// THEN
 	require.ErrorIs(t, err, domain.ErrTokenNotFound)
 }
+
+func TestEventsPsqlRepository_Save_ErrEventTypeNotFound(t *testing.T) {
+	repo := psql.NewEventsPsqlRepository(db)
+
+	// GIVEN
+	source := fixtureSource(t)
+	token := fixtureToken(t, source.ID())
+	eventType := fixtureEventType()
+	storeSource(t, source)
+	storeToken(t, token)
+	storeEventType(t, eventType)
+
+	event := fixtureEvent(t, source.ID(), "dummy.action")
+
+	// WHEN
+	err := repo.Save(context.Background(), event, token.Value())
+
+	// THEN
+	require.ErrorIs(t, err, domain.ErrEventTypeActionNotFound)
+}
