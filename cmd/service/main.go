@@ -30,16 +30,16 @@ import (
 )
 
 type Config struct {
-	DatabaseURL       string   `envconfig:"DATABASE_URL"`
-	HttpPort          int      `envconfig:"HTTP_PORT"`
-	AllowedCorsOrigin []string `envconfig:"ALLOWED_CORS_ORIGIN"`
-	DebugMode         bool     `envconfig:"DEBUG_MODE"`
-	LogLevel          string   `envconfig:"LOG_LEVEL"`
-	AmqpUrl           string   `envconfig:"AMQP_URL"`
-	JWTPublicKey      string   `envconfig:"JWT_PUBLIC_KEY" required:"true"`
-	JWTPrivateKey     string   `envconfig:"JWT_PRIVATE_KEY" required:"true"`
-	AdminEmail        string   `envconfig:"ADMIN_EMAIL" required:"true"`
-	AdminPassword     string   `envconfig:"ADMIN_PASSWORD" required:"true"`
+	DatabaseURL       string   `envconfig:"ADT_DATABASE_URL"`
+	HttpPort          int      `envconfig:"ADT_HTTP_PORT"`
+	AllowedCorsOrigin []string `envconfig:"ADT_ALLOWED_CORS_ORIGIN"`
+	DebugMode         bool     `envconfig:"ADT_DEBUG_MODE"`
+	LogLevel          string   `envconfig:"ADT_LOG_LEVEL"`
+	AmqpUrl           string   `envconfig:"ADT_AMQP_URL"`
+	JWTPublicKey      string   `envconfig:"ADT_JWT_PUBLIC_KEY" required:"true"`
+	JWTPrivateKey     string   `envconfig:"ADT_JWT_PRIVATE_KEY" required:"true"`
+	AdminEmail        string   `envconfig:"ADT_ADMIN_EMAIL" required:"true"`
+	AdminPassword     string   `envconfig:"ADT_ADMIN_PASSWORD" required:"true"`
 }
 
 type Service struct {
@@ -226,7 +226,7 @@ func (s *Service) createAdminUserIfNotExists(ctx context.Context, db *sql.DB) er
 func (s *Service) parseJwtPrivateKey() (*ecdsa.PrivateKey, error) {
 	block, _ := pem.Decode([]byte(strings.ReplaceAll(s.config.JWTPrivateKey, `\n`, "\n")))
 	if block == nil {
-		return nil, errors.New("failed to decode PEM block from 'JWT_PRIVATE_KEY'")
+		return nil, errors.New("failed to decode PEM block from 'ADT_JWT_PRIVATE_KEY'")
 	}
 
 	key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
@@ -239,13 +239,13 @@ func (s *Service) parseJwtPrivateKey() (*ecdsa.PrivateKey, error) {
 		return nil, errors.New("private key is not ECDSA")
 	}
 
-	s.logger.Debug("JWT_PRIVATE_KEY loaded successfully")
+	s.logger.Debug("ADT_JWT_PRIVATE_KEY loaded successfully")
 
 	return ecKey, nil
 }
 
 func main() {
-	logger := logs.New(cmp.Or(os.Getenv("LOG_LEVEL"), "INFO"))
+	logger := logs.New(cmp.Or(os.Getenv("ADT_LOG_LEVEL"), "INFO"))
 	svc := &Service{
 		logger: logger,
 	}
