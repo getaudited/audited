@@ -26,9 +26,9 @@ var (
 )
 
 func main() {
-	dbURL := os.Getenv("DATABASE_URL")
+	dbURL := os.Getenv("ADT_DATABASE_URL")
 	if dbURL == "" {
-		log.Fatal("DATABASE_URL environment variable is required")
+		log.Fatal("ADT_DATABASE_URL environment variable is required")
 	}
 
 	ctx := context.Background()

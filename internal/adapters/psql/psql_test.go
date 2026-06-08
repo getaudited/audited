@@ -34,7 +34,7 @@ func TestMain(m *testing.M) {
 	// Wait for postgres and other dependencies running in containers
 	wait_for.Run()
 
-	db, err = postgres.Connect(ctx, os.Getenv("DATABASE_URL"))
+	db, err = postgres.Connect(ctx, os.Getenv("ADT_DATABASE_URL"))
 	if err != nil {
 		panic(err)
 	}
