@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -15,13 +14,12 @@ import (
 
 func (h handlers) GetEventTypes(c echo.Context, params GetEventTypesParams) error {
 	result, err := h.application.Queries.AllEventTypes.Execute(mapEchoCtxToCtx(c), query.AllEventTypes{
+		Action:           params.Action,
 		PaginationParams: mapToQueryPaginationParams(params.Page, params.Limit),
 	})
 	if err != nil {
 		return NewHandlerError(err, "unable-to-retrieve-event-types")
 	}
-
-	fmt.Println(result)
 
 	return c.JSON(http.StatusOK, mapToEventTypeList(result))
 }

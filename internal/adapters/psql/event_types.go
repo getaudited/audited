@@ -70,22 +70,26 @@ func (r EventTypePsqlRepository) Delete(ctx context.Context, action string) erro
 	return nil
 }
 
-func (r EventTypePsqlRepository) QueryAll(ctx context.Context, params query.PaginationParams) (query.Pagination[*domain.EventType], error) {
+func (r EventTypePsqlRepository) QueryAll(ctx context.Context, params query.AllEventTypes) (query.Pagination[*domain.EventType], error) {
 	count, err := models.EventTypes().Count(ctx, r.db)
 	if err != nil {
 		return query.Pagination[*domain.EventType]{}, fmt.Errorf("unable to count event types: %w", err)
 	}
-	boil.DebugMode = true
-	rows, err := models.EventTypes(
-		qm.Limit(params.Limit),
-		qm.Offset(mapPaginationParamsToOffset(params)),
+
+	qms := []qm.QueryMod{
+		qm.Limit(params.PaginationParams.Limit),
+		qm.Offset(mapPaginationParamsToOffset(params.PaginationParams)),
 		qm.OrderBy("created_at DESC"),
-	).All(ctx, r.db)
+	}
+
+	if params.Action != nil {
+		qms = append(qms, models.EventTypeWhere.Action.ILIKE("%"+*params.Action+"%"))
+	}
+
+	rows, err := models.EventTypes(qms...).All(ctx, r.db)
 	if err != nil {
 		return query.Pagination[*domain.EventType]{}, fmt.Errorf("unable to query event types: %w", err)
 	}
 
-	fmt.Println("###", rows)
-
-	return mapToPaginationResult[*domain.EventType](params, count, mapRowsToEventTypes(rows)), nil
+	return mapToPaginationResult[*domain.EventType](params.PaginationParams, count, mapRowsToEventTypes(rows)), nil
 }

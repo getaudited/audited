@@ -40,7 +40,3 @@ type sourceByIDFinder interface {
 type eventsFinder interface {
 	QueryAll(ctx context.Context, params AllEventsParams, pagination CursorPaginationParams) (CursorPaginationResult[domain.Event], error)
 }
-
-type eventTypesFinder interface {
-	QueryAll(ctx context.Context, params PaginationParams) (Pagination[*domain.EventType], error)
-}

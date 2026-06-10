@@ -87,18 +87,17 @@ func TestSourcesPsqlRepository_QueryAll(t *testing.T) {
 	})
 
 	t.Run("filters by name (case-insensitive partial match)", func(t *testing.T) {
-		needle := "zz-unique-needle-zz"
-		named, err := domain.NewSource("svc-" + needle + "-svc")
+		source, err := domain.NewSource(fmt.Sprintf("svc-%s-%d", gofakeit.AppName(), time.Now().UnixMilli()))
 		require.NoError(t, err)
-		storeSource(t, named)
+		storeSource(t, source)
 
 		result, err := repo.QueryAll(ctx, query.AllSources{
-			Name:       new(needle),
+			Name:       new(source.Name()),
 			Pagination: query.PaginationParams{Limit: 10, Page: 1},
 		})
 		require.NoError(t, err)
 		require.Len(t, result.Data, 1)
-		assert.Equal(t, named.ID().String(), result.Data[0].ID().String())
+		assert.Equal(t, source.ID().String(), result.Data[0].ID().String())
 	})
 
 	t.Run("returns empty result when no sources match the name filter", func(t *testing.T) {
