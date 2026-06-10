@@ -33,10 +33,6 @@ type eventTypeFinder interface {
 	FindByAction(ctx context.Context, action string) (*domain.EventType, error)
 }
 
-type sourcesFinder interface {
-	QueryAll(ctx context.Context, params PaginationParams) (Pagination[domain.Source], error)
-}
-
 type sourceByIDFinder interface {
 	FindByID(ctx context.Context, id string) (*domain.Source, error)
 }

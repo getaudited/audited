@@ -49,24 +49,30 @@ func (s SourcesPsqlRepository) FindByID(ctx context.Context, id string) (*domain
 	return new(domain.MarshallToSource(row.ID, row.Name, row.CreatedAt, row.UpdatedAt)), nil
 }
 
-func (s SourcesPsqlRepository) QueryAll(ctx context.Context, params query.PaginationParams) (query.Pagination[domain.Source], error) {
+func (s SourcesPsqlRepository) QueryAll(ctx context.Context, params query.AllSources) (query.Pagination[domain.Source], error) {
 	count, err := models.Sources().Count(ctx, s.db)
 	if err != nil {
 		return query.Pagination[domain.Source]{}, fmt.Errorf("error querying total sources: %w", err)
 	}
 
 	if count == 0 {
-		return mapToPaginationResult[domain.Source](params, count, []domain.Source{}), nil
+		return mapToPaginationResult[domain.Source](params.Pagination, count, []domain.Source{}), nil
 	}
 
-	rows, err := models.Sources(
-		qm.Limit(params.Limit),
-		qm.Offset(mapPaginationParamsToOffset(params)),
+	qms := []qm.QueryMod{
+		qm.Limit(params.Pagination.Limit),
+		qm.Offset(mapPaginationParamsToOffset(params.Pagination)),
 		qm.OrderBy("created_at DESC"),
-	).All(ctx, s.db)
+	}
+
+	if params.Name != nil {
+		qms = append(qms, models.SourceWhere.Name.ILIKE("%"+*params.Name+"%"))
+	}
+
+	rows, err := models.Sources(qms...).All(ctx, s.db)
 	if err != nil {
 		return query.Pagination[domain.Source]{}, fmt.Errorf("error querying sources: %w", err)
 	}
 
-	return mapToPaginationResult[domain.Source](params, count, mapRowsToSources(rows)), nil
+	return mapToPaginationResult[domain.Source](params.Pagination, count, mapRowsToSources(rows)), nil
 }

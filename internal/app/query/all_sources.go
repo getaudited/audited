@@ -7,7 +7,12 @@ import (
 )
 
 type AllSources struct {
-	PaginationParams PaginationParams
+	Name       *string
+	Pagination PaginationParams
+}
+
+type sourcesFinder interface {
+	QueryAll(ctx context.Context, params AllSources) (Pagination[domain.Source], error)
 }
 
 type AllSourcesHandler struct {
@@ -21,5 +26,5 @@ func NewAllSourcesHandler(finder sourcesFinder) AllSourcesHandler {
 }
 
 func (e AllSourcesHandler) Execute(ctx context.Context, q AllSources) (Pagination[domain.Source], error) {
-	return e.finder.QueryAll(ctx, q.PaginationParams)
+	return e.finder.QueryAll(ctx, q)
 }

@@ -42,7 +42,8 @@ func (h handlers) CreateSource(c echo.Context) error {
 
 func (h handlers) GetSources(c echo.Context, params GetSourcesParams) error {
 	result, err := h.application.Queries.AllSources.Execute(mapEchoCtxToCtx(c), query.AllSources{
-		PaginationParams: mapToQueryPaginationParams(params.Page, params.Limit),
+		Name:       params.Name,
+		Pagination: mapToQueryPaginationParams(params.Page, params.Limit),
 	})
 	if err != nil {
 		return NewHandlerError(err, "error-retrieving-sources")
