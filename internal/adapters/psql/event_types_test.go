@@ -7,10 +7,12 @@ import (
 
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/oklog/ulid/v2"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/getaudited/audited/internal/adapters/models"
 	"github.com/getaudited/audited/internal/adapters/psql"
+	"github.com/getaudited/audited/internal/app/query"
 	"github.com/getaudited/audited/internal/domain"
 )
 
@@ -95,6 +97,87 @@ func TestEventTypePsqlRepository_Delete(t *testing.T) {
 
 		// THEN
 		require.NoError(t, err)
+	})
+}
+
+func TestEventTypePsqlRepository_QueryAll(t *testing.T) {
+	repo := psql.NewEventTypePsqlRepository(db)
+
+	et1 := fixtureEventType()
+	et2 := fixtureEventType()
+	et3 := fixtureEventType()
+	storeEventType(t, et1)
+	storeEventType(t, et2)
+	storeEventType(t, et3)
+
+	t.Run("returns all event types ordered by created_at desc", func(t *testing.T) {
+		result, err := repo.QueryAll(ctx, query.AllEventTypes{
+			PaginationParams: query.PaginationParams{Limit: 10, Page: 1},
+		})
+		require.NoError(t, err)
+
+		ids := make([]string, len(result.Data))
+		for i, et := range result.Data {
+			ids[i] = et.Id
+		}
+		assert.Contains(t, ids, et1.Id)
+		assert.Contains(t, ids, et2.Id)
+		assert.Contains(t, ids, et3.Id)
+
+		for i := 1; i < len(result.Data); i++ {
+			assert.False(t, result.Data[i].CreatedAt.After(result.Data[i-1].CreatedAt))
+		}
+	})
+
+	t.Run("paginates correctly", func(t *testing.T) {
+		page1, err := repo.QueryAll(ctx, query.AllEventTypes{
+			PaginationParams: query.PaginationParams{Limit: 2, Page: 1},
+		})
+		require.NoError(t, err)
+		assert.Len(t, page1.Data, 2)
+		assert.Equal(t, 1, page1.CurrentPage)
+		assert.Equal(t, 2, page1.PerPage)
+		assert.GreaterOrEqual(t, page1.Total, 3)
+
+		page2, err := repo.QueryAll(ctx, query.AllEventTypes{
+			PaginationParams: query.PaginationParams{Limit: 2, Page: 2},
+		})
+		require.NoError(t, err)
+		assert.GreaterOrEqual(t, len(page2.Data), 1)
+		assert.Equal(t, 2, page2.CurrentPage)
+
+		page1IDs := make([]string, len(page1.Data))
+		for i, et := range page1.Data {
+			page1IDs[i] = et.Id
+		}
+		for _, et := range page2.Data {
+			assert.NotContains(t, page1IDs, et.Id)
+		}
+	})
+
+	t.Run("filters by action (case-insensitive partial match)", func(t *testing.T) {
+		action := fmt.Sprintf("zz_unique_needle_%d_zz", time.Now().UnixNano())
+		et := fixtureEventType()
+		et.Action = action + "_suffix"
+		storeEventType(t, et)
+
+		result, err := repo.QueryAll(ctx, query.AllEventTypes{
+			Action:           &action,
+			PaginationParams: query.PaginationParams{Limit: 10, Page: 1},
+		})
+		require.NoError(t, err)
+		require.Len(t, result.Data, 1)
+		assert.Equal(t, et.Id, result.Data[0].Id)
+	})
+
+	t.Run("returns empty result when no event types match the action filter", func(t *testing.T) {
+		action := "this-action-does-not-exist-anywhere"
+		result, err := repo.QueryAll(ctx, query.AllEventTypes{
+			Action:           new(action),
+			PaginationParams: query.PaginationParams{Limit: 10, Page: 1},
+		})
+		require.NoError(t, err)
+		assert.Empty(t, result.Data)
 	})
 }
 
