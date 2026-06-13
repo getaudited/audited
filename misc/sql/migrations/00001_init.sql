@@ -37,7 +37,9 @@ CREATE TABLE event_type_versions (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
     CONSTRAINT pk_event_type_id_and_version PRIMARY KEY (event_type_action, version),
-    CONSTRAINT fk_versions_belongs_to_event_type FOREIGN KEY (event_type_action) REFERENCES event_types (action)
+    CONSTRAINT fk_versions_belongs_to_event_type FOREIGN KEY (event_type_action)
+        REFERENCES event_types (action)
+        ON DELETE CASCADE
 );
 
 CREATE TABLE tokens (
