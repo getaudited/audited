@@ -1,14 +1,20 @@
 package main
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/x509"
+	"database/sql"
 	"encoding/pem"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
+	"github.com/getaudited/audited/internal/adapters/models"
+	"github.com/getaudited/audited/internal/domain"
 	"github.com/golang-jwt/jwt"
+	_ "github.com/lib/pq"
 )
 
 // nolint
@@ -35,10 +41,22 @@ func main() {
 		log.Fatal("private key is not ECDSA")
 	}
 
+	db, err := sql.Open("postgres", os.Getenv("ADT_DATABASE_URL"))
+	if err != nil {
+		log.Fatalf("unable to open db: %v", err)
+	}
+	defer func() { _ = db.Close() }()
+
+	adminUser, err := models.Users(models.UserWhere.Role.EQ(domain.UserRoleAdmin.String())).One(context.Background(), db)
+	if err != nil {
+		log.Fatalf("error querying user: %v", err)
+	}
+
 	now := time.Now()
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, jwt.StandardClaims{
 		IssuedAt:  now.Unix(),
 		ExpiresAt: now.Add(24 * time.Hour).Unix(),
+		Subject:   adminUser.ID,
 	})
 
 	signed, err := token.SignedString(ecKey)

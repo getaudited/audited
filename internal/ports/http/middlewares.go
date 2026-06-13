@@ -3,17 +3,23 @@ package http
 import (
 	"context"
 	"crypto/ecdsa"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
 
-	"github.com/friendsofgo/errors"
-	"github.com/getaudited/audited/internal/common/logs"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	oapimiddleware "github.com/oapi-codegen/echo-middleware"
+
+	"github.com/getaudited/audited/internal/common/logs"
+)
+
+const (
+	ctxUserID = "user_id"
 )
 
 func loggerMiddleware(logger *logs.Logger, isDebug bool) echo.MiddlewareFunc {
@@ -61,13 +67,13 @@ func NewJWTMiddleware(publicKey *ecdsa.PublicKey) *JWTMiddleware {
 	}
 }
 
-func (m *JWTMiddleware) Authenticate(_ context.Context, input *openapi3filter.AuthenticationInput) error {
+func (m *JWTMiddleware) Authenticate(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
 	authToken := input.RequestValidationInput.Request.Header.Get(echo.HeaderAuthorization)
 	if strings.TrimSpace(authToken) == "" {
 		return errors.New("missing token")
 	}
 
-	_, err := jwt.Parse(strings.TrimPrefix(authToken, "Bearer "), func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(strings.TrimPrefix(authToken, "Bearer "), &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodECDSA); !ok {
 			return nil, errors.New("incorrect signing method")
 		}
@@ -77,6 +83,14 @@ func (m *JWTMiddleware) Authenticate(_ context.Context, input *openapi3filter.Au
 	if err != nil {
 		return fmt.Errorf("error parsing the JWT provided: %w", err)
 	}
+
+	claims, ok := token.Claims.(*jwt.StandardClaims)
+	if !ok || !token.Valid {
+		return fmt.Errorf("error parsing the JWT provided: %w", err)
+	}
+
+	eCtx := oapimiddleware.GetEchoContext(ctx)
+	eCtx.Set(ctxUserID, claims.Subject)
 
 	return nil
 }
@@ -124,4 +138,13 @@ func errorHandler(logger *logs.Logger) echo.HTTPErrorHandler {
 			logger.Debug("Failed to send error response", "error", err)
 		}
 	}
+}
+
+func mapRetrieveUserIdFromCtx(c echo.Context) (string, error) {
+	userID, ok := c.Get(ctxUserID).(string)
+	if !ok {
+		return "", errors.New("unable to retrieve user_id from request's context")
+	}
+
+	return userID, nil
 }
