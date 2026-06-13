@@ -9,7 +9,6 @@ import (
 
 	"github.com/brianvoe/gofakeit/v7"
 	_ "github.com/lib/pq"
-	"github.com/oklog/ulid/v2"
 
 	"github.com/getaudited/audited/internal/adapters/psql"
 	"github.com/getaudited/audited/internal/app/command"
@@ -63,12 +62,9 @@ func main() {
 	fmt.Printf("source created  id=%-26s  name=%s\n", source.ID(), source.Name())
 
 	eventType := domain.EventType{
-		Id:                           ulid.Make().String(),
-		Version:                      1,
 		Action:                       fmt.Sprintf("users.%d", time.Now().UnixMilli()),
-		TargetTypes:                  []string{"user"},
 		ShouldValidateMetadataSchema: false,
-		Schema:                       nil,
+		LastVersion:                  domain.NewEventTypeVersion([]string{"user"}, nil),
 		CreatedAt:                    time.Now(),
 		UpdatedAt:                    time.Now(),
 	}

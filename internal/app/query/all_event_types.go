@@ -2,8 +2,6 @@ package query
 
 import (
 	"context"
-
-	"github.com/getaudited/audited/internal/domain"
 )
 
 type AllEventTypes struct {
@@ -11,20 +9,16 @@ type AllEventTypes struct {
 	PaginationParams PaginationParams
 }
 
-type eventTypesFinder interface {
-	QueryAll(ctx context.Context, params AllEventTypes) (Pagination[*domain.EventType], error)
-}
-
 type AllEventTypesHandler struct {
-	finder eventTypesFinder
+	finder eventTypeFinder
 }
 
-func NewAllEventTypesHandler(finder eventTypesFinder) AllEventTypesHandler {
+func NewAllEventTypesHandler(finder eventTypeFinder) AllEventTypesHandler {
 	return AllEventTypesHandler{
 		finder: finder,
 	}
 }
 
-func (e AllEventTypesHandler) Execute(ctx context.Context, q AllEventTypes) (Pagination[*domain.EventType], error) {
+func (e AllEventTypesHandler) Execute(ctx context.Context, q AllEventTypes) (Pagination[EventType], error) {
 	return e.finder.QueryAll(ctx, q)
 }

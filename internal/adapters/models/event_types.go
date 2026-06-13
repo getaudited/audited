@@ -13,116 +13,45 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/aarondl/sqlboiler/v4/queries"
 	"github.com/aarondl/sqlboiler/v4/queries/qm"
 	"github.com/aarondl/sqlboiler/v4/queries/qmhelper"
-	"github.com/aarondl/sqlboiler/v4/types"
 	"github.com/aarondl/strmangle"
 	"github.com/friendsofgo/errors"
 )
 
 // EventType is an object representing the database table.
 type EventType struct {
-	ID                           string            `boil:"id" json:"id" toml:"id" yaml:"id"`
-	Version                      int               `boil:"version" json:"version" toml:"version" yaml:"version"`
-	Action                       string            `boil:"action" json:"action" toml:"action" yaml:"action"`
-	TargetTypes                  types.StringArray `boil:"target_types" json:"target_types" toml:"target_types" yaml:"target_types"`
-	ShouldValidateMetadataSchema bool              `boil:"should_validate_metadata_schema" json:"should_validate_metadata_schema" toml:"should_validate_metadata_schema" yaml:"should_validate_metadata_schema"`
-	EventSchema                  null.JSON         `boil:"event_schema" json:"event_schema,omitempty" toml:"event_schema" yaml:"event_schema,omitempty"`
-	CreatedAt                    time.Time         `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
-	UpdatedAt                    time.Time         `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
+	Action                       string    `boil:"action" json:"action" toml:"action" yaml:"action"`
+	ShouldValidateMetadataSchema bool      `boil:"should_validate_metadata_schema" json:"should_validate_metadata_schema" toml:"should_validate_metadata_schema" yaml:"should_validate_metadata_schema"`
+	CreatedAt                    time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 
 	R *eventTypeR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L eventTypeL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var EventTypeColumns = struct {
-	ID                           string
-	Version                      string
 	Action                       string
-	TargetTypes                  string
 	ShouldValidateMetadataSchema string
-	EventSchema                  string
 	CreatedAt                    string
-	UpdatedAt                    string
 }{
-	ID:                           "id",
-	Version:                      "version",
 	Action:                       "action",
-	TargetTypes:                  "target_types",
 	ShouldValidateMetadataSchema: "should_validate_metadata_schema",
-	EventSchema:                  "event_schema",
 	CreatedAt:                    "created_at",
-	UpdatedAt:                    "updated_at",
 }
 
 var EventTypeTableColumns = struct {
-	ID                           string
-	Version                      string
 	Action                       string
-	TargetTypes                  string
 	ShouldValidateMetadataSchema string
-	EventSchema                  string
 	CreatedAt                    string
-	UpdatedAt                    string
 }{
-	ID:                           "event_types.id",
-	Version:                      "event_types.version",
 	Action:                       "event_types.action",
-	TargetTypes:                  "event_types.target_types",
 	ShouldValidateMetadataSchema: "event_types.should_validate_metadata_schema",
-	EventSchema:                  "event_types.event_schema",
 	CreatedAt:                    "event_types.created_at",
-	UpdatedAt:                    "event_types.updated_at",
 }
 
 // Generated where
-
-type whereHelperint struct{ field string }
-
-func (w whereHelperint) EQ(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
-func (w whereHelperint) NEQ(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
-func (w whereHelperint) LT(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.LT, x) }
-func (w whereHelperint) LTE(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.LTE, x) }
-func (w whereHelperint) GT(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
-func (w whereHelperint) GTE(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
-func (w whereHelperint) IN(slice []int) qm.QueryMod {
-	values := make([]any, 0, len(slice))
-	for _, value := range slice {
-		values = append(values, value)
-	}
-	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
-}
-func (w whereHelperint) NIN(slice []int) qm.QueryMod {
-	values := make([]any, 0, len(slice))
-	for _, value := range slice {
-		values = append(values, value)
-	}
-	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
-}
-
-type whereHelpertypes_StringArray struct{ field string }
-
-func (w whereHelpertypes_StringArray) EQ(x types.StringArray) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.EQ, x)
-}
-func (w whereHelpertypes_StringArray) NEQ(x types.StringArray) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.NEQ, x)
-}
-func (w whereHelpertypes_StringArray) LT(x types.StringArray) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LT, x)
-}
-func (w whereHelpertypes_StringArray) LTE(x types.StringArray) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LTE, x)
-}
-func (w whereHelpertypes_StringArray) GT(x types.StringArray) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GT, x)
-}
-func (w whereHelpertypes_StringArray) GTE(x types.StringArray) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GTE, x)
-}
 
 type whereHelperbool struct{ field string }
 
@@ -133,62 +62,50 @@ func (w whereHelperbool) LTE(x bool) qm.QueryMod { return qmhelper.Where(w.field
 func (w whereHelperbool) GT(x bool) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
 func (w whereHelperbool) GTE(x bool) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
 
-type whereHelpertime_Time struct{ field string }
-
-func (w whereHelpertime_Time) EQ(x time.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.EQ, x)
-}
-func (w whereHelpertime_Time) NEQ(x time.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.NEQ, x)
-}
-func (w whereHelpertime_Time) LT(x time.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LT, x)
-}
-func (w whereHelpertime_Time) LTE(x time.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LTE, x)
-}
-func (w whereHelpertime_Time) GT(x time.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GT, x)
-}
-func (w whereHelpertime_Time) GTE(x time.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GTE, x)
-}
-
 var EventTypeWhere = struct {
-	ID                           whereHelperstring
-	Version                      whereHelperint
 	Action                       whereHelperstring
-	TargetTypes                  whereHelpertypes_StringArray
 	ShouldValidateMetadataSchema whereHelperbool
-	EventSchema                  whereHelpernull_JSON
 	CreatedAt                    whereHelpertime_Time
-	UpdatedAt                    whereHelpertime_Time
 }{
-	ID:                           whereHelperstring{field: "\"event_types\".\"id\""},
-	Version:                      whereHelperint{field: "\"event_types\".\"version\""},
 	Action:                       whereHelperstring{field: "\"event_types\".\"action\""},
-	TargetTypes:                  whereHelpertypes_StringArray{field: "\"event_types\".\"target_types\""},
 	ShouldValidateMetadataSchema: whereHelperbool{field: "\"event_types\".\"should_validate_metadata_schema\""},
-	EventSchema:                  whereHelpernull_JSON{field: "\"event_types\".\"event_schema\""},
 	CreatedAt:                    whereHelpertime_Time{field: "\"event_types\".\"created_at\""},
-	UpdatedAt:                    whereHelpertime_Time{field: "\"event_types\".\"updated_at\""},
 }
 
 // EventTypeRels is where relationship names are stored.
 var EventTypeRels = struct {
-	ActionEvents string
+	EventTypeActionEventTypeVersions string
+	ActionEvents                     string
 }{
-	ActionEvents: "ActionEvents",
+	EventTypeActionEventTypeVersions: "EventTypeActionEventTypeVersions",
+	ActionEvents:                     "ActionEvents",
 }
 
 // eventTypeR is where relationships are stored.
 type eventTypeR struct {
-	ActionEvents EventSlice `boil:"ActionEvents" json:"ActionEvents" toml:"ActionEvents" yaml:"ActionEvents"`
+	EventTypeActionEventTypeVersions EventTypeVersionSlice `boil:"EventTypeActionEventTypeVersions" json:"EventTypeActionEventTypeVersions" toml:"EventTypeActionEventTypeVersions" yaml:"EventTypeActionEventTypeVersions"`
+	ActionEvents                     EventSlice            `boil:"ActionEvents" json:"ActionEvents" toml:"ActionEvents" yaml:"ActionEvents"`
 }
 
 // NewStruct creates a new relationship struct
 func (*eventTypeR) NewStruct() *eventTypeR {
 	return &eventTypeR{}
+}
+
+func (o *EventType) GetEventTypeActionEventTypeVersions() EventTypeVersionSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetEventTypeActionEventTypeVersions()
+}
+
+func (r *eventTypeR) GetEventTypeActionEventTypeVersions() EventTypeVersionSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.EventTypeActionEventTypeVersions
 }
 
 func (o *EventType) GetActionEvents() EventSlice {
@@ -211,10 +128,10 @@ func (r *eventTypeR) GetActionEvents() EventSlice {
 type eventTypeL struct{}
 
 var (
-	eventTypeAllColumns            = []string{"id", "version", "action", "target_types", "should_validate_metadata_schema", "event_schema", "created_at", "updated_at"}
-	eventTypeColumnsWithoutDefault = []string{"id", "action", "target_types"}
-	eventTypeColumnsWithDefault    = []string{"version", "should_validate_metadata_schema", "event_schema", "created_at", "updated_at"}
-	eventTypePrimaryKeyColumns     = []string{"id"}
+	eventTypeAllColumns            = []string{"action", "should_validate_metadata_schema", "created_at"}
+	eventTypeColumnsWithoutDefault = []string{"action"}
+	eventTypeColumnsWithDefault    = []string{"should_validate_metadata_schema", "created_at"}
+	eventTypePrimaryKeyColumns     = []string{"action"}
 	eventTypeGeneratedColumns      = []string{}
 )
 
@@ -523,6 +440,20 @@ func (q eventTypeQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (
 	return count > 0, nil
 }
 
+// EventTypeActionEventTypeVersions retrieves all the event_type_version's EventTypeVersions with an executor via event_type_action column.
+func (o *EventType) EventTypeActionEventTypeVersions(mods ...qm.QueryMod) eventTypeVersionQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"event_type_versions\".\"event_type_action\"=?", o.Action),
+	)
+
+	return EventTypeVersions(queryMods...)
+}
+
 // ActionEvents retrieves all the event's Events with an executor via action column.
 func (o *EventType) ActionEvents(mods ...qm.QueryMod) eventQuery {
 	var queryMods []qm.QueryMod
@@ -535,6 +466,119 @@ func (o *EventType) ActionEvents(mods ...qm.QueryMod) eventQuery {
 	)
 
 	return Events(queryMods...)
+}
+
+// LoadEventTypeActionEventTypeVersions allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (eventTypeL) LoadEventTypeActionEventTypeVersions(ctx context.Context, e boil.ContextExecutor, singular bool, maybeEventType any, mods queries.Applicator) error {
+	var slice []*EventType
+	var object *EventType
+
+	if singular {
+		var ok bool
+		object, ok = maybeEventType.(*EventType)
+		if !ok {
+			object = new(EventType)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeEventType)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeEventType))
+			}
+		}
+	} else {
+		s, ok := maybeEventType.(*[]*EventType)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeEventType)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeEventType))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &eventTypeR{}
+		}
+		args[object.Action] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &eventTypeR{}
+			}
+			args[obj.Action] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`event_type_versions`),
+		qm.WhereIn(`event_type_versions.event_type_action in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load event_type_versions")
+	}
+
+	var resultSlice []*EventTypeVersion
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice event_type_versions")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on event_type_versions")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for event_type_versions")
+	}
+
+	if len(eventTypeVersionAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.EventTypeActionEventTypeVersions = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &eventTypeVersionR{}
+			}
+			foreign.R.EventTypeActionEventType = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.Action == foreign.EventTypeAction {
+				local.R.EventTypeActionEventTypeVersions = append(local.R.EventTypeActionEventTypeVersions, foreign)
+				if foreign.R == nil {
+					foreign.R = &eventTypeVersionR{}
+				}
+				foreign.R.EventTypeActionEventType = local
+				break
+			}
+		}
+	}
+
+	return nil
 }
 
 // LoadActionEvents allows an eager lookup of values, cached into the
@@ -650,6 +694,59 @@ func (eventTypeL) LoadActionEvents(ctx context.Context, e boil.ContextExecutor, 
 	return nil
 }
 
+// AddEventTypeActionEventTypeVersions adds the given related objects to the existing relationships
+// of the event_type, optionally inserting them as new records.
+// Appends related to o.R.EventTypeActionEventTypeVersions.
+// Sets related.R.EventTypeActionEventType appropriately.
+func (o *EventType) AddEventTypeActionEventTypeVersions(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*EventTypeVersion) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.EventTypeAction = o.Action
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"event_type_versions\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"event_type_action"}),
+				strmangle.WhereClause("\"", "\"", 2, eventTypeVersionPrimaryKeyColumns),
+			)
+			values := []any{o.Action, rel.EventTypeAction, rel.Version}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.EventTypeAction = o.Action
+		}
+	}
+
+	if o.R == nil {
+		o.R = &eventTypeR{
+			EventTypeActionEventTypeVersions: related,
+		}
+	} else {
+		o.R.EventTypeActionEventTypeVersions = append(o.R.EventTypeActionEventTypeVersions, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &eventTypeVersionR{
+				EventTypeActionEventType: o,
+			}
+		} else {
+			rel.R.EventTypeActionEventType = o
+		}
+	}
+	return nil
+}
+
 // AddActionEvents adds the given related objects to the existing relationships
 // of the event_type, optionally inserting them as new records.
 // Appends related to o.R.ActionEvents.
@@ -716,7 +813,7 @@ func EventTypes(mods ...qm.QueryMod) eventTypeQuery {
 
 // FindEventType retrieves a single record by ID with an executor.
 // If selectCols is empty Find will return all columns.
-func FindEventType(ctx context.Context, exec boil.ContextExecutor, iD string, selectCols ...string) (*EventType, error) {
+func FindEventType(ctx context.Context, exec boil.ContextExecutor, action string, selectCols ...string) (*EventType, error) {
 	eventTypeObj := &EventType{}
 
 	sel := "*"
@@ -724,10 +821,10 @@ func FindEventType(ctx context.Context, exec boil.ContextExecutor, iD string, se
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from \"event_types\" where \"id\"=$1", sel,
+		"select %s from \"event_types\" where \"action\"=$1", sel,
 	)
 
-	q := queries.Raw(query, iD)
+	q := queries.Raw(query, action)
 
 	err := q.Bind(ctx, exec, eventTypeObj)
 	if err != nil {
@@ -757,9 +854,6 @@ func (o *EventType) Insert(ctx context.Context, exec boil.ContextExecutor, colum
 
 		if o.CreatedAt.IsZero() {
 			o.CreatedAt = currTime
-		}
-		if o.UpdatedAt.IsZero() {
-			o.UpdatedAt = currTime
 		}
 	}
 
@@ -837,12 +931,6 @@ func (o *EventType) Insert(ctx context.Context, exec boil.ContextExecutor, colum
 // See boil.Columns.UpdateColumnSet documentation to understand column list inference for updates.
 // Update does not automatically update the record in case of default values. Use .Reload() to refresh the records.
 func (o *EventType) Update(ctx context.Context, exec boil.ContextExecutor, columns boil.Columns) (int64, error) {
-	if !boil.TimestampsAreSkipped(ctx) {
-		currTime := time.Now().In(boil.GetLocation())
-
-		o.UpdatedAt = currTime
-	}
-
 	var err error
 	if err = o.doBeforeUpdateHooks(ctx, exec); err != nil {
 		return 0, err
@@ -979,7 +1067,6 @@ func (o *EventType) Upsert(ctx context.Context, exec boil.ContextExecutor, updat
 		if o.CreatedAt.IsZero() {
 			o.CreatedAt = currTime
 		}
-		o.UpdatedAt = currTime
 	}
 
 	if err := o.doBeforeUpsertHooks(ctx, exec); err != nil {
@@ -1109,7 +1196,7 @@ func (o *EventType) Delete(ctx context.Context, exec boil.ContextExecutor) (int6
 	}
 
 	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), eventTypePrimaryKeyMapping)
-	sql := "DELETE FROM \"event_types\" WHERE \"id\"=$1"
+	sql := "DELETE FROM \"event_types\" WHERE \"action\"=$1"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1206,7 +1293,7 @@ func (o EventTypeSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor
 // Reload refetches the object from the database
 // using the primary keys with an executor.
 func (o *EventType) Reload(ctx context.Context, exec boil.ContextExecutor) error {
-	ret, err := FindEventType(ctx, exec, o.ID)
+	ret, err := FindEventType(ctx, exec, o.Action)
 	if err != nil {
 		return err
 	}
@@ -1245,16 +1332,16 @@ func (o *EventTypeSlice) ReloadAll(ctx context.Context, exec boil.ContextExecuto
 }
 
 // EventTypeExists checks if the EventType row exists.
-func EventTypeExists(ctx context.Context, exec boil.ContextExecutor, iD string) (bool, error) {
+func EventTypeExists(ctx context.Context, exec boil.ContextExecutor, action string) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from \"event_types\" where \"id\"=$1 limit 1)"
+	sql := "select exists(select 1 from \"event_types\" where \"action\"=$1 limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
 		fmt.Fprintln(writer, sql)
-		fmt.Fprintln(writer, iD)
+		fmt.Fprintln(writer, action)
 	}
-	row := exec.QueryRowContext(ctx, sql, iD)
+	row := exec.QueryRowContext(ctx, sql, action)
 
 	err := row.Scan(&exists)
 	if err != nil {
@@ -1266,5 +1353,5 @@ func EventTypeExists(ctx context.Context, exec boil.ContextExecutor, iD string) 
 
 // Exists checks if the EventType row exists.
 func (o *EventType) Exists(ctx context.Context, exec boil.ContextExecutor) (bool, error) {
-	return EventTypeExists(ctx, exec, o.ID)
+	return EventTypeExists(ctx, exec, o.Action)
 }

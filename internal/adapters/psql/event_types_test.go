@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
-	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -27,17 +26,18 @@ func TestEventTypePsqlRepository_Save(t *testing.T) {
 	require.NoError(t, err)
 
 	// THEN
-	stored := queryEventTypeByID(t, et.Id)
+	stored, storedVersion := queryEventTypeByAction(t, et.Action)
 	require.NotNil(t, stored)
+	require.NotNil(t, storedVersion)
 
-	require.Equal(t, et.Id, stored.ID)
-	require.Equal(t, et.Version, stored.Version)
 	require.Equal(t, et.Action, stored.Action)
-	require.Equal(t, et.TargetTypes, []string(stored.TargetTypes))
 	require.Equal(t, et.ShouldValidateMetadataSchema, stored.ShouldValidateMetadataSchema)
-	require.False(t, stored.EventSchema.Valid)
 	require.WithinDuration(t, et.CreatedAt, stored.CreatedAt, time.Millisecond)
-	require.WithinDuration(t, et.UpdatedAt, stored.UpdatedAt, time.Millisecond)
+
+	require.Equal(t, et.LastVersion.Version, storedVersion.Version)
+	require.Equal(t, et.LastVersion.TargetTypes, []string(storedVersion.TargetTypes))
+	require.False(t, storedVersion.EventSchema.Valid)
+	require.WithinDuration(t, et.LastVersion.CreatedAt, storedVersion.CreatedAt, time.Millisecond)
 }
 
 func TestEventTypePsqlRepository_FindByAction(t *testing.T) {
@@ -53,15 +53,15 @@ func TestEventTypePsqlRepository_FindByAction(t *testing.T) {
 
 		// THEN
 		require.NoError(t, err)
-		require.NotNil(t, result)
 
-		require.Equal(t, et.Id, result.Id)
-		require.Equal(t, et.Version, result.Version)
 		require.Equal(t, et.Action, result.Action)
-		require.Equal(t, et.TargetTypes, result.TargetTypes)
 		require.Equal(t, et.ShouldValidateMetadataSchema, result.ShouldValidateMetadataSchema)
 		require.WithinDuration(t, et.CreatedAt, result.CreatedAt, time.Millisecond)
-		require.WithinDuration(t, et.UpdatedAt, result.UpdatedAt, time.Millisecond)
+
+		require.Len(t, result.Versions, 1)
+		require.Equal(t, et.LastVersion.Version, result.Versions[0].Version)
+		require.Equal(t, et.LastVersion.TargetTypes, result.Versions[0].TargetTypes)
+		require.WithinDuration(t, et.LastVersion.CreatedAt, result.Versions[0].CreatedAt, time.Millisecond)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -70,7 +70,7 @@ func TestEventTypePsqlRepository_FindByAction(t *testing.T) {
 
 		// THEN
 		require.ErrorIs(t, err, domain.ErrEventTypeNotFound)
-		require.Nil(t, result)
+		require.Empty(t, result.Action)
 	})
 }
 
@@ -116,13 +116,13 @@ func TestEventTypePsqlRepository_QueryAll(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		ids := make([]string, len(result.Data))
+		actions := make([]string, len(result.Data))
 		for i, et := range result.Data {
-			ids[i] = et.Id
+			actions[i] = et.Action
 		}
-		assert.Contains(t, ids, et1.Id)
-		assert.Contains(t, ids, et2.Id)
-		assert.Contains(t, ids, et3.Id)
+		assert.Contains(t, actions, et1.Action)
+		assert.Contains(t, actions, et2.Action)
+		assert.Contains(t, actions, et3.Action)
 
 		for i := 1; i < len(result.Data); i++ {
 			assert.False(t, result.Data[i].CreatedAt.After(result.Data[i-1].CreatedAt))
@@ -146,12 +146,12 @@ func TestEventTypePsqlRepository_QueryAll(t *testing.T) {
 		assert.GreaterOrEqual(t, len(page2.Data), 1)
 		assert.Equal(t, 2, page2.CurrentPage)
 
-		page1IDs := make([]string, len(page1.Data))
+		page1Actions := make([]string, len(page1.Data))
 		for i, et := range page1.Data {
-			page1IDs[i] = et.Id
+			page1Actions[i] = et.Action
 		}
 		for _, et := range page2.Data {
-			assert.NotContains(t, page1IDs, et.Id)
+			assert.NotContains(t, page1Actions, et.Action)
 		}
 	})
 
@@ -167,13 +167,13 @@ func TestEventTypePsqlRepository_QueryAll(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.Len(t, result.Data, 1)
-		assert.Equal(t, et.Id, result.Data[0].Id)
+		assert.Equal(t, et.Action, result.Data[0].Action)
 	})
 
 	t.Run("returns empty result when no event types match the action filter", func(t *testing.T) {
 		action := "this-action-does-not-exist-anywhere"
 		result, err := repo.QueryAll(ctx, query.AllEventTypes{
-			Action:           new(action),
+			Action:           &action,
 			PaginationParams: query.PaginationParams{Limit: 10, Page: 1},
 		})
 		require.NoError(t, err)
@@ -181,28 +181,35 @@ func TestEventTypePsqlRepository_QueryAll(t *testing.T) {
 	})
 }
 
-func queryEventTypeByID(t *testing.T, id string) *models.EventType {
+func queryEventTypeByAction(t *testing.T, action string) (*models.EventType, *models.EventTypeVersion) {
 	t.Helper()
 
 	row, err := models.EventTypes(
-		models.EventTypeWhere.ID.EQ(id),
+		models.EventTypeWhere.Action.EQ(action),
 	).One(ctx, db)
 	require.NoError(t, err)
 
-	return row
+	version, err := models.EventTypeVersions(
+		models.EventTypeVersionWhere.EventTypeAction.EQ(action),
+	).One(ctx, db)
+	require.NoError(t, err)
+
+	return row, version
 }
 
 func fixtureEventType() domain.EventType {
 	now := time.Now()
 	return domain.EventType{
-		Id:                           ulid.Make().String(),
-		Version:                      1,
 		Action:                       fmt.Sprintf("%s_%d", gofakeit.Word(), time.Now().UnixMilli()),
-		TargetTypes:                  []string{"user", "team"},
 		ShouldValidateMetadataSchema: false,
-		Schema:                       nil,
-		CreatedAt:                    now,
-		UpdatedAt:                    now,
+		LastVersion: domain.EventTypeVersion{
+			Version:     1,
+			TargetTypes: []string{"user", "team"},
+			Schema:      nil,
+			CreatedAt:   now,
+		},
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 }
 

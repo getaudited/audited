@@ -21,26 +21,28 @@ type QueryHandler[Q, R any] interface {
 }
 
 type Commands struct {
-	CreateEvent     CommandHandler[command.CreateEvent]
-	CreateEventType CommandHandler[command.CreateEventType]
-	DeleteEventType CommandHandler[command.DeleteEventType]
-	CreateExport    CommandHandler[any]
-	CreateSource    CommandHandler[command.CreateSource]
-	CreateToken     CommandHandler[command.CreateToken]
-	DeleteToken     CommandHandler[command.DeleteToken]
-	LogIn           CommandWithResultHandler[command.LogIn, string]
-	CreateAdminUser CommandHandler[command.CreateAdminUser]
+	CreateEvent              CommandHandler[command.CreateEvent]
+	CreateEventType          CommandHandler[command.CreateEventType]
+	CreateEventTypeVersion   CommandHandler[command.CreateEventTypeVersion]
+	RollbackEventTypeVersion CommandHandler[command.RollbackEventTypeVersion]
+	DeleteEventType          CommandHandler[command.DeleteEventType]
+	CreateExport             CommandHandler[any]
+	CreateSource             CommandHandler[command.CreateSource]
+	CreateToken              CommandHandler[command.CreateToken]
+	DeleteToken              CommandHandler[command.DeleteToken]
+	LogIn                    CommandWithResultHandler[command.LogIn, string]
+	CreateAdminUser          CommandHandler[command.CreateAdminUser]
 }
 
 type Queries struct {
-	EventTypes        QueryHandler[any, query.Pagination[domain.EventType]]
-	EventTypeByAction QueryHandler[query.EventTypeByName, *domain.EventType]
+	EventTypes        QueryHandler[any, query.Pagination[query.EventType]]
+	EventTypeByAction QueryHandler[query.EventTypeByAction, query.EventType]
 	Events            QueryHandler[query.AllEvents, query.CursorPaginationResult[domain.Event]]
 	EventByID         QueryHandler[any, domain.Event]
 	SourceByID        QueryHandler[query.SourceByID, *domain.Source]
 	AllSources        QueryHandler[query.AllSources, query.Pagination[domain.Source]]
 	AllTokens         QueryHandler[query.AllTokens, []*domain.Token]
-	AllEventTypes     QueryHandler[query.AllEventTypes, query.Pagination[*domain.EventType]]
+	AllEventTypes     QueryHandler[query.AllEventTypes, query.Pagination[query.EventType]]
 }
 
 type App struct {

@@ -22,16 +22,22 @@ CREATE TABLE sources (
 );
 
 CREATE TABLE event_types (
-    id TEXT NOT NULL PRIMARY KEY,
-    version INTEGER DEFAULT 1 NOT NULL,
     action TEXT NOT NULL,
-    target_types TEXT[] NOT NULL,
     should_validate_metadata_schema BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    CONSTRAINT pk_action PRIMARY KEY (action)
+);
+
+CREATE TABLE event_type_versions (
+    event_type_action TEXT NOT NULL,
+    version INTEGER DEFAULT 1 NOT NULL,
+    target_types TEXT[] NOT NULL,
     event_schema JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    CONSTRAINT un_event_type_name UNIQUE (action)
+    CONSTRAINT pk_event_type_id_and_version PRIMARY KEY (event_type_action, version),
+    CONSTRAINT fk_versions_belongs_to_event_type FOREIGN KEY (event_type_action) REFERENCES event_types (action)
 );
 
 CREATE TABLE tokens (
@@ -42,8 +48,6 @@ CREATE TABLE tokens (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT fk_token_belongs_to_source FOREIGN KEY (source_id) REFERENCES sources (id)
 );
-
--- TODO: add event_type_schemas
 
 CREATE TABLE events (
     id TEXT NOT NULL PRIMARY KEY,
@@ -84,6 +88,7 @@ DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS tokens;
 DROP TABLE IF EXISTS event_targets;
 DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS event_type_versions;
 DROP TABLE IF EXISTS event_types;
 DROP TABLE IF EXISTS sources;
 DROP TYPE IF EXISTS UserRole;
