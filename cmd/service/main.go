@@ -77,11 +77,12 @@ func (s *Service) Run() error {
 		return err
 	}
 
-	eventsRepository := psql.NewEventsPsqlRepository(db)
-	sourcesRepository := psql.NewSourcesPsqlRepository(db)
-	eventTypeRepository := psql.NewEventTypePsqlRepository(db)
-	tokensRepository := psql.NewTokensPsqlRepository(db)
-	usersRepository := psql.NewUsersPsqlRepository(db)
+	eventsRepo := psql.NewEventsPsqlRepository(db)
+	sourcesRepo := psql.NewSourcesPsqlRepository(db)
+	eventTypeRepo := psql.NewEventTypePsqlRepository(db)
+	tokensRepo := psql.NewTokensPsqlRepository(db)
+	usersRepo := psql.NewUsersPsqlRepository(db)
+	txProvider := psql.NewTxProvider(db, logger)
 	jwtPrivateKey, err := s.parseJwtPrivateKey()
 	if err != nil {
 		return err
@@ -89,24 +90,26 @@ func (s *Service) Run() error {
 
 	application := &app.App{
 		Commands: app.Commands{
-			CreateEventType: command.NewCreateEventTypeHandler(eventTypeRepository),
-			DeleteEventType: command.NewDeleteEventTypeHandler(eventTypeRepository),
-			CreateEvent:     command.NewCreateEventHandler(eventsRepository),
-			CreateSource:    command.NewCreateSourceHandler(sourcesRepository),
-			CreateToken:     command.NewCreateTokenHandler(tokensRepository),
-			DeleteToken:     command.NewDeleteTokenHandler(tokensRepository),
-			LogIn:           command.NewLogInHandler(usersRepository, jwtPrivateKey),
-			CreateAdminUser: command.NewCreateAdminUserHandler(usersRepository),
+			CreateEventType:          command.NewCreateEventTypeHandler(eventTypeRepo),
+			DeleteEventType:          command.NewDeleteEventTypeHandler(eventTypeRepo),
+			CreateEventTypeVersion:   command.NewCreateEventTypeVersionHandler(txProvider),
+			RollbackEventTypeVersion: command.NewRollbackEventTypeVersionHandler(eventTypeRepo),
+			CreateEvent:              command.NewCreateEventHandler(eventsRepo),
+			CreateSource:             command.NewCreateSourceHandler(sourcesRepo),
+			CreateToken:              command.NewCreateTokenHandler(tokensRepo),
+			DeleteToken:              command.NewDeleteTokenHandler(tokensRepo),
+			LogIn:                    command.NewLogInHandler(usersRepo, jwtPrivateKey),
+			CreateAdminUser:          command.NewCreateAdminUserHandler(usersRepo),
 		},
 		Queries: app.Queries{
 			EventTypes:        nil,
-			EventTypeByAction: query.NewEventTypeByActionHandler(eventTypeRepository),
-			Events:            query.NewAllEventsHandler(eventsRepository),
+			EventTypeByAction: query.NewEventTypeByActionHandler(eventTypeRepo),
+			Events:            query.NewAllEventsHandler(eventsRepo),
 			EventByID:         nil,
-			AllSources:        query.NewAllSourcesHandler(sourcesRepository),
-			SourceByID:        query.NewSourceByIDHandler(sourcesRepository),
-			AllTokens:         query.NewAllTokensHandler(tokensRepository),
-			AllEventTypes:     query.NewAllEventTypesHandler(eventTypeRepository),
+			AllSources:        query.NewAllSourcesHandler(sourcesRepo),
+			SourceByID:        query.NewSourceByIDHandler(sourcesRepo),
+			AllTokens:         query.NewAllTokensHandler(tokensRepo),
+			AllEventTypes:     query.NewAllEventTypesHandler(eventTypeRepo),
 		},
 	}
 

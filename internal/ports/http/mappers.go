@@ -91,26 +91,26 @@ func mapToTokens(tokens []*domain.Token) []Token {
 	return r
 }
 
-func mapToEventType(et *domain.EventType) EventType {
-	var schema *string
-	if len(et.Schema) > 0 {
-		s := string(et.Schema)
-		schema = new(s)
+func mapToEventType(et query.EventType) EventType {
+	versions := make([]EventTypeVersion, len(et.Versions))
+	for i, eventTypeVersion := range et.Versions {
+		versions[i] = EventTypeVersion{
+			Version:     eventTypeVersion.Version,
+			Schema:      new(string(eventTypeVersion.Schema)),
+			TargetTypes: eventTypeVersion.TargetTypes,
+			CreatedAt:   eventTypeVersion.CreatedAt,
+		}
 	}
 
 	return EventType{
-		Id:                           et.Id,
-		Version:                      et.Version,
 		Action:                       et.Action,
-		TargetTypes:                  et.TargetTypes,
+		Versions:                     versions,
 		ShouldValidateMetadataSchema: et.ShouldValidateMetadataSchema,
-		Schema:                       schema,
 		CreatedAt:                    et.CreatedAt,
-		UpdatedAt:                    et.UpdatedAt,
 	}
 }
 
-func mapToEventTypeList(result query.Pagination[*domain.EventType]) EventTypeList {
+func mapToEventTypeList(result query.Pagination[query.EventType]) EventTypeList {
 	data := make([]EventType, len(result.Data))
 	for i, et := range result.Data {
 		data[i] = mapToEventType(et)

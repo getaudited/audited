@@ -68,20 +68,24 @@ type EventList struct {
 
 // EventType defines model for EventType.
 type EventType struct {
-	Action                       string    `json:"action"`
-	CreatedAt                    time.Time `json:"created_at"`
-	Id                           string    `json:"id"`
-	Schema                       *string   `json:"schema,omitempty"`
-	ShouldValidateMetadataSchema bool      `json:"should_validate_metadata_schema"`
-	TargetTypes                  []string  `json:"target_types"`
-	UpdatedAt                    time.Time `json:"updated_at"`
-	Version                      int       `json:"version"`
+	Action                       string             `json:"action"`
+	Versions                     []EventTypeVersion `json:"versions"`
+	ShouldValidateMetadataSchema bool               `json:"should_validate_metadata_schema"`
+	CreatedAt                    time.Time          `json:"created_at"`
 }
 
 // EventTypeList defines model for EventTypeList.
 type EventTypeList struct {
 	Data       []EventType `json:"data"`
 	Pagination Pagination  `json:"pagination"`
+}
+
+// EventTypeVersion defines model for EventTypeVersion.
+type EventTypeVersion struct {
+	Version     int       `json:"version"`
+	TargetTypes []string  `json:"target_types"`
+	Schema      *string   `json:"schema,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 // LogIn defines model for LogIn.
@@ -241,6 +245,12 @@ type CreateEventTypeJSONBody struct {
 	TargetTypes                  []string `json:"target_types"`
 }
 
+// CreateEventTypeVersionJSONBody defines parameters for CreateEventTypeVersion.
+type CreateEventTypeVersionJSONBody struct {
+	Schema      *string  `json:"schema,omitempty"`
+	TargetTypes []string `json:"target_types"`
+}
+
 // GetEventsParams defines parameters for GetEvents.
 type GetEventsParams struct {
 	SourceId SourceIdQuery `form:"source_id" json:"source_id"`
@@ -291,6 +301,9 @@ type CreateEventJSONRequestBody CreateEventJSONBody
 // CreateEventTypeJSONRequestBody defines body for CreateEventType for application/json ContentType.
 type CreateEventTypeJSONRequestBody CreateEventTypeJSONBody
 
+// CreateEventTypeVersionJSONRequestBody defines body for CreateEventTypeVersion for application/json ContentType.
+type CreateEventTypeVersionJSONRequestBody CreateEventTypeVersionJSONBody
+
 // LogInJSONRequestBody defines body for LogIn for application/json ContentType.
 type LogInJSONRequestBody LogInJSONBody
 
@@ -317,6 +330,12 @@ type ServerInterface interface {
 	// Return the details of an Event Type
 	// (GET /x/v1/event-types/{event_type_action})
 	GetEventTypeByID(ctx echo.Context, eventTypeAction EventTypeAction) error
+	// Rollback event type version
+	// (DELETE /x/v1/event-types/{event_type_action}/versions)
+	RollbackEventTypeVersion(ctx echo.Context, eventTypeAction EventTypeAction) error
+	// Create an event type version
+	// (POST /x/v1/event-types/{event_type_action}/versions)
+	CreateEventTypeVersion(ctx echo.Context, eventTypeAction EventTypeAction) error
 	// Get events
 	// (GET /x/v1/events)
 	GetEvents(ctx echo.Context, params GetEventsParams) error
@@ -457,6 +476,42 @@ func (w *ServerInterfaceWrapper) GetEventTypeByID(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetEventTypeByID(ctx, eventTypeAction)
+	return err
+}
+
+// RollbackEventTypeVersion converts echo context to params.
+func (w *ServerInterfaceWrapper) RollbackEventTypeVersion(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "event_type_action" -------------
+	var eventTypeAction EventTypeAction
+
+	err = runtime.BindStyledParameterWithOptions("simple", "event_type_action", ctx.Param("event_type_action"), &eventTypeAction, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter event_type_action: %s", err))
+	}
+
+	ctx.Set(BearerAuthScopes, []string{})
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.RollbackEventTypeVersion(ctx, eventTypeAction)
+	return err
+}
+
+// CreateEventTypeVersion converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateEventTypeVersion(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "event_type_action" -------------
+	var eventTypeAction EventTypeAction
+
+	err = runtime.BindStyledParameterWithOptions("simple", "event_type_action", ctx.Param("event_type_action"), &eventTypeAction, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter event_type_action: %s", err))
+	}
+
+	ctx.Set(BearerAuthScopes, []string{})
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.CreateEventTypeVersion(ctx, eventTypeAction)
 	return err
 }
 
@@ -696,6 +751,8 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.POST(baseURL+"/x/v1/event-types", wrapper.CreateEventType)
 	router.DELETE(baseURL+"/x/v1/event-types/:event_type_action", wrapper.DeleteEventType)
 	router.GET(baseURL+"/x/v1/event-types/:event_type_action", wrapper.GetEventTypeByID)
+	router.DELETE(baseURL+"/x/v1/event-types/:event_type_action/versions", wrapper.RollbackEventTypeVersion)
+	router.POST(baseURL+"/x/v1/event-types/:event_type_action/versions", wrapper.CreateEventTypeVersion)
 	router.GET(baseURL+"/x/v1/events", wrapper.GetEvents)
 	router.POST(baseURL+"/x/v1/login", wrapper.LogIn)
 	router.GET(baseURL+"/x/v1/sources", wrapper.GetSources)
@@ -710,46 +767,48 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
-	"TvHufvdXAAAA//+dNSdEGDgAAA==",
+	"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",
+	"I5KsuVSzn6c/T/H+bv//AAAA///67lBerD0AAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

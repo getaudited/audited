@@ -3,12 +3,25 @@ package domain
 import "time"
 
 type EventType struct {
-	Id                           string
-	Version                      int
 	Action                       string
-	TargetTypes                  []string
 	ShouldValidateMetadataSchema bool
-	Schema                       Schema
+	LastVersion                  EventTypeVersion
 	CreatedAt                    time.Time
 	UpdatedAt                    time.Time
+}
+
+type EventTypeVersion struct {
+	Version     int
+	TargetTypes []string
+	Schema      Schema
+	CreatedAt   time.Time
+}
+
+func NewEventTypeVersion(targetTypes []string, schema Schema) EventTypeVersion {
+	return EventTypeVersion{
+		Version:     1,
+		TargetTypes: targetTypes,
+		Schema:      schema,
+		CreatedAt:   time.Now(),
+	}
 }

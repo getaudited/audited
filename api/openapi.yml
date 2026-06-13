@@ -388,7 +388,56 @@ paths:
           $ref: '#/components/responses/BadRequestError'
         default:
           $ref: "#/components/responses/InternalServerError"
-
+  /x/v1/event-types/{event_type_action}/versions:
+    post:
+      summary: Create an event type version
+      description: Create a new event type version
+      tags:
+        - Admin API
+      operationId: CreateEventTypeVersion
+      parameters:
+        - $ref: '#/components/parameters/event_type_action'
+      security:
+        - BearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required: [ target_types ]
+              properties:
+                target_types:
+                  type: array
+                  items:
+                    type: string
+                schema:
+                  type: string
+      responses:
+        "204":
+          description: Event type version created
+        "400":
+          $ref: '#/components/responses/BadRequestError'
+        "404":
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      summary: Rollback event type version
+      description: Rollback event type version
+      tags:
+        - Admin API
+      operationId: RollbackEventTypeVersion
+      parameters:
+        - $ref: '#/components/parameters/event_type_action'
+      security:
+        - BearerAuth: [ ]
+      responses:
+        "204":
+          description: The event type version rolled back
+        "400":
+          $ref: '#/components/responses/BadRequestError'
+        default:
+          $ref: "#/components/responses/InternalServerError"
 components:
   parameters:
     x_token:
@@ -606,29 +655,42 @@ components:
             $ref: '#/components/schemas/Source'
 
     # Event type
-    EventType:
-      required: [id, action, version, target_types, should_validate_metadata_schema, created_at, updated_at]
+    EventTypeVersion:
+      required: [version, target_types, created_at]
       properties:
-        id:
-          type: string
         version:
           type: integer
-        action:
-          type: string
+          x-order: 1
         target_types:
           type: array
           items:
             type: string
+          x-order: 2
         schema:
           type: string
-        should_validate_metadata_schema:
-          type: boolean
+          x-order: 3
         created_at:
           type: string
           format: date-time
-        updated_at:
+          x-order: 4
+    EventType:
+      required: [action, target_types, versions, should_validate_metadata_schema, created_at]
+      properties:
+        action:
+          type: string
+          x-order: 1
+        versions:
+          type: array
+          x-order: 2
+          items:
+            $ref: '#/components/schemas/EventTypeVersion'
+        should_validate_metadata_schema:
+          type: boolean
+          x-order: 3
+        created_at:
           type: string
           format: date-time
+          x-order: 4
     EventTypeList:
       required: [ data, pagination ]
       properties:

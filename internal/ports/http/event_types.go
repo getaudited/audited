@@ -9,7 +9,6 @@ import (
 	"github.com/getaudited/audited/internal/app/query"
 	"github.com/getaudited/audited/internal/domain"
 	"github.com/labstack/echo/v4"
-	"github.com/oklog/ulid/v2"
 )
 
 func (h handlers) GetEventTypes(c echo.Context, params GetEventTypesParams) error {
@@ -36,19 +35,16 @@ func (h handlers) CreateEventType(c echo.Context) error {
 		schema = []byte(*body.Schema)
 	}
 
-	eventType := domain.EventType{
-		Id:                           ulid.Make().String(),
-		Version:                      1,
+	et := domain.EventType{
 		Action:                       body.Action,
-		TargetTypes:                  body.TargetTypes,
 		ShouldValidateMetadataSchema: body.ShouldValidateMetadataSchema,
-		Schema:                       schema,
+		LastVersion:                  domain.NewEventTypeVersion(body.TargetTypes, schema),
 		CreatedAt:                    time.Now(),
 		UpdatedAt:                    time.Now(),
 	}
 
 	err = h.application.Commands.CreateEventType.Execute(mapEchoCtxToCtx(c), command.CreateEventType{
-		EventType: eventType,
+		EventType: et,
 	})
 	if errors.Is(err, domain.ErrEventTypeExists) {
 		return NewHandlerErrorWithStatus(err, "error-event-type-exists", http.StatusConflict)
@@ -58,18 +54,22 @@ func (h handlers) CreateEventType(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusCreated, EventType{
-		Id:                           eventType.Id,
-		Action:                       eventType.Action,
-		TargetTypes:                  eventType.TargetTypes,
-		Schema:                       body.Schema,
-		ShouldValidateMetadataSchema: eventType.ShouldValidateMetadataSchema,
-		CreatedAt:                    eventType.CreatedAt,
-		UpdatedAt:                    eventType.UpdatedAt,
+		Action:                       et.Action,
+		ShouldValidateMetadataSchema: et.ShouldValidateMetadataSchema,
+		CreatedAt:                    et.CreatedAt,
+		Versions: []EventTypeVersion{
+			{
+				Version:     et.LastVersion.Version,
+				Schema:      body.Schema,
+				TargetTypes: et.LastVersion.TargetTypes,
+				CreatedAt:   et.CreatedAt,
+			},
+		},
 	})
 }
 
 func (h handlers) GetEventTypeByID(c echo.Context, action EventTypeAction) error {
-	et, err := h.application.Queries.EventTypeByAction.Execute(mapEchoCtxToCtx(c), query.EventTypeByName{
+	et, err := h.application.Queries.EventTypeByAction.Execute(mapEchoCtxToCtx(c), query.EventTypeByAction{
 		Action: action,
 	})
 	if errors.Is(err, domain.ErrEventTypeNotFound) {
@@ -79,17 +79,7 @@ func (h handlers) GetEventTypeByID(c echo.Context, action EventTypeAction) error
 		return NewHandlerError(err, "error-querying-event-type")
 	}
 
-	schema := string(et.Schema)
-	return c.JSON(http.StatusOK, EventType{
-		Id:                           et.Id,
-		Version:                      et.Version,
-		Action:                       et.Action,
-		TargetTypes:                  et.TargetTypes,
-		Schema:                       &schema,
-		ShouldValidateMetadataSchema: et.ShouldValidateMetadataSchema,
-		CreatedAt:                    et.CreatedAt,
-		UpdatedAt:                    et.UpdatedAt,
-	})
+	return c.JSON(http.StatusOK, mapToEventType(et))
 }
 
 func (h handlers) DeleteEventType(c echo.Context, action EventTypeAction) error {
@@ -98,6 +88,47 @@ func (h handlers) DeleteEventType(c echo.Context, action EventTypeAction) error 
 	})
 	if err != nil {
 		return NewHandlerError(err, "error-deleting-event-type")
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+func (h handlers) CreateEventTypeVersion(c echo.Context, eventTypeAction EventTypeAction) error {
+	var body CreateEventTypeVersionJSONBody
+	err := c.Bind(&body)
+	if err != nil {
+		return NewBadRequestError(err, "unable-to-parse-body")
+	}
+
+	var schema domain.Schema
+	if body.Schema != nil {
+		schema = domain.Schema(*body.Schema)
+	}
+
+	err = h.application.Commands.CreateEventTypeVersion.Execute(mapEchoCtxToCtx(c), command.CreateEventTypeVersion{
+		Schema:      schema,
+		Action:      eventTypeAction,
+		TargetTypes: body.TargetTypes,
+	})
+	if errors.Is(err, domain.ErrEventTypeNotFound) {
+		return NewNotFoundError(err, "event-type-not-found")
+	}
+	if err != nil {
+		return NewHandlerError(err, "unable-to-create-event-type-version")
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+func (h handlers) RollbackEventTypeVersion(c echo.Context, eventTypeAction EventTypeAction) error {
+	err := h.application.Commands.RollbackEventTypeVersion.Execute(mapEchoCtxToCtx(c), command.RollbackEventTypeVersion{
+		Action: eventTypeAction,
+	})
+	if errors.Is(err, domain.ErrVersionOneOfEventTypeCannotBeRolledBack) {
+		return NewHandlerErrorWithStatus(err, "unable-to-rollback-version-one-of-event-type", http.StatusConflict)
+	}
+	if err != nil {
+		return NewHandlerError(err, "unable-to-rollback-event-event-type")
 	}
 
 	return c.NoContent(http.StatusNoContent)

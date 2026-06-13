@@ -4,17 +4,19 @@
 package models
 
 var TableNames = struct {
-	EventTargets string
-	EventTypes   string
-	Events       string
-	Sources      string
-	Tokens       string
-	Users        string
+	EventTargets      string
+	EventTypeVersions string
+	EventTypes        string
+	Events            string
+	Sources           string
+	Tokens            string
+	Users             string
 }{
-	EventTargets: "event_targets",
-	EventTypes:   "event_types",
-	Events:       "events",
-	Sources:      "sources",
-	Tokens:       "tokens",
-	Users:        "users",
+	EventTargets:      "event_targets",
+	EventTypeVersions: "event_type_versions",
+	EventTypes:        "event_types",
+	Events:            "events",
+	Sources:           "sources",
+	Tokens:            "tokens",
+	Users:             "users",
 }

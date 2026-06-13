@@ -2,11 +2,9 @@ package query
 
 import (
 	"context"
-
-	"github.com/getaudited/audited/internal/domain"
 )
 
-type EventTypeByName struct {
+type EventTypeByAction struct {
 	Action string
 }
 
@@ -20,6 +18,6 @@ func NewEventTypeByActionHandler(finder eventTypeFinder) EventTypeByActionHandle
 	}
 }
 
-func (e EventTypeByActionHandler) Execute(ctx context.Context, q EventTypeByName) (*domain.EventType, error) {
+func (e EventTypeByActionHandler) Execute(ctx context.Context, q EventTypeByAction) (EventType, error) {
 	return e.finder.FindByAction(ctx, q.Action)
 }
