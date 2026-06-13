@@ -43,6 +43,7 @@ type Queries struct {
 	AllSources        QueryHandler[query.AllSources, query.Pagination[domain.Source]]
 	AllTokens         QueryHandler[query.AllTokens, []*domain.Token]
 	AllEventTypes     QueryHandler[query.AllEventTypes, query.Pagination[query.EventType]]
+	UserProfile       QueryHandler[query.UserProfile, *domain.User]
 }
 
 type App struct {

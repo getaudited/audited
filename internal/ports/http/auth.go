@@ -5,6 +5,7 @@ import (
 
 	"github.com/friendsofgo/errors"
 	"github.com/getaudited/audited/internal/app/command"
+	"github.com/getaudited/audited/internal/app/query"
 	"github.com/getaudited/audited/internal/domain"
 	"github.com/labstack/echo/v4"
 )
@@ -37,5 +38,25 @@ func (h handlers) LogIn(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, LogIn{
 		Jwt: signedToken,
+	})
+}
+
+func (h handlers) GetUserProfile(c echo.Context) error {
+	userID, err := mapRetrieveUserIdFromCtx(c)
+	if err != nil {
+		return NewHandlerError(err, "error-retrieving-user-id")
+	}
+
+	user, err := h.application.Queries.UserProfile.Execute(mapEchoCtxToCtx(c), query.UserProfile{
+		UserID: domain.ID(userID),
+	})
+	if err != nil {
+		return NewHandlerError(err, "unable-retrieve-user-details")
+	}
+
+	return c.JSON(http.StatusOK, User{
+		Id:    user.ID().String(),
+		Email: user.Email().String(),
+		Role:  user.Role().String(),
 	})
 }

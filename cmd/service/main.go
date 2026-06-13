@@ -110,6 +110,7 @@ func (s *Service) Run() error {
 			SourceByID:        query.NewSourceByIDHandler(sourcesRepo),
 			AllTokens:         query.NewAllTokensHandler(tokensRepo),
 			AllEventTypes:     query.NewAllEventTypesHandler(eventTypeRepo),
+			UserProfile:       query.NewUserProfileHandler(usersRepo),
 		},
 	}
 

@@ -33,6 +33,18 @@ func (u UserPsqlRepository) FindByEmail(ctx context.Context, email domain.Email)
 	return domain.MarshallToUser(row.ID, row.Email, row.Password, row.Role, row.CreatedAt), nil
 }
 
+func (u UserPsqlRepository) FindByID(ctx context.Context, id domain.ID) (*domain.User, error) {
+	row, err := models.Users(models.UserWhere.ID.EQ(id.String())).One(ctx, u.db)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, domain.ErrUserNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("error querying user via id '%s': %w", id, err)
+	}
+
+	return domain.MarshallToUser(row.ID, row.Email, row.Password, row.Role, row.CreatedAt), nil
+}
+
 func (u UserPsqlRepository) Save(ctx context.Context, user *domain.User) error {
 	row := models.User{
 		ID:        user.ID().String(),
