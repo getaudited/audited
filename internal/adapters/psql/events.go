@@ -42,19 +42,19 @@ func (r EventsPsqlRepository) Save(ctx context.Context, e domain.Event, token do
 		return err
 	}
 
+	err = r.checkEventType(ctx, e.Action())
+	if err != nil {
+		return err
+	}
+
 	row, err := mapDomainEventToModelEvent(e)
 	if err != nil {
 		return err
 	}
 
 	err = row.Insert(ctx, r.db, boil.Infer())
-	if pqErr, ok := errors.AsType[*pq.Error](err); ok {
-		switch pqErr.Constraint {
-		case FkEventBelongsToSource:
-			return domain.ErrSourceNotFoundWhileSavingEvent
-		case FkEventHasEventTypeAction:
-			return domain.ErrEventTypeActionNotFound
-		}
+	if pqErr, ok := errors.AsType[*pq.Error](err); ok && pqErr.Constraint == FkEventBelongsToSource {
+		return domain.ErrSourceNotFoundWhileSavingEvent
 	}
 	if err != nil {
 		return fmt.Errorf("error saving event: %w", err)
@@ -68,22 +68,6 @@ func (r EventsPsqlRepository) Save(ctx context.Context, e domain.Event, token do
 	err = row.AddEventTargets(ctx, r.db, true, targetRows...)
 	if err != nil {
 		return fmt.Errorf("error saving event_targets: %w", err)
-	}
-
-	return nil
-}
-
-func (r EventsPsqlRepository) validateToken(ctx context.Context, token domain.TokenValue, sourceID domain.ID) error {
-	exists, err := models.Tokens(
-		models.TokenWhere.Value.EQ(token.String()),
-		models.TokenWhere.SourceID.EQ(sourceID.String()),
-	).Exists(ctx, r.db)
-	if err != nil {
-		return fmt.Errorf("error validating token: %w", err)
-	}
-
-	if !exists {
-		return domain.ErrTokenNotFound
 	}
 
 	return nil
@@ -156,4 +140,35 @@ func (r EventsPsqlRepository) QueryAll(
 		Data:           events,
 		LastItemCursor: lastItemCursor,
 	}, nil
+}
+
+func (r EventsPsqlRepository) validateToken(ctx context.Context, token domain.TokenValue, sourceID domain.ID) error {
+	exists, err := models.Tokens(
+		models.TokenWhere.Value.EQ(token.String()),
+		models.TokenWhere.SourceID.EQ(sourceID.String()),
+	).Exists(ctx, r.db)
+	if err != nil {
+		return fmt.Errorf("error validating token: %w", err)
+	}
+
+	if !exists {
+		return domain.ErrTokenNotFound
+	}
+
+	return nil
+}
+
+func (r EventsPsqlRepository) checkEventType(ctx context.Context, eventTypeAction string) error {
+	exists, err := models.EventTypes(
+		models.EventTypeWhere.Action.EQ(eventTypeAction),
+	).Exists(ctx, r.db)
+	if err != nil {
+		return fmt.Errorf("error checking for event_type: '%s': %w", eventTypeAction, err)
+	}
+
+	if !exists {
+		return domain.ErrEventTypeActionNotFound
+	}
+
+	return nil
 }
