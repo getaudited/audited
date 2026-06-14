@@ -10,5 +10,6 @@ type EventTypeRepository interface {
 }
 
 type EventRepository interface {
+	FindByID(ctx context.Context, id ID) (Event, error)
 	Save(ctx context.Context, evt Event, token TokenValue) error
 }

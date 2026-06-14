@@ -304,6 +304,28 @@ paths:
                 $ref: "#/components/schemas/EventList"
         default:
           $ref: "#/components/responses/InternalServerError"
+  /x/v1/events/{event_id}:
+    get:
+      summary: Get event by id
+      description: ...
+      tags:
+        - Admin API
+      operationId: getEventByID
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - $ref: '#/components/parameters/event_id'
+      responses:
+        "200":
+          description: Event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        default:
+          $ref: "#/components/responses/InternalServerError"
   /x/v1/event-types:
     get:
       summary: List event types

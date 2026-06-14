@@ -2,6 +2,7 @@ package psql
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -140,6 +141,22 @@ func (r EventsPsqlRepository) QueryAll(
 		Data:           events,
 		LastItemCursor: lastItemCursor,
 	}, nil
+}
+
+func (r EventsPsqlRepository) FindByID(ctx context.Context, id domain.ID) (domain.Event, error) {
+	row, err := models.Events(
+		models.EventWhere.ID.EQ(id.String()),
+		qm.Load(models.EventRels.EventTargets),
+		// qm.Load(models.EventRels.ActionEventType),
+	).One(ctx, r.db)
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.Event{}, domain.ErrEventNotFound
+	}
+	if err != nil {
+		return domain.Event{}, fmt.Errorf("error querying event by id '%s': %w", id, err)
+	}
+
+	return mapRowToDomainEvent(row)
 }
 
 func (r EventsPsqlRepository) validateToken(ctx context.Context, token domain.TokenValue, sourceID domain.ID) error {

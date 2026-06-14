@@ -11,7 +11,6 @@ import (
 )
 
 func (h handlers) CreateEvent(c echo.Context, params CreateEventParams) error {
-	// TODO: check token
 	var body CreateEventJSONBody
 	err := c.Bind(&body)
 	if err != nil {
@@ -74,4 +73,18 @@ func (h handlers) GetEvents(c echo.Context, params GetEventsParams) error {
 		LastItemCursor: result.LastItemCursor,
 		Data:           mapDomainEventsToEvents(result.Data),
 	})
+}
+
+func (h handlers) GetEventByID(c echo.Context, eventID EventId) error {
+	event, err := h.application.Queries.EventByID.Execute(mapEchoCtxToCtx(c), query.EventByID{
+		ID: domain.ID(eventID),
+	})
+	if errors.Is(err, domain.ErrEventTypeExists) {
+		return NewNotFoundError(err, "event-not-found")
+	}
+	if err != nil {
+		return NewHandlerError(err, "unable-to-get-event-by-id")
+	}
+
+	return c.JSON(http.StatusOK, mapDomainEventToEvent(event))
 }

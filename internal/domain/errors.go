@@ -10,4 +10,5 @@ var (
 	ErrEventTypeExists                         = errors.New("the action specified for the event type already exists")
 	ErrEventTypeVersionExists                  = errors.New("the event_type_version already exists")
 	ErrVersionOneOfEventTypeCannotBeRolledBack = errors.New("version 1 of event type cannot be rolledback")
+	ErrEventNotFound                           = errors.New("event not found")
 )
