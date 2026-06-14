@@ -102,10 +102,9 @@ func (s *Service) Run() error {
 			CreateAdminUser:          command.NewCreateAdminUserHandler(usersRepo),
 		},
 		Queries: app.Queries{
-			EventTypes:        nil,
 			EventTypeByAction: query.NewEventTypeByActionHandler(eventTypeRepo),
 			Events:            query.NewAllEventsHandler(eventsRepo),
-			EventByID:         nil,
+			EventByID:         query.NewEventByIDHandler(eventsRepo),
 			AllSources:        query.NewAllSourcesHandler(sourcesRepo),
 			SourceByID:        query.NewSourceByIDHandler(sourcesRepo),
 			AllTokens:         query.NewAllTokensHandler(tokensRepo),

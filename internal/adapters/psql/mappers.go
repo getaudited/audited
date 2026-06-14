@@ -143,47 +143,56 @@ func mapJsonToDomainMetadata(jsonMetadata null.JSON) (domain.Metadata, error) {
 	return metadata, nil
 }
 
+func mapRowToDomainEvent(row *models.Event) (domain.Event, error) {
+	metadata, err := mapJsonToDomainMetadata(row.Metadata)
+	if err != nil {
+		return domain.Event{}, fmt.Errorf("error unmarshalling event metadata: %w", err)
+	}
+
+	actorMetadata, err := mapJsonToDomainMetadata(row.ActorMetadata)
+	if err != nil {
+		return domain.Event{}, fmt.Errorf("error unmarshalling actor metadata: %w", err)
+	}
+
+	var targets []domain.Target
+	if row.R != nil {
+		targets, err = mapRowsToDomainTargets(row.R.EventTargets)
+		if err != nil {
+			return domain.Event{}, err
+		}
+	}
+
+	return domain.MarshallToEvent(
+		row.ID,
+		row.SourceID,
+		row.Action,
+		row.Version,
+		domain.Actor{
+			ID:        row.ActorID,
+			ActorType: row.ActorType,
+			Name:      row.ActorName.Ptr(),
+			Metadata:  &actorMetadata,
+		},
+		targets,
+		domain.Context{
+			Location:  row.ContextLocation,
+			UserAgent: row.ContextUserAgent.Ptr(),
+		},
+		&metadata,
+		row.OccurredAt,
+	), nil
+}
+
 func mapRowsToDomainEvents(rows []*models.Event) ([]domain.Event, error) {
 	events := make([]domain.Event, len(rows))
 
 	for i, row := range rows {
-		metadata, err := mapJsonToDomainMetadata(row.Metadata)
+		event, err := mapRowToDomainEvent(row)
 		if err != nil {
-			return nil, fmt.Errorf("error unmarshalling event metadata: %w", err)
+			return nil, err
 		}
 
-		actorMetadata, err := mapJsonToDomainMetadata(row.ActorMetadata)
-		if err != nil {
-			return nil, fmt.Errorf("error unmarshalling actor metadata: %w", err)
-		}
-
-		var targets []domain.Target
-		if row.R != nil {
-			targets, err = mapRowsToDomainTargets(row.R.EventTargets)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		events[i] = domain.MarshallToEvent(
-			row.ID,
-			row.SourceID,
-			row.Action,
-			row.Version,
-			domain.Actor{
-				ID:        row.ActorID,
-				ActorType: row.ActorType,
-				Name:      row.ActorName.Ptr(),
-				Metadata:  &actorMetadata,
-			},
-			targets,
-			domain.Context{
-				Location:  row.ContextLocation,
-				UserAgent: row.ContextUserAgent.Ptr(),
-			},
-			&metadata,
-			row.OccurredAt,
-		)
+		events[i] = event
 	}
 
 	return events, nil
