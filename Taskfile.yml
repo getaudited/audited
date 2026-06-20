@@ -143,3 +143,11 @@ tasks:
   seed-events:
     cmds:
       - go run ./cmd/events-generator
+
+  docker:build:
+    cmds:
+      - docker build -t getaudited/audited:latest .
+
+  docker:run:
+    cmds:
+      - docker run --rm --env-file=.env.local --env-file=.env.docker -p=${ADT_HTTP_PORT:-8080}:${ADT_HTTP_PORT:-8080} getaudited/audited:latest

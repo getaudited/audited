@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -16,10 +17,9 @@ import (
 	"github.com/getaudited/audited/internal/domain"
 )
 
-const maxEvents = 5
+const maxEvents = 1000
 
 var (
-	locations   = []string{"US", "EU", "APAC", "BR", "UK"}
 	actorTypes  = []string{"user", "service", "admin", "system"}
 	targetTypes = []string{"document", "record", "file", "account", "resource"}
 )
@@ -62,7 +62,7 @@ func main() {
 	fmt.Printf("source created  id=%-26s  name=%s\n", source.ID(), source.Name())
 
 	eventType := domain.EventType{
-		Action:                       fmt.Sprintf("users.%d", time.Now().UnixMilli()),
+		Action:                       "user.created",
 		ShouldValidateMetadataSchema: false,
 		LastVersion:                  domain.NewEventTypeVersion([]string{"user"}, nil),
 		CreatedAt:                    time.Now(),
@@ -71,7 +71,7 @@ func main() {
 	err = createEventType.Execute(ctx, command.CreateEventType{
 		EventType: eventType,
 	})
-	if err != nil {
+	if err != nil && !errors.Is(err, domain.ErrEventTypeExists) {
 		log.Fatalf("error creating event type: %v", err)
 	}
 
@@ -112,14 +112,14 @@ func main() {
 			domain.Actor{
 				ID:        gofakeit.UUID(),
 				ActorType: pick(actorTypes),
-				Name:      &actorName,
+				Name:      new(actorName),
 			},
 			[]domain.Target{
 				target,
 			},
 			domain.Context{
-				Location:  pick(locations),
-				UserAgent: &ua,
+				Location:  gofakeit.IPv4Address(),
+				UserAgent: new(ua),
 			},
 			&domain.Metadata{
 				"ip":      gofakeit.IPv4Address(),
