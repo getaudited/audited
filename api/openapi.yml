@@ -3,17 +3,17 @@ openapi: 3.0.3
 info:
   title: audited
   description: API reference for audited API
-  termsOfService: https://github.com/firminochangani/audited
+  termsOfService: https://github.com/getauditeddev/audited
   contact:
     email: firmino.changani@gmail.com
   license:
     name: MIT
-    url: https://github.com/firminochangani/audited/LICENSE.md
+    url: https://github.com/getauditeddev/audited/LICENSE.md
   version: 0.0.1
 
 externalDocs:
-  description: https://github.com/firminochangani/audited/README.md
-  url: https://github.com/firminochangani/audited
+  description: https://github.com/getauditeddev/audited/README.md
+  url: https://github.com/getauditeddev/audited
 
 servers:
   - url: http://localhost:8080
