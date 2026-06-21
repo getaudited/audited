@@ -22,11 +22,7 @@ const (
 	ctxUserID = "user_id"
 )
 
-func loggerMiddleware(logger *logs.Logger, isDebug bool) echo.MiddlewareFunc {
-	if isDebug {
-		return middleware.RequestLogger()
-	}
-
+func loggerMiddleware(logger *logs.Logger) echo.MiddlewareFunc {
 	return middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:       true,
 		LogStatus:    true,

@@ -33,9 +33,7 @@ type Config struct {
 	DatabaseURL       string   `envconfig:"ADT_DATABASE_URL"`
 	HttpPort          int      `envconfig:"ADT_HTTP_PORT"`
 	AllowedCorsOrigin []string `envconfig:"ADT_ALLOWED_CORS_ORIGIN"`
-	DebugMode         bool     `envconfig:"ADT_DEBUG_MODE"`
 	LogLevel          string   `envconfig:"ADT_LOG_LEVEL"`
-	AmqpUrl           string   `envconfig:"ADT_AMQP_URL"`
 	JWTPublicKey      string   `envconfig:"ADT_JWT_PUBLIC_KEY" required:"true"`
 	JWTPrivateKey     string   `envconfig:"ADT_JWT_PRIVATE_KEY" required:"true"`
 	AdminEmail        string   `envconfig:"ADT_ADMIN_EMAIL" required:"true"`
@@ -123,7 +121,6 @@ func (s *Service) Run() error {
 		Port:              config.HttpPort,
 		AllowedCorsOrigin: config.AllowedCorsOrigin,
 		Logger:            logger,
-		IsDebug:           config.DebugMode,
 		Context:           ctx,
 		JwtPublicKey:      jwtPublicKey,
 	})
