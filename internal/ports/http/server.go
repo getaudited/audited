@@ -29,7 +29,6 @@ type Config struct {
 	Port              int
 	AllowedCorsOrigin []string
 	Logger            *logs.Logger
-	IsDebug           bool
 	Context           context.Context
 	JwtPublicKey      *ecdsa.PublicKey
 }
@@ -85,7 +84,7 @@ func registerMiddlewares(router *echo.Echo, spec *openapi3.T, config Config) {
 	router.HTTPErrorHandler = errorHandler(config.Logger)
 	router.Use(middleware.RequestID())
 	router.Use(middleware.Recover())
-	router.Use(loggerMiddleware(config.Logger, config.IsDebug))
+	router.Use(loggerMiddleware(config.Logger))
 	router.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: config.AllowedCorsOrigin,
 		AllowHeaders: []string{

@@ -13,10 +13,10 @@ This project uses [Task](https://taskfile.dev) (`task`) as the task runner. All 
 ### Infrastructure
 
 ```bash
-task run          # Start postgres + rabbitmq + app in Docker
+task run          # Start postgres + app in Docker
 task dev          # Also starts swagger-ui on :8090
 ```
-In 
+
 ### Running the service locally (outside Docker)
 
 ```bash
@@ -105,7 +105,6 @@ internal/
 |---|---|
 | `DATABASE_URL` | PostgreSQL DSN |
 | `HTTP_PORT` | HTTP listen port (default 8080) |
-| `AMQP_URL` | RabbitMQ connection URL |
 | `DEBUG_MODE` | Enables verbose logging |
 | `GOOSE_DRIVER` / `GOOSE_DBSTRING` | Used by goose CLI for migrations |
 
