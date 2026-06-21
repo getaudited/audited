@@ -19,6 +19,7 @@ type AllEventsParams struct {
 	ActorID   domain.ID
 	ActorName *string
 	TargetID  domain.ID
+	Action    *string
 }
 
 type AllEventsHandler struct {

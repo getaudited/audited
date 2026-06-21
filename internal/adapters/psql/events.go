@@ -90,7 +90,11 @@ func (r EventsPsqlRepository) QueryAll(
 	}
 
 	if params.ActorName != nil {
-		opts = append(opts, models.EventWhere.ActorName.ILIKE(null.StringFromPtr(params.ActorName)))
+		opts = append(opts, models.EventWhere.ActorName.ILIKE(null.StringFromPtr(new("%"+*params.ActorName+"%"))))
+	}
+
+	if params.Action != nil {
+		opts = append(opts, models.EventWhere.Action.ILIKE("%"+*params.Action+"%"))
 	}
 
 	if params.TargetID.Empty() {
@@ -176,9 +180,7 @@ func (r EventsPsqlRepository) validateToken(ctx context.Context, token domain.To
 }
 
 func (r EventsPsqlRepository) checkEventType(ctx context.Context, eventTypeAction string) error {
-	exists, err := models.EventTypes(
-		models.EventTypeWhere.Action.EQ(eventTypeAction),
-	).Exists(ctx, r.db)
+	exists, err := models.EventTypes(models.EventTypeWhere.Action.EQ(eventTypeAction)).Exists(ctx, r.db)
 	if err != nil {
 		return fmt.Errorf("error checking for event_type: '%s': %w", eventTypeAction, err)
 	}
