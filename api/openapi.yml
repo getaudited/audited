@@ -290,6 +290,7 @@ paths:
         - $ref: '#/components/parameters/source_id_query'
         - $ref: '#/components/parameters/start_from_cursor'
         - $ref: '#/components/parameters/pagination_limit'
+        - $ref: '#/components/parameters/events_by_action'
         - $ref: '#/components/parameters/events_by_actor_id'
         - $ref: '#/components/parameters/events_by_actor_name'
         - $ref: '#/components/parameters/events_by_target_id'
@@ -519,6 +520,12 @@ components:
     start_from_cursor:
       name: start_from
       description: Opaque cursor returned by the previous page. Omit to start from the most recent event.
+      in: query
+      required: false
+      schema:
+        type: string
+    events_by_action:
+      name: action
       in: query
       required: false
       schema:

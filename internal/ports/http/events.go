@@ -59,6 +59,7 @@ func (h handlers) GetEvents(c echo.Context, params GetEventsParams) error {
 			ActorID:   actorID,
 			ActorName: params.ActorName,
 			TargetID:  targetID,
+			Action:    params.Action,
 		},
 		CursorPaginationParams: query.CursorPaginationParams{
 			Limit:           params.Limit,
