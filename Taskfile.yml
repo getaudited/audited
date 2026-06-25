@@ -49,6 +49,22 @@ tasks:
     cmds:
       - goose -s -dir ./misc/sql/migrations create {{.CLI_ARGS}} sql
 
+  ch:up:
+    cmds:
+      - goose -s -dir ./misc/clickhouse up
+
+  ch:down:
+    cmds:
+      - goose -s -dir ./misc/clickhouse down
+
+  ch:reset:
+    cmds:
+      - goose -s -dir ./misc/clickhouse reset
+
+  ch:create:
+    cmds:
+      - goose -s -dir ./misc/clickhouse create {{.CLI_ARGS}} sql
+
   seed:up:
     cmds:
       - goose -no-versioning -dir ./misc/sql/seeds up

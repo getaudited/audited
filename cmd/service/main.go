@@ -14,7 +14,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/friendsofgo/errors"
+	clickhouseadapter "github.com/getaudited/audited/internal/adapters/clickhouse"
 	"github.com/getaudited/audited/internal/domain"
 	"github.com/kelseyhightower/envconfig"
 	_ "github.com/lib/pq"
@@ -30,14 +32,15 @@ import (
 )
 
 type Config struct {
-	DatabaseURL       string   `envconfig:"ADT_DATABASE_URL"`
-	HttpPort          int      `envconfig:"ADT_HTTP_PORT"`
-	AllowedCorsOrigin []string `envconfig:"ADT_ALLOWED_CORS_ORIGIN"`
-	LogLevel          string   `envconfig:"ADT_LOG_LEVEL"`
-	JWTPublicKey      string   `envconfig:"ADT_JWT_PUBLIC_KEY" required:"true"`
-	JWTPrivateKey     string   `envconfig:"ADT_JWT_PRIVATE_KEY" required:"true"`
-	AdminEmail        string   `envconfig:"ADT_ADMIN_EMAIL" required:"true"`
-	AdminPassword     string   `envconfig:"ADT_ADMIN_PASSWORD" required:"true"`
+	DatabaseURL           string   `envconfig:"ADT_DATABASE_URL"`
+	ClickhouseDatabaseURL string   `envconfig:"ADT_CLICKHOUSE_DATABASE_URL"`
+	HttpPort              int      `envconfig:"ADT_HTTP_PORT"`
+	AllowedCorsOrigin     []string `envconfig:"ADT_ALLOWED_CORS_ORIGIN"`
+	LogLevel              string   `envconfig:"ADT_LOG_LEVEL"`
+	JWTPublicKey          string   `envconfig:"ADT_JWT_PUBLIC_KEY" required:"true"`
+	JWTPrivateKey         string   `envconfig:"ADT_JWT_PRIVATE_KEY" required:"true"`
+	AdminEmail            string   `envconfig:"ADT_ADMIN_EMAIL" required:"true"`
+	AdminPassword         string   `envconfig:"ADT_ADMIN_PASSWORD" required:"true"`
 }
 
 type Service struct {
@@ -75,7 +78,13 @@ func (s *Service) Run() error {
 		return err
 	}
 
-	eventsRepo := psql.NewEventsPsqlRepository(db)
+	clickhouseConn, err := newClickhouseConnection(ctx, config.ClickhouseDatabaseURL)
+	if err != nil {
+		return err
+	}
+
+	// eventsRepo := psql.NewEventsPsqlRepository(db)
+	eventsClickhouseRepo := clickhouseadapter.NewEventsClickhouseRepository(clickhouseConn)
 	sourcesRepo := psql.NewSourcesPsqlRepository(db)
 	eventTypeRepo := psql.NewEventTypePsqlRepository(db)
 	tokensRepo := psql.NewTokensPsqlRepository(db)
@@ -92,7 +101,7 @@ func (s *Service) Run() error {
 			DeleteEventType:          command.NewDeleteEventTypeHandler(eventTypeRepo),
 			CreateEventTypeVersion:   command.NewCreateEventTypeVersionHandler(txProvider),
 			RollbackEventTypeVersion: command.NewRollbackEventTypeVersionHandler(eventTypeRepo),
-			CreateEvent:              command.NewCreateEventHandler(eventsRepo),
+			CreateEvent:              command.NewCreateEventHandler(eventsClickhouseRepo),
 			CreateSource:             command.NewCreateSourceHandler(sourcesRepo),
 			CreateToken:              command.NewCreateTokenHandler(tokensRepo),
 			DeleteToken:              command.NewDeleteTokenHandler(tokensRepo),
@@ -101,8 +110,8 @@ func (s *Service) Run() error {
 		},
 		Queries: app.Queries{
 			EventTypeByAction: query.NewEventTypeByActionHandler(eventTypeRepo),
-			Events:            query.NewAllEventsHandler(eventsRepo),
-			EventByID:         query.NewEventByIDHandler(eventsRepo),
+			Events:            query.NewAllEventsHandler(eventsClickhouseRepo),
+			EventByID:         query.NewEventByIDHandler(eventsClickhouseRepo),
 			AllSources:        query.NewAllSourcesHandler(sourcesRepo),
 			SourceByID:        query.NewSourceByIDHandler(sourcesRepo),
 			AllTokens:         query.NewAllTokensHandler(tokensRepo),
@@ -254,4 +263,43 @@ func main() {
 		logger.Error("service exited with an error", "error", err)
 		os.Exit(1)
 	}
+}
+
+func newClickhouseConnection(ctx context.Context, databaseURL string) (clickhouse.Conn, error) {
+	var conn, err = clickhouse.Open(&clickhouse.Options{
+		Addr: []string{strings.TrimPrefix(databaseURL, "clickhouse://")},
+		Auth: clickhouse.Auth{
+			Database: "default",
+			Username: "default",
+			Password: "password",
+		},
+		ClientInfo: clickhouse.ClientInfo{
+			Products: []struct {
+				Name    string
+				Version string
+			}{
+				{Name: "an-example-go-client", Version: "0.1"},
+			},
+		},
+		Debugf: func(format string, v ...interface{}) {
+			fmt.Printf(format, v)
+		},
+		/*TLS: &tls.Config{
+			InsecureSkipVerify: true,
+		},*/
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err = conn.Ping(ctx); err != nil {
+		if exception, ok := err.(*clickhouse.Exception); ok {
+			fmt.Printf("Exception [%d] %s \n%s\n", exception.Code, exception.Message, exception.StackTrace)
+		}
+
+		return nil, err
+	}
+
+	return conn, nil
 }

@@ -103,7 +103,10 @@ func registerMiddlewares(router *echo.Echo, spec *openapi3.T, config Config) {
 	router.Use(oapimiddleware.OapiRequestValidatorWithOptions(
 		spec,
 		&oapimiddleware.Options{
-			ErrorHandler: nil,
+			ErrorHandler: func(c echo.Context, err *echo.HTTPError) error {
+				err.Code = libhttp.StatusUnauthorized
+				return err
+			},
 			Options: openapi3filter.Options{
 				AuthenticationFunc: func(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
 					if input.SecuritySchemeName == strings.TrimSuffix(BearerAuthScopes, ".Scopes") {
@@ -117,12 +120,9 @@ func registerMiddlewares(router *echo.Echo, spec *openapi3.T, config Config) {
 					return nil
 				},
 			},
-			ParamDecoder: nil,
-			UserData:     nil,
 			Skipper: func(c echo.Context) bool {
 				return strings.HasPrefix(c.Request().URL.Path, "/openapi.json") || strings.HasPrefix(c.Request().URL.Path, "/health")
 			},
-			MultiErrorHandler:     nil,
 			SilenceServersWarning: false,
 		},
 	))
