@@ -30,7 +30,7 @@ jobs:
         run: task test:all
         timeout-minutes: 4
 
-      - run: docker compose logs app emulators || true
+      - run: docker compose logs app || true
         if: always()
 
   golangci:

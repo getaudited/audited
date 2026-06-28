@@ -22,6 +22,10 @@ const (
 	ctxUserID = "user_id"
 )
 
+var (
+	errMissingToken = errors.New("missing x-token")
+)
+
 func loggerMiddleware(logger *logs.Logger) echo.MiddlewareFunc {
 	return middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:       true,
@@ -94,7 +98,7 @@ func (m *JWTMiddleware) Authenticate(ctx context.Context, input *openapi3filter.
 func tokenAuthMiddleware(_ context.Context, input *openapi3filter.AuthenticationInput) error {
 	token := input.RequestValidationInput.Request.Header.Get("x-token")
 	if strings.TrimSpace(token) == "" {
-		return errors.New("missing token")
+		return errMissingToken
 	}
 
 	return nil

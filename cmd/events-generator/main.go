@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/brianvoe/gofakeit/v7"
+	clickhouseadapter "github.com/getaudited/audited/internal/adapters/clickhouse"
 	_ "github.com/lib/pq"
 
 	"github.com/getaudited/audited/internal/adapters/psql"
@@ -38,8 +41,13 @@ func main() {
 	}
 	defer func() { _ = db.Close() }()
 
+	conn, err := newClickhouseConnection(ctx, os.Getenv("ADT_CLICKHOUSE_DATABASE_URL"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	sourcesRepo := psql.NewSourcesPsqlRepository(db)
-	eventsRepo := psql.NewEventsPsqlRepository(db)
+	eventsRepo := clickhouseadapter.NewEventsClickhouseRepository(conn) // psql.NewEventsPsqlRepository(db)
 	tokensRepo := psql.NewTokensPsqlRepository(db)
 	eventsTypeRepo := psql.NewEventTypePsqlRepository(db)
 
@@ -147,4 +155,43 @@ func main() {
 
 func pick(s []string) string {
 	return s[gofakeit.Number(0, len(s)-1)]
+}
+
+func newClickhouseConnection(ctx context.Context, databaseURL string) (clickhouse.Conn, error) {
+	var conn, err = clickhouse.Open(&clickhouse.Options{
+		Addr: []string{strings.TrimPrefix(databaseURL, "clickhouse://")},
+		Auth: clickhouse.Auth{
+			Database: "default",
+			Username: "default",
+			Password: "password",
+		},
+		ClientInfo: clickhouse.ClientInfo{
+			Products: []struct {
+				Name    string
+				Version string
+			}{
+				{Name: "an-example-go-client", Version: "0.1"},
+			},
+		},
+		Debugf: func(format string, v ...interface{}) {
+			fmt.Printf(format, v)
+		},
+		/*TLS: &tls.Config{
+			InsecureSkipVerify: true,
+		},*/
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err = conn.Ping(ctx); err != nil {
+		if exception, ok := err.(*clickhouse.Exception); ok {
+			fmt.Printf("Exception [%d] %s \n%s\n", exception.Code, exception.Message, exception.StackTrace)
+		}
+
+		return nil, err
+	}
+
+	return conn, nil
 }
