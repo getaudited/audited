@@ -3,6 +3,7 @@ package wait_for
 import (
 	"context"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -61,7 +62,10 @@ func (w *WaitFor) Wait() {
 func Run() {
 	w := NewWaitFor(logs.New(os.Getenv("ADT_LOG_LEVEL")))
 	w.Do(func() error {
-		db, err := postgres.Connect(context.Background(), os.Getenv("ADT_DATABASE_URL"))
+		db, err := postgres.Connect(
+			context.Background(),
+			strings.Replace(os.Getenv("ADT_DATABASE_URL"), "@postgres", "@localhost", 1),
+		)
 		if err != nil {
 			return err
 		}
