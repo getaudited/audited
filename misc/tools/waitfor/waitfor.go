@@ -1,20 +1,17 @@
-package wait_for
+package waitfor
 
 import (
-	"context"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/getaudited/audited/internal/common/logs"
-	"github.com/getaudited/audited/internal/common/postgres"
 	_ "github.com/lib/pq"
 )
 
 type WaitFor struct {
-	wg     *sync.WaitGroup
 	logger *logs.Logger
+	wg     *sync.WaitGroup
 }
 
 func NewWaitFor(logger *logs.Logger) *WaitFor {
@@ -56,22 +53,4 @@ func (w *WaitFor) Do(handler func() error, svcName string, timeout time.Duration
 
 func (w *WaitFor) Wait() {
 	w.wg.Wait()
-}
-
-// Run Wait for other containers to start responding before running the service
-func Run() {
-	w := NewWaitFor(logs.New(os.Getenv("ADT_LOG_LEVEL")))
-	w.Do(func() error {
-		db, err := postgres.Connect(
-			context.Background(),
-			strings.Replace(os.Getenv("ADT_DATABASE_URL"), "@postgres", "@localhost", 1),
-		)
-		if err != nil {
-			return err
-		}
-
-		return db.Ping()
-	}, "postgres", time.Second*30)
-
-	w.Wait()
 }

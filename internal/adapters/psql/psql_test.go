@@ -14,9 +14,10 @@ import (
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/getaudited/audited/internal/adapters/models"
 	"github.com/getaudited/audited/internal/adapters/psql"
+	"github.com/getaudited/audited/internal/common/logs"
 	"github.com/getaudited/audited/internal/common/postgres"
 	"github.com/getaudited/audited/internal/domain"
-	"github.com/getaudited/audited/misc/tools/wait/wait_for"
+	"github.com/getaudited/audited/misc/tools/waitfor"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
@@ -33,15 +34,16 @@ func TestMain(m *testing.M) {
 	defer cancel()
 
 	// Wait for postgres and other dependencies running in containers
-	wait_for.Run()
+	waitFor := waitfor.NewWaitFor(logs.New("DEBUG"))
 
-	db, err = postgres.Connect(
-		ctx,
-		strings.Replace(os.Getenv("ADT_DATABASE_URL"), "@postgres", "@localhost", 1),
-	)
-	if err != nil {
-		panic(err)
-	}
+	waitFor.Do(func() error {
+		db, err = postgres.Connect(ctx, strings.Replace(os.Getenv("ADT_DATABASE_URL"), "@postgres", "@localhost", 1))
+		if err != nil {
+			return err
+		}
+
+		return db.Ping()
+	}, "postgres", time.Second*30)
 
 	err = postgres.ApplyMigrations(db, "../../../misc/sql/migrations")
 	if err != nil {
