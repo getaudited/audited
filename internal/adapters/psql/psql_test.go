@@ -44,6 +44,7 @@ func TestMain(m *testing.M) {
 
 		return db.Ping()
 	}, "postgres", time.Second*30)
+	waitFor.Wait()
 
 	err = postgres.ApplyMigrations(db, "../../../misc/sql/migrations")
 	if err != nil {

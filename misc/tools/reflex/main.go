@@ -20,4 +20,5 @@ func main() {
 
 		return db.Ping()
 	}, "postgres", time.Second*30)
+	waitFor.Wait()
 }
