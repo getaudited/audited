@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -34,7 +35,10 @@ func TestMain(m *testing.M) {
 	// Wait for postgres and other dependencies running in containers
 	wait_for.Run()
 
-	db, err = postgres.Connect(ctx, os.Getenv("ADT_DATABASE_URL"))
+	db, err = postgres.Connect(
+		ctx,
+		strings.Replace(os.Getenv("ADT_DATABASE_URL"), "@postgres", "@localhost", 1),
+	)
 	if err != nil {
 		panic(err)
 	}
