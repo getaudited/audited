@@ -13,6 +13,7 @@ import (
 
 var (
 	ErrUserNotFound                            = errors.New("user not found")
+	ErrUserExists                              = errors.New("user exists")
 	ErrAuthenticationFailedCredentialsMismatch = errors.New("authentication failed due to credentials mismatch")
 )
 

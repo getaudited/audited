@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/x509"
-	"database/sql"
 	"encoding/pem"
 	"fmt"
 	"os"
@@ -14,20 +13,15 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/friendsofgo/errors"
-	clickhouseadapter "github.com/getaudited/audited/internal/adapters/clickhouse"
 	"github.com/getaudited/audited/internal/domain"
 	"github.com/kelseyhightower/envconfig"
 	_ "github.com/lib/pq"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/getaudited/audited/internal/adapters/psql"
 	"github.com/getaudited/audited/internal/app"
 	"github.com/getaudited/audited/internal/app/command"
-	"github.com/getaudited/audited/internal/app/query"
 	"github.com/getaudited/audited/internal/common/logs"
-	"github.com/getaudited/audited/internal/common/postgres"
 	"github.com/getaudited/audited/internal/ports/http"
 )
 
@@ -61,63 +55,20 @@ func (s *Service) Run() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	g, ctx := errgroup.WithContext(ctx)
 
-	db, err := postgres.Connect(ctx, config.DatabaseURL)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = db.Close() }()
-
-	err = postgres.ApplyMigrations(db, "misc/sql/migrations")
-	if err != nil {
-		return err
-	}
-
-	// Set up Admin user
-	err = s.createAdminUserIfNotExists(ctx, db)
-	if err != nil {
-		return err
-	}
-
-	clickhouseConn, err := newClickhouseConnection(ctx, config.ClickhouseDatabaseURL)
-	if err != nil {
-		return err
-	}
-
-	// eventsRepo := psql.NewEventsPsqlRepository(db)
-	eventsClickhouseRepo := clickhouseadapter.NewEventsClickhouseRepository(clickhouseConn)
-	sourcesRepo := psql.NewSourcesPsqlRepository(db)
-	eventTypeRepo := psql.NewEventTypePsqlRepository(db)
-	tokensRepo := psql.NewTokensPsqlRepository(db)
-	usersRepo := psql.NewUsersPsqlRepository(db)
-	txProvider := psql.NewTxProvider(db, logger)
 	jwtPrivateKey, err := s.parseJwtPrivateKey()
 	if err != nil {
 		return err
 	}
 
-	application := &app.App{
-		Commands: app.Commands{
-			CreateEventType:          command.NewCreateEventTypeHandler(eventTypeRepo),
-			DeleteEventType:          command.NewDeleteEventTypeHandler(eventTypeRepo),
-			CreateEventTypeVersion:   command.NewCreateEventTypeVersionHandler(txProvider),
-			RollbackEventTypeVersion: command.NewRollbackEventTypeVersionHandler(eventTypeRepo),
-			CreateEvent:              command.NewCreateEventHandler(eventsClickhouseRepo),
-			CreateSource:             command.NewCreateSourceHandler(sourcesRepo),
-			CreateToken:              command.NewCreateTokenHandler(tokensRepo),
-			DeleteToken:              command.NewDeleteTokenHandler(tokensRepo),
-			LogIn:                    command.NewLogInHandler(usersRepo, jwtPrivateKey),
-			CreateAdminUser:          command.NewCreateAdminUserHandler(usersRepo),
-		},
-		Queries: app.Queries{
-			EventTypeByAction: query.NewEventTypeByActionHandler(eventTypeRepo),
-			Events:            query.NewAllEventsHandler(eventsClickhouseRepo),
-			EventByID:         query.NewEventByIDHandler(eventsClickhouseRepo),
-			AllSources:        query.NewAllSourcesHandler(sourcesRepo),
-			SourceByID:        query.NewSourceByIDHandler(sourcesRepo),
-			AllTokens:         query.NewAllTokensHandler(tokensRepo),
-			AllEventTypes:     query.NewAllEventTypesHandler(eventTypeRepo),
-			UserProfile:       query.NewUserProfileHandler(usersRepo),
-		},
+	application, closer, err := resolveAppFromDatabase(ctx, logger, jwtPrivateKey, config)
+	if err != nil {
+		return err
+	}
+
+	// Set up Admin user
+	err = s.createAdminUserIfNotExists(ctx, application)
+	if err != nil {
+		return err
 	}
 
 	jwtPublicKey, err := s.parsePublicKey(config.JWTPublicKey)
@@ -152,6 +103,8 @@ func (s *Service) Run() error {
 		if err != nil {
 			return err
 		}
+
+		_ = closer.Close()
 
 		return nil
 	})
@@ -191,38 +144,15 @@ func (s *Service) parsePublicKey(content string) (*ecdsa.PublicKey, error) {
 	return parsedPublicKey, nil
 }
 
-func (s *Service) createAdminUserIfNotExists(ctx context.Context, db *sql.DB) error {
-	usersRepository := psql.NewUsersPsqlRepository(db)
-
-	email, err := domain.NewEmail(s.config.AdminEmail)
-	if err != nil {
-		return err
-	}
-
-	adminUser, err := usersRepository.FindByEmail(ctx, email)
-	if err != nil && !errors.Is(err, domain.ErrUserNotFound) {
-		return err
-	}
-	if adminUser != nil {
-		s.logger.Debug("Admin user exists")
+func (s *Service) createAdminUserIfNotExists(ctx context.Context, app *app.App) error {
+	err := app.Commands.CreateAdminUser.Execute(ctx, command.CreateAdminUser{
+		Email:    s.config.AdminEmail,
+		Password: s.config.AdminPassword,
+	})
+	if errors.Is(err, domain.ErrUserExists) {
+		s.logger.Info("Admin user exists")
 		return nil
 	}
-
-	password, err := domain.NewPassword(s.config.AdminPassword)
-	if err != nil {
-		return err
-	}
-
-	user, err := domain.NewUser(email, password, domain.UserRoleAdmin)
-	if err != nil {
-		return err
-	}
-
-	handler := command.NewCreateAdminUserHandler(usersRepository)
-
-	err = handler.Execute(ctx, command.CreateAdminUser{
-		User: user,
-	})
 	if err != nil {
 		return err
 	}
@@ -253,6 +183,18 @@ func (s *Service) parseJwtPrivateKey() (*ecdsa.PrivateKey, error) {
 	return ecKey, nil
 }
 
+func resolveAppFromDatabase(ctx context.Context, logger *logs.Logger, jwtPrivateKey *ecdsa.PrivateKey, config *Config) (*app.App, Closer, error) {
+	if strings.TrimSpace(config.DatabaseURL) != "" {
+		return NewPostgresApp(ctx, logger, jwtPrivateKey, config)
+	}
+
+	if strings.TrimSpace(config.ClickhouseDatabaseURL) != "" {
+		return NewClickhouseApp(ctx, config, jwtPrivateKey)
+	}
+
+	return nil, nil, errors.New("no database has been set")
+}
+
 func main() {
 	logger := logs.New(cmp.Or(os.Getenv("ADT_LOG_LEVEL"), "INFO"))
 	svc := &Service{
@@ -263,43 +205,4 @@ func main() {
 		logger.Error("service exited with an error", "error", err)
 		os.Exit(1)
 	}
-}
-
-func newClickhouseConnection(ctx context.Context, databaseURL string) (clickhouse.Conn, error) {
-	var conn, err = clickhouse.Open(&clickhouse.Options{
-		Addr: []string{strings.TrimPrefix(databaseURL, "clickhouse://")},
-		Auth: clickhouse.Auth{
-			Database: "default",
-			Username: "default",
-			Password: "password",
-		},
-		ClientInfo: clickhouse.ClientInfo{
-			Products: []struct {
-				Name    string
-				Version string
-			}{
-				{Name: "an-example-go-client", Version: "0.1"},
-			},
-		},
-		Debugf: func(format string, v ...interface{}) {
-			fmt.Printf(format, v)
-		},
-		/*TLS: &tls.Config{
-			InsecureSkipVerify: true,
-		},*/
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	if err = conn.Ping(ctx); err != nil {
-		if exception, ok := err.(*clickhouse.Exception); ok {
-			fmt.Printf("Exception [%d] %s \n%s\n", exception.Code, exception.Message, exception.StackTrace)
-		}
-
-		return nil, err
-	}
-
-	return conn, nil
 }

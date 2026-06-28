@@ -2,12 +2,14 @@ package command
 
 import (
 	"context"
+	"errors"
 
 	"github.com/getaudited/audited/internal/domain"
 )
 
 type CreateAdminUser struct {
-	User *domain.User
+	Email    string
+	Password string
 }
 
 type CreateAdminUserHandler struct {
@@ -21,5 +23,28 @@ func NewCreateAdminUserHandler(repo domain.UserRepository) CreateAdminUserHandle
 }
 
 func (c CreateAdminUserHandler) Execute(ctx context.Context, cmd CreateAdminUser) error {
-	return c.repo.Save(ctx, cmd.User)
+	email, err := domain.NewEmail(cmd.Email)
+	if err != nil {
+		return err
+	}
+
+	adminUser, err := c.repo.FindByEmail(ctx, email)
+	if err != nil && !errors.Is(err, domain.ErrUserNotFound) {
+		return err
+	}
+	if adminUser != nil {
+		return domain.ErrUserExists
+	}
+
+	password, err := domain.NewPassword(cmd.Password)
+	if err != nil {
+		return err
+	}
+
+	user, err := domain.NewUser(email, password, domain.UserRoleAdmin)
+	if err != nil {
+		return err
+	}
+
+	return c.repo.Save(ctx, user)
 }
