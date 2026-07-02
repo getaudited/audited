@@ -37,22 +37,30 @@ func NewClickhouseApp(
 			DeleteEventType:          command.NewDeleteEventTypeHandler(nil),
 			CreateEventTypeVersion:   command.NewCreateEventTypeVersionHandler(nil),
 			RollbackEventTypeVersion: command.NewRollbackEventTypeVersionHandler(nil),
-			CreateEvent:              command.NewCreateEventHandler(eventsRepo),
-			CreateSource:             command.NewCreateSourceHandler(sourcesRepo),
-			CreateToken:              command.NewCreateTokenHandler(tokensRepo),
-			DeleteToken:              command.NewDeleteTokenHandler(tokensRepo),
-			LogIn:                    command.NewLogInHandler(nil, jwtPrivateKey),
-			CreateAdminUser:          command.NewCreateAdminUserHandler(nil),
+
+			CreateEvent: command.NewCreateEventHandler(eventsRepo),
+
+			CreateSource: command.NewCreateSourceHandler(sourcesRepo),
+
+			CreateToken: command.NewCreateTokenHandler(tokensRepo),
+			DeleteToken: command.NewDeleteTokenHandler(tokensRepo),
+
+			LogIn:           command.NewLogInHandler(nil, jwtPrivateKey),
+			CreateAdminUser: command.NewCreateAdminUserHandler(nil),
 		},
 		Queries: app.Queries{
-			EventTypeByAction: query.NewEventTypeByActionHandler(nil),
-			Events:            query.NewAllEventsHandler(eventsRepo),
-			EventByID:         query.NewEventByIDHandler(eventsRepo),
-			AllSources:        query.NewAllSourcesHandler(nil),
-			SourceByID:        query.NewSourceByIDHandler(nil),
-			AllTokens:         query.NewAllTokensHandler(tokensRepo),
+			Events:    query.NewAllEventsHandler(eventsRepo),
+			EventByID: query.NewEventByIDHandler(eventsRepo),
+
 			AllEventTypes:     query.NewAllEventTypesHandler(nil),
-			UserProfile:       query.NewUserProfileHandler(nil),
+			EventTypeByAction: query.NewEventTypeByActionHandler(nil),
+
+			AllSources: query.NewAllSourcesHandler(sourcesRepo),
+			SourceByID: query.NewSourceByIDHandler(sourcesRepo),
+
+			AllTokens: query.NewAllTokensHandler(tokensRepo),
+
+			UserProfile: query.NewUserProfileHandler(nil),
 		},
 	}, conn, nil
 }

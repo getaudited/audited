@@ -2,9 +2,12 @@ package clickhouse
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
 	clickhousedb "github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/getaudited/audited/internal/app/query"
 	"github.com/getaudited/audited/internal/domain"
 )
 
@@ -32,4 +35,21 @@ func (r SourcesClickhouseRepository) Save(ctx context.Context, s *domain.Source)
 	}
 
 	return nil
+}
+
+func (r SourcesClickhouseRepository) QueryAll(ctx context.Context, params query.AllSources) (query.Pagination[domain.Source], error) {
+	return query.Pagination[domain.Source]{}, nil
+}
+
+func (r SourcesClickhouseRepository) FindByID(ctx context.Context, id string) (*domain.Source, error) {
+	row := r.db.QueryRow(ctx, `SELECT id, name, created_at, updated_at FROM sources WHERE id = ?`, id)
+	source, err := mapRowToSource(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, domain.ErrSourceNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("error querying source by id '%s' due to: %w", id, err)
+	}
+
+	return source, nil
 }

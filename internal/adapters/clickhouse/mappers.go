@@ -162,3 +162,15 @@ func mapRowsToTokens(rows driver.Rows) ([]*domain.Token, error) {
 
 	return tokens, nil
 }
+
+func mapRowToSource(row driver.Row) (*domain.Source, error) {
+	var id, name string
+	var createdAt, updatedAt time.Time
+
+	err := row.Scan(&id, &name, &createdAt, &updatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return new(domain.MarshallToSource(id, name, createdAt, updatedAt)), nil
+}
