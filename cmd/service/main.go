@@ -146,7 +146,6 @@ func (s *Service) parsePublicKey(content string) (*ecdsa.PublicKey, error) {
 }
 
 func (s *Service) createAdminUserIfNotExists(ctx context.Context, app *app.App) error {
-	return nil // TMP
 	err := app.Commands.CreateAdminUser.Execute(ctx, command.CreateAdminUser{
 		Email:    s.config.AdminEmail,
 		Password: s.config.AdminPassword,

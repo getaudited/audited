@@ -200,7 +200,11 @@ func mapPaginationParamsToOffset(params query.PaginationParams) int {
 	return (params.Page - 1) * params.Limit
 }
 
-func mapToPaginationResult[T any](params query.PaginationParams, totalRows uint64, data []T) query.Pagination[T] {
+func mapToPaginationResult[T any](
+	params query.PaginationParams,
+	totalRows uint64,
+	data []T,
+) query.Pagination[T] {
 	return query.Pagination[T]{
 		Data:        data,
 		Total:       int(totalRows),
@@ -208,4 +212,19 @@ func mapToPaginationResult[T any](params query.PaginationParams, totalRows uint6
 		CurrentPage: params.Page,
 		TotalPages:  int(math.Ceil(float64(totalRows) / float64(params.Limit))),
 	}
+}
+
+func mapRowToUser(row driver.Row) (*domain.User, error) {
+	var id, email, password string
+	var createdAt time.Time
+
+	err := row.Scan(&id, &email, &password, &createdAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, domain.ErrUserNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("error mapping user: %v", err)
+	}
+
+	return nil, nil
 }

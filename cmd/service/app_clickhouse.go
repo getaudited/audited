@@ -30,6 +30,7 @@ func NewClickhouseApp(
 	tokensRepo := clickhouseadapter.NewTokenChRepository(conn)
 	eventsRepo := clickhouseadapter.NewEventsClickhouseRepository(conn)
 	sourcesRepo := clickhouseadapter.NewSourcesClickhouseRepository(conn)
+	usersRepo := clickhouseadapter.NewUsersClickhouseRepository(conn)
 
 	return &app.App{
 		Commands: app.Commands{
@@ -45,8 +46,8 @@ func NewClickhouseApp(
 			CreateToken: command.NewCreateTokenHandler(tokensRepo),
 			DeleteToken: command.NewDeleteTokenHandler(tokensRepo),
 
-			LogIn:           command.NewLogInHandler(nil, jwtPrivateKey),
-			CreateAdminUser: command.NewCreateAdminUserHandler(nil),
+			LogIn:           command.NewLogInHandler(usersRepo, jwtPrivateKey),
+			CreateAdminUser: command.NewCreateAdminUserHandler(usersRepo),
 		},
 		Queries: app.Queries{
 			Events:    query.NewAllEventsHandler(eventsRepo),
@@ -60,7 +61,7 @@ func NewClickhouseApp(
 
 			AllTokens: query.NewAllTokensHandler(tokensRepo),
 
-			UserProfile: query.NewUserProfileHandler(nil),
+			UserProfile: query.NewUserProfileHandler(usersRepo),
 		},
 	}, conn, nil
 }
