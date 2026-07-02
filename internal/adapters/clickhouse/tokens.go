@@ -36,8 +36,17 @@ func (r *TokenChRepository) Save(ctx context.Context, t *domain.Token) error {
 }
 
 func (r *TokenChRepository) Delete(ctx context.Context, id, sourceID domain.ID) error {
-	//TODO implement me
-	panic("implement me")
+	err := r.db.Exec(
+		ctx,
+		`DELETE FROM tokens WHERE id = ? AND source_id = ?`,
+		id.String(),
+		sourceID.String(),
+	)
+	if err != nil {
+		return fmt.Errorf("error deleting token with id '%s' due to: %w", id, err)
+	}
+
+	return nil
 }
 
 func (r *TokenChRepository) QueryAll(ctx context.Context, sourceID domain.ID) ([]*domain.Token, error) {

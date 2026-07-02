@@ -39,7 +39,7 @@ func NewClickhouseApp(
 			CreateEvent:              command.NewCreateEventHandler(eventsRepo),
 			CreateSource:             command.NewCreateSourceHandler(nil),
 			CreateToken:              command.NewCreateTokenHandler(tokensRepo),
-			DeleteToken:              command.NewDeleteTokenHandler(nil),
+			DeleteToken:              command.NewDeleteTokenHandler(tokensRepo),
 			LogIn:                    command.NewLogInHandler(nil, jwtPrivateKey),
 			CreateAdminUser:          command.NewCreateAdminUserHandler(nil),
 		},
