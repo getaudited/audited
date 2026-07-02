@@ -27,6 +27,7 @@ func NewClickhouseApp(
 		return nil, nil, err
 	}
 
+	tokensRepo := clickhouseadapter.NewTokenChRepository(conn)
 	eventsRepo := clickhouseadapter.NewEventsClickhouseRepository(conn)
 
 	return &app.App{
@@ -37,7 +38,7 @@ func NewClickhouseApp(
 			RollbackEventTypeVersion: command.NewRollbackEventTypeVersionHandler(nil),
 			CreateEvent:              command.NewCreateEventHandler(eventsRepo),
 			CreateSource:             command.NewCreateSourceHandler(nil),
-			CreateToken:              command.NewCreateTokenHandler(nil),
+			CreateToken:              command.NewCreateTokenHandler(tokensRepo),
 			DeleteToken:              command.NewDeleteTokenHandler(nil),
 			LogIn:                    command.NewLogInHandler(nil, jwtPrivateKey),
 			CreateAdminUser:          command.NewCreateAdminUserHandler(nil),

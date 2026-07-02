@@ -1,4 +1,31 @@
 -- +goose Up
+CREATE TABLE users (
+    id String,
+    email String,
+    password String,
+    role LowCardinality(String),
+    created_at DateTime DEFAULT now()
+);
+
+CREATE TABLE sources (
+    id String,
+    name String,
+    created_at DateTime DEFAULT now(),
+    updated_at DateTime DEFAULT now()
+);
+
+CREATE TABLE event_types (
+    action String,
+    should_validate_metadata_schema Bool DEFAULT false,
+    versions Nested (
+        version UInt16,
+        schema String,
+        target_types Array(LowCardinality(String)),
+        created_at DateTime
+    ),
+    created_at DateTime DEFAULT now()
+);
+
 CREATE TABLE events (
     id String,
     source_id String,
@@ -28,5 +55,17 @@ ENGINE = MergeTree()
 PARTITION BY toYYYYMM(occurred_at)
 ORDER BY (occurred_at, id);
 
+CREATE TABLE tokens (
+    id String,
+    name String,
+    value String,
+    source_id String,
+    created_at DateTime DEFAULT now()
+);
+
 -- +goose Down
+DROP TABLE tokens;
+DROP TABLE users;
+DROP TABLE event_types;
+DROP TABLE sources;
 DROP TABLE events;

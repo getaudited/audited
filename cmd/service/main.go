@@ -26,6 +26,7 @@ import (
 )
 
 type Config struct {
+	ActiveDatabase        string   `envconfig:"ADT_ACTIVE_DATABASE"`
 	DatabaseURL           string   `envconfig:"ADT_DATABASE_URL"`
 	ClickhouseDatabaseURL string   `envconfig:"ADT_CLICKHOUSE_DATABASE_URL"`
 	HttpPort              int      `envconfig:"ADT_HTTP_PORT"`
@@ -145,6 +146,7 @@ func (s *Service) parsePublicKey(content string) (*ecdsa.PublicKey, error) {
 }
 
 func (s *Service) createAdminUserIfNotExists(ctx context.Context, app *app.App) error {
+	return nil // TMP
 	err := app.Commands.CreateAdminUser.Execute(ctx, command.CreateAdminUser{
 		Email:    s.config.AdminEmail,
 		Password: s.config.AdminPassword,
@@ -184,11 +186,11 @@ func (s *Service) parseJwtPrivateKey() (*ecdsa.PrivateKey, error) {
 }
 
 func resolveAppFromDatabase(ctx context.Context, logger *logs.Logger, jwtPrivateKey *ecdsa.PrivateKey, config *Config) (*app.App, Closer, error) {
-	if strings.TrimSpace(config.DatabaseURL) != "" {
+	if config.ActiveDatabase == "postgres" {
 		return NewPostgresApp(ctx, logger, jwtPrivateKey, config)
 	}
 
-	if strings.TrimSpace(config.ClickhouseDatabaseURL) != "" {
+	if config.ActiveDatabase == "clickhouse" {
 		return NewClickhouseApp(ctx, config, jwtPrivateKey)
 	}
 
