@@ -58,6 +58,7 @@ func (r *TokenChRepository) QueryAll(ctx context.Context, sourceID domain.ID) ([
 	if err != nil {
 		return nil, fmt.Errorf("error querying tokens from source with id '%s' due to: %w", sourceID, err)
 	}
+	defer func() { _ = rows.Close() }()
 
 	return mapRowsToTokens(rows)
 }

@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/getaudited/audited/internal/app/query"
 	"github.com/getaudited/audited/internal/domain"
 )
 
@@ -160,7 +162,7 @@ func mapRowsToTokens(rows driver.Rows) ([]*domain.Token, error) {
 		tokens = append(tokens, token)
 	}
 
-	return tokens, nil
+	return tokens, rows.Close()
 }
 
 func mapRowToSource(row driver.Row) (*domain.Source, error) {
@@ -173,4 +175,37 @@ func mapRowToSource(row driver.Row) (*domain.Source, error) {
 	}
 
 	return new(domain.MarshallToSource(id, name, createdAt, updatedAt)), nil
+}
+
+func mapRowsToSources(rows driver.Rows) ([]domain.Source, error) {
+	var sources []domain.Source
+
+	for rows.Next() {
+		source, err := mapRowToSource(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		sources = append(sources, *source)
+	}
+
+	return sources, nil
+}
+
+func mapPaginationParamsToOffset(params query.PaginationParams) int {
+	if params.Page == 1 {
+		return 0
+	}
+
+	return (params.Page - 1) * params.Limit
+}
+
+func mapToPaginationResult[T any](params query.PaginationParams, totalRows uint64, data []T) query.Pagination[T] {
+	return query.Pagination[T]{
+		Data:        data,
+		Total:       int(totalRows),
+		PerPage:     params.Limit,
+		CurrentPage: params.Page,
+		TotalPages:  int(math.Ceil(float64(totalRows) / float64(params.Limit))),
+	}
 }

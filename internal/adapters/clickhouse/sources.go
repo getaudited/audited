@@ -37,8 +37,34 @@ func (r SourcesClickhouseRepository) Save(ctx context.Context, s *domain.Source)
 	return nil
 }
 
-func (r SourcesClickhouseRepository) QueryAll(ctx context.Context, params query.AllSources) (query.Pagination[domain.Source], error) {
-	return query.Pagination[domain.Source]{}, nil
+func (r SourcesClickhouseRepository) QueryAll(
+	ctx context.Context,
+	params query.AllSources,
+) (query.Pagination[domain.Source], error) {
+	var total uint64
+	row := r.db.QueryRow(ctx, `SELECT COUNT(id) FROM sources`)
+	err := row.Scan(&total)
+	if err != nil {
+		return query.Pagination[domain.Source]{}, fmt.Errorf("error counting sources: %w", err)
+	}
+
+	rows, err := r.db.Query(
+		ctx,
+		`SELECT id, name, created_at, updated_at FROM sources LIMIT ? OFFSET ?`,
+		params.Pagination.Limit,
+		mapPaginationParamsToOffset(params.Pagination),
+	)
+	if err != nil {
+		return query.Pagination[domain.Source]{}, fmt.Errorf("error querying sources: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	sources, err := mapRowsToSources(rows)
+	if err != nil {
+		return query.Pagination[domain.Source]{}, fmt.Errorf("error mapping sources: %w", err)
+	}
+
+	return mapToPaginationResult[domain.Source](params.Pagination, total, sources), nil
 }
 
 func (r SourcesClickhouseRepository) FindByID(ctx context.Context, id string) (*domain.Source, error) {
