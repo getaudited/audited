@@ -132,3 +132,33 @@ func mapStringToMetadata(value string) (domain.Metadata, error) {
 
 	return metadata, nil
 }
+
+func mapRowToToken(row driver.Row) (*domain.Token, error) {
+	var id string
+	var name string
+	var value string
+	var sourceID string
+	var createdAt time.Time
+
+	err := row.Scan(&id, &name, &value, &sourceID, &createdAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return domain.MarshallToToken(id, sourceID, value, name, createdAt), nil
+}
+
+func mapRowsToTokens(rows driver.Rows) ([]*domain.Token, error) {
+	var tokens []*domain.Token
+
+	for rows.Next() {
+		token, err := mapRowToToken(rows)
+		if err != nil {
+			return nil, fmt.Errorf("error mapping row to token: %v", err)
+		}
+
+		tokens = append(tokens, token)
+	}
+
+	return tokens, nil
+}

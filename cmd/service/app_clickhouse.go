@@ -49,7 +49,7 @@ func NewClickhouseApp(
 			EventByID:         query.NewEventByIDHandler(eventsRepo),
 			AllSources:        query.NewAllSourcesHandler(nil),
 			SourceByID:        query.NewSourceByIDHandler(nil),
-			AllTokens:         query.NewAllTokensHandler(nil),
+			AllTokens:         query.NewAllTokensHandler(tokensRepo),
 			AllEventTypes:     query.NewAllEventTypesHandler(nil),
 			UserProfile:       query.NewUserProfileHandler(nil),
 		},
