@@ -7,6 +7,8 @@ import (
 	"fmt"
 
 	clickhousedb "github.com/ClickHouse/clickhouse-go/v2"
+	sq "github.com/Masterminds/squirrel"
+
 	"github.com/getaudited/audited/internal/app/query"
 	"github.com/getaudited/audited/internal/domain"
 )
@@ -48,12 +50,22 @@ func (r SourcesClickhouseRepository) QueryAll(
 		return query.Pagination[domain.Source]{}, fmt.Errorf("error counting sources: %w", err)
 	}
 
-	rows, err := r.db.Query(
-		ctx,
-		`SELECT id, name, created_at, updated_at FROM sources LIMIT ? OFFSET ?`,
-		params.Pagination.Limit,
-		mapPaginationParamsToOffset(params.Pagination),
-	)
+	queryAll := sq.
+		Select("id, name, created_at, updated_at").
+		From("sources").
+		Limit(uint64(params.Pagination.Limit)).
+		Offset(uint64(mapPaginationParamsToOffset(params.Pagination)))
+
+	if params.Name != nil {
+		queryAll = queryAll.Where("ilike(name, ?)", "%"+*params.Name+"%")
+	}
+
+	q, args, err := queryAll.ToSql()
+	if err != nil {
+		return query.Pagination[domain.Source]{}, fmt.Errorf("error building query: %w", err)
+	}
+
+	rows, err := r.db.Query(ctx, q, args...)
 	if err != nil {
 		return query.Pagination[domain.Source]{}, fmt.Errorf("error querying sources: %w", err)
 	}

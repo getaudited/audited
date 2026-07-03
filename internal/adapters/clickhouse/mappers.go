@@ -1,11 +1,13 @@
 package clickhouse
 
 import (
+	"cmp"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 	"strings"
 	"time"
 
@@ -227,7 +229,8 @@ func mapRowToUser(row driver.Row) (*domain.User, error) {
 
 func mapRowToEventType(row driver.Row) (query.EventType, error) {
 	var versions []uint16
-	var schemas, targetTypes []string
+	var schemas []string
+	var targetTypes [][]string
 	var createdAts []time.Time
 
 	var et query.EventType
@@ -247,6 +250,19 @@ func mapRowToEventType(row driver.Row) (query.EventType, error) {
 	if err != nil {
 		return query.EventType{}, fmt.Errorf("error mapping event type: %w", err)
 	}
+
+	for i := range versions {
+		et.Versions = append(et.Versions, query.EventTypeVersion{
+			Version:     int(versions[i]),
+			TargetTypes: targetTypes[i],
+			Schema:      []byte(schemas[i]),
+			CreatedAt:   createdAts[i],
+		})
+	}
+
+	slices.SortFunc[[]query.EventTypeVersion](et.Versions, func(a, b query.EventTypeVersion) int {
+		return cmp.Compare(a.Version, b.Version)
+	})
 
 	return et, nil
 }

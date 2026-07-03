@@ -9,6 +9,7 @@ import (
 	"time"
 
 	clickhousedb "github.com/ClickHouse/clickhouse-go/v2"
+	sq "github.com/Masterminds/squirrel"
 	"github.com/getaudited/audited/internal/app/query"
 	"github.com/getaudited/audited/internal/domain"
 )
@@ -43,26 +44,36 @@ func (r EventTypesClickhouseRepository) FindByAction(ctx context.Context, action
 
 func (r EventTypesClickhouseRepository) QueryAll(ctx context.Context, params query.AllEventTypes) (query.Pagination[query.EventType], error) {
 	var total uint64
-	row := r.db.QueryRow(ctx, `SELECT COUNT(id) FROM event_types`)
+	row := r.db.QueryRow(ctx, `SELECT COUNT(action) FROM event_types`)
 	err := row.Scan(&total)
 	if err != nil {
 		return query.Pagination[query.EventType]{}, fmt.Errorf("error counting event_types: %w", err)
 	}
 
-	rows, err := r.db.Query(
-		ctx,
-		`SELECT 
-				action,
-				should_validate_metadata_schema,
-				versions.version,
-				versions.schema,
-				versions.target_types,
-				versions.created_at,
-				created_at
-				FROM event_types LIMIT ? OFFSET ?`,
-		params.PaginationParams.Limit,
-		mapPaginationParamsToOffset(params.PaginationParams),
-	)
+	queryAll := sq.
+		Select(`
+			action,
+			should_validate_metadata_schema,
+			versions.version,
+			versions.schema,
+			versions.target_types,
+			versions.created_at,
+			created_at
+		`).
+		From("event_types").
+		Limit(uint64(params.PaginationParams.Limit)).
+		Offset(uint64(mapPaginationParamsToOffset(params.PaginationParams)))
+
+	if params.Action != nil {
+		queryAll = queryAll.Where("ilike(action, ?)", "%"+*params.Action+"%")
+	}
+
+	q, args, err := queryAll.ToSql()
+	if err != nil {
+		return query.Pagination[query.EventType]{}, fmt.Errorf("error building query: %w", err)
+	}
+	
+	rows, err := r.db.Query(ctx, q, args...)
 	if err != nil {
 		return query.Pagination[query.EventType]{}, fmt.Errorf("error querying event_types: %w", err)
 	}
