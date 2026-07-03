@@ -31,13 +31,15 @@ func NewClickhouseApp(
 	eventsRepo := clickhouseadapter.NewEventsClickhouseRepository(conn)
 	sourcesRepo := clickhouseadapter.NewSourcesClickhouseRepository(conn)
 	usersRepo := clickhouseadapter.NewUsersClickhouseRepository(conn)
+	eventTypesRepo := clickhouseadapter.NewEventTypesClickhouseRepository(conn)
+	shallowTxProvider := clickhouseadapter.NewShallowTxProvider(conn)
 
 	return &app.App{
 		Commands: app.Commands{
-			CreateEventType:          command.NewCreateEventTypeHandler(nil),
-			DeleteEventType:          command.NewDeleteEventTypeHandler(nil),
-			CreateEventTypeVersion:   command.NewCreateEventTypeVersionHandler(nil),
-			RollbackEventTypeVersion: command.NewRollbackEventTypeVersionHandler(nil),
+			CreateEventType:          command.NewCreateEventTypeHandler(eventTypesRepo),
+			DeleteEventType:          command.NewDeleteEventTypeHandler(eventTypesRepo),
+			CreateEventTypeVersion:   command.NewCreateEventTypeVersionHandler(shallowTxProvider),
+			RollbackEventTypeVersion: command.NewRollbackEventTypeVersionHandler(eventTypesRepo),
 
 			CreateEvent: command.NewCreateEventHandler(eventsRepo),
 
@@ -53,8 +55,8 @@ func NewClickhouseApp(
 			Events:    query.NewAllEventsHandler(eventsRepo),
 			EventByID: query.NewEventByIDHandler(eventsRepo),
 
-			AllEventTypes:     query.NewAllEventTypesHandler(nil),
-			EventTypeByAction: query.NewEventTypeByActionHandler(nil),
+			AllEventTypes:     query.NewAllEventTypesHandler(eventTypesRepo),
+			EventTypeByAction: query.NewEventTypeByActionHandler(eventTypesRepo),
 
 			AllSources: query.NewAllSourcesHandler(sourcesRepo),
 			SourceByID: query.NewSourceByIDHandler(sourcesRepo),

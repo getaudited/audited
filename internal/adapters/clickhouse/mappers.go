@@ -200,31 +200,68 @@ func mapPaginationParamsToOffset(params query.PaginationParams) int {
 	return (params.Page - 1) * params.Limit
 }
 
-func mapToPaginationResult[T any](
-	params query.PaginationParams,
-	totalRows uint64,
-	data []T,
-) query.Pagination[T] {
+func mapToPaginationResult[T any](params query.PaginationParams, total uint64, data []T) query.Pagination[T] {
 	return query.Pagination[T]{
 		Data:        data,
-		Total:       int(totalRows),
+		Total:       int(total),
 		PerPage:     params.Limit,
 		CurrentPage: params.Page,
-		TotalPages:  int(math.Ceil(float64(totalRows) / float64(params.Limit))),
+		TotalPages:  int(math.Ceil(float64(total) / float64(params.Limit))),
 	}
 }
 
 func mapRowToUser(row driver.Row) (*domain.User, error) {
-	var id, email, password string
+	var id, email, password, role string
 	var createdAt time.Time
 
-	err := row.Scan(&id, &email, &password, &createdAt)
+	err := row.Scan(&id, &email, &password, &role, &createdAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrUserNotFound
 	}
 	if err != nil {
-		return nil, fmt.Errorf("error mapping user: %v", err)
+		return nil, fmt.Errorf("error mapping user: %w", err)
 	}
 
 	return nil, nil
+}
+
+func mapRowToEventType(row driver.Row) (query.EventType, error) {
+	var versions []uint16
+	var schemas, targetTypes []string
+	var createdAts []time.Time
+
+	var et query.EventType
+
+	err := row.Scan(
+		&et.Action,
+		&et.ShouldValidateMetadataSchema,
+		&versions,
+		&schemas,
+		&targetTypes,
+		&createdAts,
+		&et.CreatedAt,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return query.EventType{}, domain.ErrEventTypeNotFound
+	}
+	if err != nil {
+		return query.EventType{}, fmt.Errorf("error mapping event type: %w", err)
+	}
+
+	return et, nil
+}
+
+func mapRowsToEventTypes(rows driver.Rows) ([]query.EventType, error) {
+	var eventTypes []query.EventType
+
+	for rows.Next() {
+		et, err := mapRowToEventType(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		eventTypes = append(eventTypes, et)
+	}
+
+	return eventTypes, nil
 }
