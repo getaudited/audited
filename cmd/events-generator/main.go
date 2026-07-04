@@ -1,7 +1,6 @@
 package main
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -10,12 +9,10 @@ import (
 	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
-	"github.com/getaudited/audited/internal/common/cli"
-	_ "github.com/lib/pq"
 
-	"github.com/getaudited/audited/internal/app"
+	clickhouseadapter "github.com/getaudited/audited/internal/adapters/clickhouse"
 	"github.com/getaudited/audited/internal/app/command"
-	"github.com/getaudited/audited/internal/common/logs"
+	"github.com/getaudited/audited/internal/common/clickhouseconn"
 	"github.com/getaudited/audited/internal/domain"
 )
 
@@ -26,32 +23,43 @@ var (
 	targetTypes = []string{"document", "record", "file", "account", "resource"}
 )
 
+// generator holds the command handlers the events generator needs, wired
+// directly against the ClickHouse adapters without depending on app.App.
+type generator struct {
+	createSource    command.CreateSourceHandler
+	createEventType command.CreateEventTypeHandler
+	createToken     command.CreateTokenHandler
+	createEvent     command.CreateEventHandler
+}
+
 func main() {
 	ctx := context.Background()
-	logger := logs.New(cmp.Or(os.Getenv("ADT_LOG_LEVEL"), "INFO"))
 
-	application, closer, err := cli.NewApp(ctx, logger, nil, cli.Config{
-		ActiveDatabase:        os.Getenv("ADT_ACTIVE_DATABASE"),
-		DatabaseURL:           os.Getenv("ADT_DATABASE_URL"),
-		ClickhouseDatabaseURL: os.Getenv("ADT_CLICKHOUSE_DATABASE_URL"),
-	})
+	conn, err := clickhouseconn.NewConnection(ctx, os.Getenv("ADT_DATABASE_URL"))
 	if err != nil {
-		log.Fatalf("build app: %v", err)
+		log.Fatalf("connect to clickhouse: %v", err)
 	}
-	defer func() { _ = closer.Close() }()
+	defer func() { _ = conn.Close() }()
 
-	if err := generate(ctx, application); err != nil {
+	g := &generator{
+		createSource:    command.NewCreateSourceHandler(clickhouseadapter.NewSourcesClickhouseRepository(conn)),
+		createEventType: command.NewCreateEventTypeHandler(clickhouseadapter.NewEventTypesClickhouseRepository(conn)),
+		createToken:     command.NewCreateTokenHandler(clickhouseadapter.NewTokenChRepository(conn)),
+		createEvent:     command.NewCreateEventHandler(clickhouseadapter.NewEventsClickhouseRepository(conn)),
+	}
+
+	if err := g.generate(ctx); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func generate(ctx context.Context, application *app.App) error {
+func (g *generator) generate(ctx context.Context) error {
 	source, err := domain.NewSource(fmt.Sprintf("%s (generator)", gofakeit.Company()))
 	if err != nil {
 		return fmt.Errorf("build source: %w", err)
 	}
 
-	err = application.Commands.CreateSource.Execute(ctx, command.CreateSource{
+	err = g.createSource.Execute(ctx, command.CreateSource{
 		Source: source,
 	})
 	if err != nil {
@@ -66,7 +74,7 @@ func generate(ctx context.Context, application *app.App) error {
 		CreatedAt:                    time.Now(),
 		UpdatedAt:                    time.Now(),
 	}
-	err = application.Commands.CreateEventType.Execute(ctx, command.CreateEventType{
+	err = g.createEventType.Execute(ctx, command.CreateEventType{
 		EventType: eventType,
 	})
 	if err != nil && !errors.Is(err, domain.ErrEventTypeExists) {
@@ -81,7 +89,7 @@ func generate(ctx context.Context, application *app.App) error {
 		return fmt.Errorf("error creating token: %w", err)
 	}
 
-	err = application.Commands.CreateToken.Execute(ctx, command.CreateToken{
+	err = g.createToken.Execute(ctx, command.CreateToken{
 		Token: token,
 	})
 	if err != nil {
@@ -129,7 +137,7 @@ func generate(ctx context.Context, application *app.App) error {
 			return fmt.Errorf("build event %d: %w", i+1, err)
 		}
 
-		err = application.Commands.CreateEvent.Execute(ctx, command.CreateEvent{
+		err = g.createEvent.Execute(ctx, command.CreateEvent{
 			Event: event,
 			Token: token.Value(),
 		})

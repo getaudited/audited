@@ -4,17 +4,15 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/x509"
-	"database/sql"
 	"encoding/pem"
 	"fmt"
 	"log"
 	"os"
 	"time"
 
-	"github.com/getaudited/audited/internal/adapters/models"
+	"github.com/getaudited/audited/internal/common/clickhouseconn"
 	"github.com/getaudited/audited/internal/domain"
 	"github.com/golang-jwt/jwt"
-	_ "github.com/lib/pq"
 )
 
 // nolint
@@ -41,14 +39,21 @@ func main() {
 		log.Fatal("private key is not ECDSA")
 	}
 
-	db, err := sql.Open("postgres", os.Getenv("ADT_DATABASE_URL"))
+	ctx := context.Background()
+
+	conn, err := clickhouseconn.NewConnection(ctx, os.Getenv("ADT_DATABASE_URL"))
 	if err != nil {
 		log.Fatalf("unable to open db: %v", err)
 	}
-	defer func() { _ = db.Close() }()
+	defer func() { _ = conn.Close() }()
 
-	adminUser, err := models.Users(models.UserWhere.Role.EQ(domain.UserRoleAdmin.String())).One(context.Background(), db)
-	if err != nil {
+	var adminUserID string
+	row := conn.QueryRow(
+		ctx,
+		`SELECT id FROM users WHERE role = ? LIMIT 1`,
+		domain.UserRoleAdmin.String(),
+	)
+	if err := row.Scan(&adminUserID); err != nil {
 		log.Fatalf("error querying user: %v", err)
 	}
 
@@ -56,7 +61,7 @@ func main() {
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, jwt.StandardClaims{
 		IssuedAt:  now.Unix(),
 		ExpiresAt: now.Add(24 * time.Hour).Unix(),
-		Subject:   adminUser.ID,
+		Subject:   adminUserID,
 	})
 
 	signed, err := token.SignedString(ecKey)
