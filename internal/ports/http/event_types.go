@@ -56,19 +56,14 @@ func (h handlers) CreateEventType(c echo.Context) error {
 	return c.JSON(http.StatusCreated, EventType{
 		Action:                       et.Action,
 		ShouldValidateMetadataSchema: et.ShouldValidateMetadataSchema,
+		Version:                      et.LastVersion.Version,
+		Schema:                       nil,
+		TargetTypes:                  et.LastVersion.TargetTypes,
 		CreatedAt:                    et.CreatedAt,
-		Versions: []EventTypeVersion{
-			{
-				Version:     et.LastVersion.Version,
-				Schema:      body.Schema,
-				TargetTypes: et.LastVersion.TargetTypes,
-				CreatedAt:   et.CreatedAt,
-			},
-		},
 	})
 }
 
-func (h handlers) GetEventTypeByID(c echo.Context, action EventTypeAction) error {
+func (h handlers) GetEventTypeByID(c echo.Context, action Action) error {
 	et, err := h.application.Queries.EventTypeByAction.Execute(mapEchoCtxToCtx(c), query.EventTypeByAction{
 		Action: action,
 	})
@@ -82,7 +77,7 @@ func (h handlers) GetEventTypeByID(c echo.Context, action EventTypeAction) error
 	return c.JSON(http.StatusOK, mapToEventType(et))
 }
 
-func (h handlers) DeleteEventType(c echo.Context, action EventTypeAction) error {
+func (h handlers) DeleteEventType(c echo.Context, action Action) error {
 	err := h.application.Commands.DeleteEventType.Execute(mapEchoCtxToCtx(c), command.DeleteEventType{
 		Action: action,
 	})
@@ -93,7 +88,7 @@ func (h handlers) DeleteEventType(c echo.Context, action EventTypeAction) error 
 	return c.NoContent(http.StatusNoContent)
 }
 
-func (h handlers) CreateEventTypeVersion(c echo.Context, eventTypeAction EventTypeAction) error {
+func (h handlers) CreateEventTypeVersion(c echo.Context, action Action) error {
 	var body CreateEventTypeVersionJSONBody
 	err := c.Bind(&body)
 	if err != nil {
@@ -107,7 +102,7 @@ func (h handlers) CreateEventTypeVersion(c echo.Context, eventTypeAction EventTy
 
 	err = h.application.Commands.CreateEventTypeVersion.Execute(mapEchoCtxToCtx(c), command.CreateEventTypeVersion{
 		Schema:      schema,
-		Action:      eventTypeAction,
+		Action:      action,
 		TargetTypes: body.TargetTypes,
 	})
 	if errors.Is(err, domain.ErrEventTypeNotFound) {
@@ -120,9 +115,9 @@ func (h handlers) CreateEventTypeVersion(c echo.Context, eventTypeAction EventTy
 	return c.NoContent(http.StatusNoContent)
 }
 
-func (h handlers) RollbackEventTypeVersion(c echo.Context, eventTypeAction EventTypeAction) error {
+func (h handlers) RollbackEventTypeVersion(c echo.Context, action Action) error {
 	err := h.application.Commands.RollbackEventTypeVersion.Execute(mapEchoCtxToCtx(c), command.RollbackEventTypeVersion{
-		Action: eventTypeAction,
+		Action: action,
 	})
 	if errors.Is(err, domain.ErrVersionOneOfEventTypeCannotBeRolledBack) {
 		return NewHandlerErrorWithStatus(err, "unable-to-rollback-version-one-of-event-type", http.StatusConflict)

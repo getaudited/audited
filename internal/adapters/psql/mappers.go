@@ -1,12 +1,10 @@
 package psql
 
 import (
-	"cmp"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math"
-	"slices"
 	"time"
 
 	"github.com/aarondl/null/v8"
@@ -274,26 +272,7 @@ func mapRowsToSources(rows []*models.Source) []domain.Source {
 }
 
 func mapRowToEventType(row *models.EventType) query.EventType {
-	versions := make([]query.EventTypeVersion, len(row.R.EventTypeActionEventTypeVersions))
-	for i, ev := range row.R.EventTypeActionEventTypeVersions {
-		versions[i] = query.EventTypeVersion{
-			Version:     ev.Version,
-			TargetTypes: ev.TargetTypes,
-			Schema:      ev.EventSchema.JSON,
-			CreatedAt:   ev.CreatedAt,
-		}
-	}
-
-	slices.SortFunc[[]query.EventTypeVersion](versions, func(a, b query.EventTypeVersion) int {
-		return cmp.Compare(a.Version, b.Version)
-	})
-
-	return query.EventType{
-		Action:                       row.Action,
-		ShouldValidateMetadataSchema: row.ShouldValidateMetadataSchema,
-		Versions:                     versions,
-		CreatedAt:                    row.CreatedAt,
-	}
+	return query.EventType{}
 }
 
 func mapRowsToEventTypes(rows []*models.EventType) []query.EventType {

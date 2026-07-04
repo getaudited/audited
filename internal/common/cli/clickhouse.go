@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"context"
@@ -7,20 +7,17 @@ import (
 	"strings"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
+
 	clickhouseadapter "github.com/getaudited/audited/internal/adapters/clickhouse"
 	"github.com/getaudited/audited/internal/app"
 	"github.com/getaudited/audited/internal/app/command"
 	"github.com/getaudited/audited/internal/app/query"
 )
 
-type Closer interface {
-	Close() error
-}
-
-func NewClickhouseApp(
+func newClickhouseApp(
 	ctx context.Context,
-	config *Config,
 	jwtPrivateKey *ecdsa.PrivateKey,
+	config Config,
 ) (*app.App, Closer, error) {
 	conn, err := newClickhouseConnection(ctx, config.ClickhouseDatabaseURL)
 	if err != nil {
@@ -84,7 +81,7 @@ func newClickhouseConnection(ctx context.Context, databaseURL string) (clickhous
 				{Name: "an-example-go-client", Version: "0.1"},
 			},
 		},
-		Debugf: func(format string, v ...interface{}) {
+		Debugf: func(format string, v ...any) {
 			fmt.Printf(format, v)
 		},
 		/*TLS: &tls.Config{

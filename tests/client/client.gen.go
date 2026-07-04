@@ -70,24 +70,18 @@ type EventList struct {
 
 // EventType defines model for EventType.
 type EventType struct {
-	Action                       string             `json:"action"`
-	Versions                     []EventTypeVersion `json:"versions"`
-	ShouldValidateMetadataSchema bool               `json:"should_validate_metadata_schema"`
-	CreatedAt                    time.Time          `json:"created_at"`
+	Action                       string                 `json:"action"`
+	Version                      int                    `json:"version"`
+	ShouldValidateMetadataSchema bool                   `json:"should_validate_metadata_schema"`
+	Schema                       map[string]interface{} `json:"schema"`
+	TargetTypes                  []string               `json:"target_types"`
+	CreatedAt                    time.Time              `json:"created_at"`
 }
 
 // EventTypeList defines model for EventTypeList.
 type EventTypeList struct {
 	Data       []EventType `json:"data"`
 	Pagination Pagination  `json:"pagination"`
-}
-
-// EventTypeVersion defines model for EventTypeVersion.
-type EventTypeVersion struct {
-	Version     int       `json:"version"`
-	TargetTypes []string  `json:"target_types"`
-	Schema      *string   `json:"schema,omitempty"`
-	CreatedAt   time.Time `json:"created_at"`
 }
 
 // LogIn defines model for LogIn.
@@ -146,14 +140,14 @@ type User struct {
 	Role  string `json:"role"`
 }
 
+// Action defines model for action.
+type Action = string
+
 // ActionFilter defines model for action_filter.
 type ActionFilter = string
 
 // EventId defines model for event_id.
 type EventId = string
-
-// EventTypeAction defines model for event_type_action.
-type EventTypeAction = string
 
 // EventsByAction defines model for events_by_action.
 type EventsByAction = string
@@ -416,18 +410,18 @@ type ClientInterface interface {
 	CreateEventType(ctx context.Context, body CreateEventTypeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteEventType request
-	DeleteEventType(ctx context.Context, eventTypeAction EventTypeAction, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteEventType(ctx context.Context, action Action, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetEventTypeByID request
-	GetEventTypeByID(ctx context.Context, eventTypeAction EventTypeAction, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetEventTypeByID(ctx context.Context, action Action, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RollbackEventTypeVersion request
-	RollbackEventTypeVersion(ctx context.Context, eventTypeAction EventTypeAction, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RollbackEventTypeVersion(ctx context.Context, action Action, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateEventTypeVersionWithBody request with any body
-	CreateEventTypeVersionWithBody(ctx context.Context, eventTypeAction EventTypeAction, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateEventTypeVersionWithBody(ctx context.Context, action Action, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	CreateEventTypeVersion(ctx context.Context, eventTypeAction EventTypeAction, body CreateEventTypeVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateEventTypeVersion(ctx context.Context, action Action, body CreateEventTypeVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetEvents request
 	GetEvents(ctx context.Context, params *GetEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -526,8 +520,8 @@ func (c *Client) CreateEventType(ctx context.Context, body CreateEventTypeJSONRe
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteEventType(ctx context.Context, eventTypeAction EventTypeAction, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteEventTypeRequest(c.Server, eventTypeAction)
+func (c *Client) DeleteEventType(ctx context.Context, action Action, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteEventTypeRequest(c.Server, action)
 	if err != nil {
 		return nil, err
 	}
@@ -538,8 +532,8 @@ func (c *Client) DeleteEventType(ctx context.Context, eventTypeAction EventTypeA
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetEventTypeByID(ctx context.Context, eventTypeAction EventTypeAction, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetEventTypeByIDRequest(c.Server, eventTypeAction)
+func (c *Client) GetEventTypeByID(ctx context.Context, action Action, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetEventTypeByIDRequest(c.Server, action)
 	if err != nil {
 		return nil, err
 	}
@@ -550,8 +544,8 @@ func (c *Client) GetEventTypeByID(ctx context.Context, eventTypeAction EventType
 	return c.Client.Do(req)
 }
 
-func (c *Client) RollbackEventTypeVersion(ctx context.Context, eventTypeAction EventTypeAction, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRollbackEventTypeVersionRequest(c.Server, eventTypeAction)
+func (c *Client) RollbackEventTypeVersion(ctx context.Context, action Action, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRollbackEventTypeVersionRequest(c.Server, action)
 	if err != nil {
 		return nil, err
 	}
@@ -562,8 +556,8 @@ func (c *Client) RollbackEventTypeVersion(ctx context.Context, eventTypeAction E
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateEventTypeVersionWithBody(ctx context.Context, eventTypeAction EventTypeAction, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateEventTypeVersionRequestWithBody(c.Server, eventTypeAction, contentType, body)
+func (c *Client) CreateEventTypeVersionWithBody(ctx context.Context, action Action, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateEventTypeVersionRequestWithBody(c.Server, action, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -574,8 +568,8 @@ func (c *Client) CreateEventTypeVersionWithBody(ctx context.Context, eventTypeAc
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateEventTypeVersion(ctx context.Context, eventTypeAction EventTypeAction, body CreateEventTypeVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateEventTypeVersionRequest(c.Server, eventTypeAction, body)
+func (c *Client) CreateEventTypeVersion(ctx context.Context, action Action, body CreateEventTypeVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateEventTypeVersionRequest(c.Server, action, body)
 	if err != nil {
 		return nil, err
 	}
@@ -917,12 +911,12 @@ func NewCreateEventTypeRequestWithBody(server string, contentType string, body i
 }
 
 // NewDeleteEventTypeRequest generates requests for DeleteEventType
-func NewDeleteEventTypeRequest(server string, eventTypeAction EventTypeAction) (*http.Request, error) {
+func NewDeleteEventTypeRequest(server string, action Action) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "event_type_action", eventTypeAction, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "action", action, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -951,12 +945,12 @@ func NewDeleteEventTypeRequest(server string, eventTypeAction EventTypeAction) (
 }
 
 // NewGetEventTypeByIDRequest generates requests for GetEventTypeByID
-func NewGetEventTypeByIDRequest(server string, eventTypeAction EventTypeAction) (*http.Request, error) {
+func NewGetEventTypeByIDRequest(server string, action Action) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "event_type_action", eventTypeAction, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "action", action, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -985,12 +979,12 @@ func NewGetEventTypeByIDRequest(server string, eventTypeAction EventTypeAction) 
 }
 
 // NewRollbackEventTypeVersionRequest generates requests for RollbackEventTypeVersion
-func NewRollbackEventTypeVersionRequest(server string, eventTypeAction EventTypeAction) (*http.Request, error) {
+func NewRollbackEventTypeVersionRequest(server string, action Action) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "event_type_action", eventTypeAction, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "action", action, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -1019,23 +1013,23 @@ func NewRollbackEventTypeVersionRequest(server string, eventTypeAction EventType
 }
 
 // NewCreateEventTypeVersionRequest calls the generic CreateEventTypeVersion builder with application/json body
-func NewCreateEventTypeVersionRequest(server string, eventTypeAction EventTypeAction, body CreateEventTypeVersionJSONRequestBody) (*http.Request, error) {
+func NewCreateEventTypeVersionRequest(server string, action Action, body CreateEventTypeVersionJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateEventTypeVersionRequestWithBody(server, eventTypeAction, "application/json", bodyReader)
+	return NewCreateEventTypeVersionRequestWithBody(server, action, "application/json", bodyReader)
 }
 
 // NewCreateEventTypeVersionRequestWithBody generates requests for CreateEventTypeVersion with any type of body
-func NewCreateEventTypeVersionRequestWithBody(server string, eventTypeAction EventTypeAction, contentType string, body io.Reader) (*http.Request, error) {
+func NewCreateEventTypeVersionRequestWithBody(server string, action Action, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "event_type_action", eventTypeAction, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "action", action, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -1673,18 +1667,18 @@ type ClientWithResponsesInterface interface {
 	CreateEventTypeWithResponse(ctx context.Context, body CreateEventTypeJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEventTypeResponse, error)
 
 	// DeleteEventTypeWithResponse request
-	DeleteEventTypeWithResponse(ctx context.Context, eventTypeAction EventTypeAction, reqEditors ...RequestEditorFn) (*DeleteEventTypeResponse, error)
+	DeleteEventTypeWithResponse(ctx context.Context, action Action, reqEditors ...RequestEditorFn) (*DeleteEventTypeResponse, error)
 
 	// GetEventTypeByIDWithResponse request
-	GetEventTypeByIDWithResponse(ctx context.Context, eventTypeAction EventTypeAction, reqEditors ...RequestEditorFn) (*GetEventTypeByIDResponse, error)
+	GetEventTypeByIDWithResponse(ctx context.Context, action Action, reqEditors ...RequestEditorFn) (*GetEventTypeByIDResponse, error)
 
 	// RollbackEventTypeVersionWithResponse request
-	RollbackEventTypeVersionWithResponse(ctx context.Context, eventTypeAction EventTypeAction, reqEditors ...RequestEditorFn) (*RollbackEventTypeVersionResponse, error)
+	RollbackEventTypeVersionWithResponse(ctx context.Context, action Action, reqEditors ...RequestEditorFn) (*RollbackEventTypeVersionResponse, error)
 
 	// CreateEventTypeVersionWithBodyWithResponse request with any body
-	CreateEventTypeVersionWithBodyWithResponse(ctx context.Context, eventTypeAction EventTypeAction, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEventTypeVersionResponse, error)
+	CreateEventTypeVersionWithBodyWithResponse(ctx context.Context, action Action, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEventTypeVersionResponse, error)
 
-	CreateEventTypeVersionWithResponse(ctx context.Context, eventTypeAction EventTypeAction, body CreateEventTypeVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEventTypeVersionResponse, error)
+	CreateEventTypeVersionWithResponse(ctx context.Context, action Action, body CreateEventTypeVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEventTypeVersionResponse, error)
 
 	// GetEventsWithResponse request
 	GetEventsWithResponse(ctx context.Context, params *GetEventsParams, reqEditors ...RequestEditorFn) (*GetEventsResponse, error)
@@ -1748,7 +1742,7 @@ func (r CreateEventResponse) StatusCode() int {
 type GetEventTypesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON201      *EventTypeList
+	JSON200      *EventTypeList
 	JSON400      *BadRequestError
 	JSONDefault  *InternalServerError
 }
@@ -2164,8 +2158,8 @@ func (c *ClientWithResponses) CreateEventTypeWithResponse(ctx context.Context, b
 }
 
 // DeleteEventTypeWithResponse request returning *DeleteEventTypeResponse
-func (c *ClientWithResponses) DeleteEventTypeWithResponse(ctx context.Context, eventTypeAction EventTypeAction, reqEditors ...RequestEditorFn) (*DeleteEventTypeResponse, error) {
-	rsp, err := c.DeleteEventType(ctx, eventTypeAction, reqEditors...)
+func (c *ClientWithResponses) DeleteEventTypeWithResponse(ctx context.Context, action Action, reqEditors ...RequestEditorFn) (*DeleteEventTypeResponse, error) {
+	rsp, err := c.DeleteEventType(ctx, action, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -2173,8 +2167,8 @@ func (c *ClientWithResponses) DeleteEventTypeWithResponse(ctx context.Context, e
 }
 
 // GetEventTypeByIDWithResponse request returning *GetEventTypeByIDResponse
-func (c *ClientWithResponses) GetEventTypeByIDWithResponse(ctx context.Context, eventTypeAction EventTypeAction, reqEditors ...RequestEditorFn) (*GetEventTypeByIDResponse, error) {
-	rsp, err := c.GetEventTypeByID(ctx, eventTypeAction, reqEditors...)
+func (c *ClientWithResponses) GetEventTypeByIDWithResponse(ctx context.Context, action Action, reqEditors ...RequestEditorFn) (*GetEventTypeByIDResponse, error) {
+	rsp, err := c.GetEventTypeByID(ctx, action, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -2182,8 +2176,8 @@ func (c *ClientWithResponses) GetEventTypeByIDWithResponse(ctx context.Context, 
 }
 
 // RollbackEventTypeVersionWithResponse request returning *RollbackEventTypeVersionResponse
-func (c *ClientWithResponses) RollbackEventTypeVersionWithResponse(ctx context.Context, eventTypeAction EventTypeAction, reqEditors ...RequestEditorFn) (*RollbackEventTypeVersionResponse, error) {
-	rsp, err := c.RollbackEventTypeVersion(ctx, eventTypeAction, reqEditors...)
+func (c *ClientWithResponses) RollbackEventTypeVersionWithResponse(ctx context.Context, action Action, reqEditors ...RequestEditorFn) (*RollbackEventTypeVersionResponse, error) {
+	rsp, err := c.RollbackEventTypeVersion(ctx, action, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -2191,16 +2185,16 @@ func (c *ClientWithResponses) RollbackEventTypeVersionWithResponse(ctx context.C
 }
 
 // CreateEventTypeVersionWithBodyWithResponse request with arbitrary body returning *CreateEventTypeVersionResponse
-func (c *ClientWithResponses) CreateEventTypeVersionWithBodyWithResponse(ctx context.Context, eventTypeAction EventTypeAction, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEventTypeVersionResponse, error) {
-	rsp, err := c.CreateEventTypeVersionWithBody(ctx, eventTypeAction, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateEventTypeVersionWithBodyWithResponse(ctx context.Context, action Action, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEventTypeVersionResponse, error) {
+	rsp, err := c.CreateEventTypeVersionWithBody(ctx, action, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateEventTypeVersionResponse(rsp)
 }
 
-func (c *ClientWithResponses) CreateEventTypeVersionWithResponse(ctx context.Context, eventTypeAction EventTypeAction, body CreateEventTypeVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEventTypeVersionResponse, error) {
-	rsp, err := c.CreateEventTypeVersion(ctx, eventTypeAction, body, reqEditors...)
+func (c *ClientWithResponses) CreateEventTypeVersionWithResponse(ctx context.Context, action Action, body CreateEventTypeVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEventTypeVersionResponse, error) {
+	rsp, err := c.CreateEventTypeVersion(ctx, action, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -2361,12 +2355,12 @@ func ParseGetEventTypesResponse(rsp *http.Response) (*GetEventTypesResponse, err
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest EventTypeList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON201 = &dest
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest BadRequestError
@@ -2927,50 +2921,50 @@ func ParseDeleteTokenResponse(rsp *http.Response) (*DeleteTokenResponse, error) 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
-	"mKRrLtXsl7NfzvDudvf/AAAA//+8y5MWu0IAAA==",
+	"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",
+	"pkEAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

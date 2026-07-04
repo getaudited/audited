@@ -17,12 +17,9 @@ CREATE TABLE sources (
 CREATE TABLE event_types (
     action String,
     should_validate_metadata_schema Bool DEFAULT false,
-    versions Nested (
-        version UInt16,
-        schema String,
-        target_types Array(LowCardinality(String)),
-        created_at DateTime
-    ),
+    version UInt16,
+    schema String,
+    target_types Array(LowCardinality(String)),
     created_at DateTime DEFAULT now()
 );
 

@@ -26,30 +26,71 @@ func (r EventsClickhouseRepository) QueryAll(
 	params query.AllEventsParams,
 	pagination query.CursorPaginationParams,
 ) (query.CursorPaginationResult[domain.Event], error) {
-	queryAll := sq.Select(`id,
-		source_id,
-		version,
-		action,
-		actor_id,
-		actor_type,
-		actor_name,
-		actor_metadata,
-		context_location,
-		context_user_agent,
-		metadata,
-		occurred_at,
-		targets.internal_id,
-		targets.id,
-		targets.name,
-		targets.type,
-		targets.metadata`).From("events")
+	queryAll := sq.
+		Select(`
+			id,
+			source_id,
+			version,
+			action,
+			actor_id,
+			actor_type,
+			actor_name,
+			actor_metadata,
+			context_location,
+			context_user_agent,
+			metadata,
+			occurred_at,
+			targets.internal_id,
+			targets.id,
+			targets.name,
+			targets.type,
+			targets.metadata`,
+		).
+		From("events").
+		OrderBy("occurred_at DESC, id DESC").
+		Limit(uint64(mapToLimit(pagination.Limit)))
 
-	q, _, err := queryAll.ToSql()
+	if pagination.StartFromCursor != nil {
+		cursor, err := mapStringToCursor(*pagination.StartFromCursor)
+		if err != nil {
+			return query.CursorPaginationResult[domain.Event]{}, err
+		}
+
+		queryAll = queryAll.Where("(occurred_at, id) < (?, ?)", cursor.OccurredAt, cursor.EventID)
+	}
+
+	if !params.ActorID.Empty() {
+		queryAll = queryAll.Where("actor_id = ?", params.ActorID.String())
+	}
+
+	if params.ActorName != nil {
+		queryAll = queryAll.Where("ilike(actor_name, ?)", "%"+*params.ActorName+"%")
+	}
+
+	if params.Action != nil {
+		queryAll = queryAll.Where("ilike(action, ?)", "%"+*params.Action+"%")
+	}
+
+	if !params.TargetID.Empty() {
+		queryAll = queryAll.Where("has(targets.id, ?)", params.TargetID.String())
+	}
+
+	if params.StartDate != nil {
+		queryAll = queryAll.Where("occurred_at >= ?", params.StartDate)
+	}
+
+	if params.EndDate != nil {
+		queryAll = queryAll.Where("occurred_at <= ?", params.EndDate)
+	}
+
+	q, args, err := queryAll.ToSql()
 	if err != nil {
 		return query.CursorPaginationResult[domain.Event]{}, fmt.Errorf("error parsing query: %w", err)
 	}
 
-	rows, err := r.db.Query(ctx, q, params.SourceID, pagination.Limit)
+	fmt.Println("###", q)
+
+	rows, err := r.db.Query(ctx, q, args...)
 	if err != nil {
 		return query.CursorPaginationResult[domain.Event]{}, fmt.Errorf("error querying events: %w", err)
 	}
@@ -57,11 +98,16 @@ func (r EventsClickhouseRepository) QueryAll(
 
 	data, err := mapRowsToEvents(rows)
 	if err != nil {
-		return query.CursorPaginationResult[domain.Event]{}, fmt.Errorf("error querying events: %w", err)
+		return query.CursorPaginationResult[domain.Event]{}, err
+	}
+
+	lastItemCursor, err := mapLastItemCursor(data)
+	if err != nil {
+		return query.CursorPaginationResult[domain.Event]{}, err
 	}
 
 	return query.CursorPaginationResult[domain.Event]{
-		LastItemCursor: "",
+		LastItemCursor: lastItemCursor,
 		Data:           data,
 	}, nil
 }

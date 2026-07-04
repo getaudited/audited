@@ -1,22 +1,21 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"time"
 
-	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/brianvoe/gofakeit/v7"
-	clickhouseadapter "github.com/getaudited/audited/internal/adapters/clickhouse"
+	"github.com/getaudited/audited/internal/common/cli"
 	_ "github.com/lib/pq"
 
-	"github.com/getaudited/audited/internal/adapters/psql"
+	"github.com/getaudited/audited/internal/app"
 	"github.com/getaudited/audited/internal/app/command"
-	"github.com/getaudited/audited/internal/common/postgres"
+	"github.com/getaudited/audited/internal/common/logs"
 	"github.com/getaudited/audited/internal/domain"
 )
 
@@ -28,44 +27,35 @@ var (
 )
 
 func main() {
-	dbURL := os.Getenv("ADT_DATABASE_URL")
-	if dbURL == "" {
-		log.Fatal("ADT_DATABASE_URL environment variable is required")
-	}
-
 	ctx := context.Background()
+	logger := logs.New(cmp.Or(os.Getenv("ADT_LOG_LEVEL"), "INFO"))
 
-	db, err := postgres.Connect(ctx, dbURL)
+	application, closer, err := cli.NewApp(ctx, logger, nil, cli.Config{
+		ActiveDatabase:        os.Getenv("ADT_ACTIVE_DATABASE"),
+		DatabaseURL:           os.Getenv("ADT_DATABASE_URL"),
+		ClickhouseDatabaseURL: os.Getenv("ADT_CLICKHOUSE_DATABASE_URL"),
+	})
 	if err != nil {
-		log.Fatalf("connect to postgres: %v", err)
+		log.Fatalf("build app: %v", err)
 	}
-	defer func() { _ = db.Close() }()
+	defer func() { _ = closer.Close() }()
 
-	conn, err := newClickhouseConnection(ctx, os.Getenv("ADT_CLICKHOUSE_DATABASE_URL"))
-	if err != nil {
+	if err := generate(ctx, application); err != nil {
 		log.Fatal(err)
 	}
+}
 
-	sourcesRepo := psql.NewSourcesPsqlRepository(db)
-	eventsRepo := clickhouseadapter.NewEventsClickhouseRepository(conn) // psql.NewEventsPsqlRepository(db)
-	tokensRepo := psql.NewTokensPsqlRepository(db)
-	eventsTypeRepo := psql.NewEventTypePsqlRepository(db)
-
-	createSource := command.NewCreateSourceHandler(sourcesRepo)
-	createEvent := command.NewCreateEventHandler(eventsRepo)
-	createToken := command.NewCreateTokenHandler(tokensRepo)
-	createEventType := command.NewCreateEventTypeHandler(eventsTypeRepo)
-
+func generate(ctx context.Context, application *app.App) error {
 	source, err := domain.NewSource(fmt.Sprintf("%s (generator)", gofakeit.Company()))
 	if err != nil {
-		log.Fatalf("build source: %v", err)
+		return fmt.Errorf("build source: %w", err)
 	}
 
-	err = createSource.Execute(ctx, command.CreateSource{
+	err = application.Commands.CreateSource.Execute(ctx, command.CreateSource{
 		Source: source,
 	})
 	if err != nil {
-		log.Fatalf("save source: %v", err)
+		return fmt.Errorf("save source: %w", err)
 	}
 	fmt.Printf("source created  id=%-26s  name=%s\n", source.ID(), source.Name())
 
@@ -76,11 +66,11 @@ func main() {
 		CreatedAt:                    time.Now(),
 		UpdatedAt:                    time.Now(),
 	}
-	err = createEventType.Execute(ctx, command.CreateEventType{
+	err = application.Commands.CreateEventType.Execute(ctx, command.CreateEventType{
 		EventType: eventType,
 	})
 	if err != nil && !errors.Is(err, domain.ErrEventTypeExists) {
-		log.Fatalf("error creating event type: %v", err)
+		return fmt.Errorf("error creating event type: %w", err)
 	}
 
 	token, err := domain.NewToken(
@@ -88,14 +78,14 @@ func main() {
 		fmt.Sprintf("Event Generator Token %s", time.Now()),
 	)
 	if err != nil {
-		log.Fatalf("error creating token: %v", err)
+		return fmt.Errorf("error creating token: %w", err)
 	}
 
-	err = createToken.Execute(ctx, command.CreateToken{
+	err = application.Commands.CreateToken.Execute(ctx, command.CreateToken{
 		Token: token,
 	})
 	if err != nil {
-		log.Fatalf("error saving token: %v", err)
+		return fmt.Errorf("error saving token: %w", err)
 	}
 
 	since := time.Now().AddDate(0, -6, 0)
@@ -136,10 +126,10 @@ func main() {
 			gofakeit.DateRange(since, time.Now()),
 		)
 		if err != nil {
-			log.Fatalf("build event %d: %v", i+1, err)
+			return fmt.Errorf("build event %d: %w", i+1, err)
 		}
 
-		err = createEvent.Execute(ctx, command.CreateEvent{
+		err = application.Commands.CreateEvent.Execute(ctx, command.CreateEvent{
 			Event: event,
 			Token: token.Value(),
 		})
@@ -151,47 +141,10 @@ func main() {
 	}
 
 	fmt.Printf("done  inserted=%d  total=%d  source=%s\n", inserted, maxEvents, source.ID())
+
+	return nil
 }
 
 func pick(s []string) string {
 	return s[gofakeit.Number(0, len(s)-1)]
-}
-
-func newClickhouseConnection(ctx context.Context, databaseURL string) (clickhouse.Conn, error) {
-	var conn, err = clickhouse.Open(&clickhouse.Options{
-		Addr: []string{strings.TrimPrefix(databaseURL, "clickhouse://")},
-		Auth: clickhouse.Auth{
-			Database: "default",
-			Username: "default",
-			Password: "password",
-		},
-		ClientInfo: clickhouse.ClientInfo{
-			Products: []struct {
-				Name    string
-				Version string
-			}{
-				{Name: "an-example-go-client", Version: "0.1"},
-			},
-		},
-		Debugf: func(format string, v ...interface{}) {
-			fmt.Printf(format, v)
-		},
-		/*TLS: &tls.Config{
-			InsecureSkipVerify: true,
-		},*/
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	if err = conn.Ping(ctx); err != nil {
-		if exception, ok := err.(*clickhouse.Exception); ok {
-			fmt.Printf("Exception [%d] %s \n%s\n", exception.Code, exception.Message, exception.StackTrace)
-		}
-
-		return nil, err
-	}
-
-	return conn, nil
 }

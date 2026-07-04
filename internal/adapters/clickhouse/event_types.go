@@ -1,15 +1,10 @@
 package clickhouse
 
 import (
-	"cmp"
 	"context"
-	"errors"
 	"fmt"
-	"slices"
-	"time"
 
 	clickhousedb "github.com/ClickHouse/clickhouse-go/v2"
-	sq "github.com/Masterminds/squirrel"
 	"github.com/getaudited/audited/internal/app/query"
 	"github.com/getaudited/audited/internal/domain"
 )
@@ -30,12 +25,14 @@ func (r EventTypesClickhouseRepository) FindByAction(ctx context.Context, action
 		`SELECT
 					action,
 					should_validate_metadata_schema,
-					versions.version,
-					versions.schema,
-					versions.target_types,
-					versions.created_at,
+					version,
+					schema,
+					target_types,
 					created_at
-				FROM event_types WHERE action = ?`,
+				FROM event_types
+				WHERE action = ?
+				ORDER BY version DESC
+				LIMIT 1`,
 		action,
 	)
 
@@ -44,35 +41,36 @@ func (r EventTypesClickhouseRepository) FindByAction(ctx context.Context, action
 
 func (r EventTypesClickhouseRepository) QueryAll(ctx context.Context, params query.AllEventTypes) (query.Pagination[query.EventType], error) {
 	var total uint64
-	row := r.db.QueryRow(ctx, `SELECT COUNT(action) FROM event_types`)
+	row := r.db.QueryRow(ctx, `SELECT COUNT(DISTINCT(action)) FROM event_types`)
 	err := row.Scan(&total)
 	if err != nil {
 		return query.Pagination[query.EventType]{}, fmt.Errorf("error counting event_types: %w", err)
 	}
 
-	queryAll := sq.
-		Select(`
-			action,
-			should_validate_metadata_schema,
-			versions.version,
-			versions.schema,
-			versions.target_types,
-			versions.created_at,
-			created_at
-		`).
-		From("event_types").
-		Limit(uint64(params.PaginationParams.Limit)).
-		Offset(uint64(mapPaginationParamsToOffset(params.PaginationParams)))
+	q := `
+		SELECT * FROM (
+		    SELECT
+				action,
+				should_validate_metadata_schema,
+				version,
+				schema,
+				target_types,
+				created_at
+			FROM event_types
+			ORDER BY action ASC, version DESC
+			LIMIT 1 BY action
+		)
+	`
 
+	var args []any
 	if params.Action != nil {
-		queryAll = queryAll.Where("ilike(action, ?)", "%"+*params.Action+"%")
+		q += " WHERE ilike(action, ?)"
+		args = append(args, "%"+*params.Action+"%")
 	}
 
-	q, args, err := queryAll.ToSql()
-	if err != nil {
-		return query.Pagination[query.EventType]{}, fmt.Errorf("error building query: %w", err)
-	}
-	
+	q += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+	args = append(args, params.PaginationParams.Limit, mapPaginationParamsToOffset(params.PaginationParams))
+
 	rows, err := r.db.Query(ctx, q, args...)
 	if err != nil {
 		return query.Pagination[query.EventType]{}, fmt.Errorf("error querying event_types: %w", err)
@@ -97,33 +95,34 @@ func (r EventTypesClickhouseRepository) Delete(ctx context.Context, action strin
 }
 
 func (r EventTypesClickhouseRepository) Save(ctx context.Context, et domain.EventType) error {
-	found, err := r.FindByAction(ctx, et.Action)
-	if err != nil && !errors.Is(err, domain.ErrEventTypeNotFound) {
-		return err
-	}
-	if found.Action == et.Action {
-		return domain.ErrEventTypeExists
-	}
+	//row := r.db.QueryRow(ctx, `SELECT action FROM event_types WHERE action = ?`, et.Action)
 
-	err = r.db.Exec(
+	// found, err := r.FindByAction(ctx, et.Action)
+	// if err != nil && !errors.Is(err, domain.ErrEventTypeNotFound) {
+	// 	return err
+	// }
+	// if found.Action == et.Action {
+	// 	return domain.ErrEventTypeExists
+	// }
+
+	err := r.db.Exec(
 		ctx,
 		`
 		INSERT INTO event_types (
 			action,
 			should_validate_metadata_schema,
-			versions.version,
-			versions.schema,
-			versions.target_types,
-			versions.created_at,
+			version,
+			schema,
+			target_types,
 			created_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?)
 	`,
 		et.Action,
 		et.ShouldValidateMetadataSchema,
-		[]uint16{uint16(et.LastVersion.Version)},
-		[]string{string(et.LastVersion.Schema)},
-		[][]string{et.LastVersion.TargetTypes},
-		[]time.Time{et.LastVersion.CreatedAt},
+		uint16(et.LastVersion.Version),
+		string(et.LastVersion.Schema),
+		et.LastVersion.TargetTypes,
+		et.LastVersion.CreatedAt,
 		et.CreatedAt,
 	)
 	if err != nil {
@@ -134,23 +133,15 @@ func (r EventTypesClickhouseRepository) Save(ctx context.Context, et domain.Even
 }
 
 func (r EventTypesClickhouseRepository) RollbackVersion(ctx context.Context, action string) error {
-	eventType, err := r.FindByAction(ctx, action)
+	evt, err := r.FindByAction(ctx, action)
 	if err != nil {
 		return err
 	}
-	if len(eventType.Versions) == 1 {
+	if evt.Version == 1 {
 		return domain.ErrVersionOneOfEventTypeCannotBeRolledBack
 	}
 
-	err = r.db.Exec(ctx, `
-		ALTER TABLE event_types
-		UPDATE 
-			versions.version = arrayFilter((v) -> v != arrayMax(versions.version), versions.version),
-			versions.schema = arrayFilter((s, v) -> v != arrayMax(versions.version), versions.schema, versions.version),
-			versions.target_types = arrayFilter((t, v) -> v != arrayMax(versions.version), versions.target_types, versions.version),
-			versions.created_at = arrayFilter((c, v) -> v != arrayMax(versions.version), versions.created_at, versions.version)
-		WHERE action = ?;
-	`, action)
+	err = r.db.Exec(ctx, `DELETE FROM event_types WHERE action = ? AND version = ?`, action, evt.Version)
 	if err != nil {
 		return fmt.Errorf("error rolling back event_type version by action '%s' due to: %w", action, err)
 	}
@@ -159,32 +150,29 @@ func (r EventTypesClickhouseRepository) RollbackVersion(ctx context.Context, act
 }
 
 func (r EventTypesClickhouseRepository) SaveVersion(ctx context.Context, action string, targetTypes []string, schema domain.Schema) error {
-	eventType, err := r.FindByAction(ctx, action)
+	et, err := r.FindByAction(ctx, action)
 	if err != nil {
 		return err
 	}
 
-	slices.SortFunc[[]query.EventTypeVersion](eventType.Versions, func(a query.EventTypeVersion, b query.EventTypeVersion) int {
-		return cmp.Compare(b.Version, a.Version)
-	})
-
-	lastEventTypeVersion := eventType.Versions[len(eventType.Versions)-1]
-
 	err = r.db.Exec(
 		ctx,
 		`
-		ALTER TABLE event_types
-		UPDATE
-			versions.version = arrayPushBack(versions.version, ?),
-			versions.schema = arrayPushBack(versions.schema, ?),
-			versions.target_types = arrayPushBack(versions.target_types, ?),
-			versions.created_at = arrayPushBack(versions.created_at, ?)
-		WHERE action = ?;
+		INSERT INTO event_types (
+			action,
+			should_validate_metadata_schema,
+			version,
+			schema,
+			target_types,
+			created_at
+		) VALUES (?, ?, ?, ?, ?, ?)
 	`,
-		lastEventTypeVersion.Version+1,
+		action,
+		et.ShouldValidateMetadataSchema,
+		uint16(et.Version+1),
 		string(schema),
 		targetTypes,
-		time.Now(),
+		et.CreatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("error saving new version of event_type '%s' due to: %w", action, err)

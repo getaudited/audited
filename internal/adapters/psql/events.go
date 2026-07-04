@@ -17,10 +17,7 @@ import (
 	"github.com/getaudited/audited/internal/domain"
 )
 
-const (
-	FkEventBelongsToSource    = "fk_event_belongs_to_source"
-	FkEventHasEventTypeAction = "fk_event_has_action"
-)
+const FkEventBelongsToSource = "fk_event_belongs_to_source"
 
 type Cursor struct {
 	OccurredAt time.Time `json:"occurred_at"`

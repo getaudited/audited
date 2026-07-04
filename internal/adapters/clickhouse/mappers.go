@@ -1,13 +1,12 @@
 package clickhouse
 
 import (
-	"cmp"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
-	"slices"
 	"strings"
 	"time"
 
@@ -15,6 +14,11 @@ import (
 	"github.com/getaudited/audited/internal/app/query"
 	"github.com/getaudited/audited/internal/domain"
 )
+
+type Cursor struct {
+	OccurredAt time.Time `json:"occurred_at"`
+	EventID    string    `json:"event_id"`
+}
 
 type EventRow struct {
 	id                 string
@@ -224,60 +228,88 @@ func mapRowToUser(row driver.Row) (*domain.User, error) {
 		return nil, fmt.Errorf("error mapping user: %w", err)
 	}
 
-	return nil, nil
+	return domain.MarshallToUser(id, email, password, role, createdAt), nil
 }
 
 func mapRowToEventType(row driver.Row) (query.EventType, error) {
-	var versions []uint16
-	var schemas []string
-	var targetTypes [][]string
-	var createdAts []time.Time
-
-	var et query.EventType
-
+	var evt query.EventType
+	var version uint16
+	var schema string
 	err := row.Scan(
-		&et.Action,
-		&et.ShouldValidateMetadataSchema,
-		&versions,
-		&schemas,
-		&targetTypes,
-		&createdAts,
-		&et.CreatedAt,
+		&evt.Action,
+		&evt.ShouldValidateMetadataSchema,
+		&version,
+		&schema,
+		&evt.TargetTypes,
+		&evt.CreatedAt,
 	)
-	if errors.Is(err, sql.ErrNoRows) {
-		return query.EventType{}, domain.ErrEventTypeNotFound
-	}
 	if err != nil {
-		return query.EventType{}, fmt.Errorf("error mapping event type: %w", err)
+		return query.EventType{}, err
 	}
 
-	for i := range versions {
-		et.Versions = append(et.Versions, query.EventTypeVersion{
-			Version:     int(versions[i]),
-			TargetTypes: targetTypes[i],
-			Schema:      []byte(schemas[i]),
-			CreatedAt:   createdAts[i],
-		})
-	}
+	evt.Schema = schema
+	evt.Version = int(version)
 
-	slices.SortFunc[[]query.EventTypeVersion](et.Versions, func(a, b query.EventTypeVersion) int {
-		return cmp.Compare(a.Version, b.Version)
-	})
-
-	return et, nil
+	return evt, nil
 }
 
 func mapRowsToEventTypes(rows driver.Rows) ([]query.EventType, error) {
-	var eventTypes []query.EventType
+	var result []query.EventType
 
 	for rows.Next() {
-		et, err := mapRowToEventType(rows)
+		evt, err := mapRowToEventType(rows)
 		if err != nil {
 			return nil, err
 		}
 
-		eventTypes = append(eventTypes, et)
+		result = append(result, evt)
 	}
 
-	return eventTypes, nil
+	return result, nil
+}
+
+func mapStringToCursor(encodedCursor string) (Cursor, error) {
+	decodedCursor, err := base64.StdEncoding.DecodeString(encodedCursor)
+	if err != nil {
+		return Cursor{}, fmt.Errorf("error decoding cursor '%s': %w", encodedCursor, err)
+	}
+
+	var cursor Cursor
+	err = json.Unmarshal(decodedCursor, &cursor)
+	if err != nil {
+		return Cursor{}, fmt.Errorf("error unmarshalling cursor '%s': %w", encodedCursor, err)
+	}
+
+	return cursor, nil
+}
+
+func mapCursorToString(eventID string, occurredAt time.Time) (string, error) {
+	cursor := Cursor{
+		EventID:    eventID,
+		OccurredAt: occurredAt,
+	}
+
+	marshalledCursor, err := json.Marshal(cursor)
+	if err != nil {
+		return "", fmt.Errorf("error marshalling cursor: %w", err)
+	}
+
+	return base64.StdEncoding.EncodeToString(marshalledCursor), nil
+}
+
+func mapToLimit(limit *int) int {
+	if limit == nil {
+		return 50
+	}
+
+	return *limit
+}
+
+func mapLastItemCursor(rows []domain.Event) (string, error) {
+	if len(rows) == 0 {
+		return "", nil
+	}
+
+	lastRow := rows[len(rows)-1]
+	return mapCursorToString(lastRow.ID().String(), lastRow.OccurredAt())
 }
