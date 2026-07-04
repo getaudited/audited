@@ -14,9 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var (
-	ctx context.Context
-)
+var ctx context.Context
 
 // nolint
 func newApiClient(t *testing.T) *client.ClientWithResponses {

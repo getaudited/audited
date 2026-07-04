@@ -41,6 +41,7 @@ type EventType struct {
 
 type eventTypeFinder interface {
 	FindByAction(ctx context.Context, action string) (EventType, error)
+	AllVersionsByAction(ctx context.Context, action string) ([]EventType, error)
 	QueryAll(ctx context.Context, params AllEventTypes) (Pagination[EventType], error)
 }
 

@@ -35,14 +35,19 @@ type Commands struct {
 }
 
 type Queries struct {
-	EventTypeByAction QueryHandler[query.EventTypeByAction, query.EventType]
-	Events            QueryHandler[query.AllEvents, query.CursorPaginationResult[domain.Event]]
-	EventByID         QueryHandler[query.EventByID, domain.Event]
-	SourceByID        QueryHandler[query.SourceByID, *domain.Source]
-	AllSources        QueryHandler[query.AllSources, query.Pagination[domain.Source]]
-	AllTokens         QueryHandler[query.AllTokens, []*domain.Token]
+	Events    QueryHandler[query.AllEvents, query.CursorPaginationResult[domain.Event]]
+	EventByID QueryHandler[query.EventByID, domain.Event]
+
+	SourceByID QueryHandler[query.SourceByID, *domain.Source]
+
+	AllSources QueryHandler[query.AllSources, query.Pagination[domain.Source]]
+	AllTokens  QueryHandler[query.AllTokens, []*domain.Token]
+
+	UserProfile QueryHandler[query.UserProfile, *domain.User]
+
 	AllEventTypes     QueryHandler[query.AllEventTypes, query.Pagination[query.EventType]]
-	UserProfile       QueryHandler[query.UserProfile, *domain.User]
+	EventTypeByAction QueryHandler[query.EventTypeByAction, query.EventType]
+	EventTypeVersions QueryHandler[query.EventTypeVersions, []query.EventType]
 }
 
 type App struct {

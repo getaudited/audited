@@ -54,6 +54,7 @@ func newClickhouseApp(
 
 			AllEventTypes:     query.NewAllEventTypesHandler(eventTypesRepo),
 			EventTypeByAction: query.NewEventTypeByActionHandler(eventTypesRepo),
+			EventTypeVersions: query.NewEventTypeVersionsHandler(eventTypesRepo),
 
 			AllSources: query.NewAllSourcesHandler(sourcesRepo),
 			SourceByID: query.NewSourceByIDHandler(sourcesRepo),

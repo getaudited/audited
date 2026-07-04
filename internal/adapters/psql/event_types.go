@@ -166,3 +166,8 @@ func (r EventTypePsqlRepository) QueryAll(ctx context.Context, params query.AllE
 
 	return mapToPaginationResult[query.EventType](params.PaginationParams, count, mapRowsToEventTypes(rows)), nil
 }
+
+func (r EventTypePsqlRepository) AllVersionsByAction(ctx context.Context, action string) ([]query.EventType, error) {
+	//TODO implement me
+	panic("implement me")
+}

@@ -180,3 +180,23 @@ func (r EventTypesClickhouseRepository) SaveVersion(ctx context.Context, action 
 
 	return nil
 }
+
+func (r EventTypesClickhouseRepository) AllVersionsByAction(ctx context.Context, action string) ([]query.EventType, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT
+			action,
+			should_validate_metadata_schema,
+			version,
+			schema,
+			target_types,
+			created_at
+		FROM event_types
+		WHERE action = ?
+		ORDER BY version DESC
+	`, action)
+	if err != nil {
+		return nil, fmt.Errorf("error querying all versions of event '%s' due to: %w", action, err)
+	}
+
+	return mapRowsToEventTypes(rows)
+}

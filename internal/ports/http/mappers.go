@@ -123,6 +123,17 @@ func mapToEventTypeList(result query.Pagination[query.EventType]) EventTypeList 
 	}
 }
 
+func mapToEventTypeNonPaginatedList(eventTypes []query.EventType) EventTypeNonPaginatedList {
+	data := make([]EventType, len(eventTypes))
+	for i, et := range eventTypes {
+		data[i] = mapToEventType(et)
+	}
+
+	return EventTypeNonPaginatedList{
+		Data: data,
+	}
+}
+
 func mapEchoCtxToCtx(c echo.Context) context.Context {
 	return c.Request().Context()
 }
