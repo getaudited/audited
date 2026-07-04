@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"context"
@@ -12,11 +12,11 @@ import (
 	"github.com/getaudited/audited/internal/common/postgres"
 )
 
-func NewPostgresApp(
+func newPostgresApp(
 	ctx context.Context,
 	logger *logs.Logger,
 	jwtPrivateKey *ecdsa.PrivateKey,
-	config *Config,
+	config Config,
 ) (*app.App, Closer, error) {
 	db, err := postgres.Connect(ctx, config.DatabaseURL)
 	if err != nil {

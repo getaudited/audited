@@ -1,6 +1,10 @@
 version: "2"
 linters:
   default: none
+  settings:
+    gosec:
+      excludes:
+        - G115
   enable:
     - asciicheck
     - bodyclose

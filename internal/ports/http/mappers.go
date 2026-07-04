@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/getaudited/audited/internal/app/query"
 	"github.com/getaudited/audited/internal/domain"
@@ -92,20 +93,15 @@ func mapToTokens(tokens []*domain.Token) []Token {
 }
 
 func mapToEventType(et query.EventType) EventType {
-	versions := make([]EventTypeVersion, len(et.Versions))
-	for i, eventTypeVersion := range et.Versions {
-		versions[i] = EventTypeVersion{
-			Version:     eventTypeVersion.Version,
-			Schema:      new(string(eventTypeVersion.Schema)),
-			TargetTypes: eventTypeVersion.TargetTypes,
-			CreatedAt:   eventTypeVersion.CreatedAt,
-		}
-	}
+	var schema map[string]interface{}
+	_ = json.Unmarshal([]byte(et.Schema), &schema)
 
 	return EventType{
 		Action:                       et.Action,
-		Versions:                     versions,
+		Version:                      et.Version,
 		ShouldValidateMetadataSchema: et.ShouldValidateMetadataSchema,
+		Schema:                       schema,
+		TargetTypes:                  et.TargetTypes,
 		CreatedAt:                    et.CreatedAt,
 	}
 }

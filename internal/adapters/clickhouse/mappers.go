@@ -2,15 +2,23 @@ package clickhouse
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/getaudited/audited/internal/app/query"
 	"github.com/getaudited/audited/internal/domain"
 )
+
+type Cursor struct {
+	OccurredAt time.Time `json:"occurred_at"`
+	EventID    string    `json:"event_id"`
+}
 
 type EventRow struct {
 	id                 string
@@ -131,4 +139,177 @@ func mapStringToMetadata(value string) (domain.Metadata, error) {
 	}
 
 	return metadata, nil
+}
+
+func mapRowToToken(row driver.Row) (*domain.Token, error) {
+	var id string
+	var name string
+	var value string
+	var sourceID string
+	var createdAt time.Time
+
+	err := row.Scan(&id, &name, &value, &sourceID, &createdAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return domain.MarshallToToken(id, sourceID, value, name, createdAt), nil
+}
+
+func mapRowsToTokens(rows driver.Rows) ([]*domain.Token, error) {
+	var tokens []*domain.Token
+
+	for rows.Next() {
+		token, err := mapRowToToken(rows)
+		if err != nil {
+			return nil, fmt.Errorf("error mapping row to token: %v", err)
+		}
+
+		tokens = append(tokens, token)
+	}
+
+	return tokens, rows.Close()
+}
+
+func mapRowToSource(row driver.Row) (*domain.Source, error) {
+	var id, name string
+	var createdAt, updatedAt time.Time
+
+	err := row.Scan(&id, &name, &createdAt, &updatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return new(domain.MarshallToSource(id, name, createdAt, updatedAt)), nil
+}
+
+func mapRowsToSources(rows driver.Rows) ([]domain.Source, error) {
+	var sources []domain.Source
+
+	for rows.Next() {
+		source, err := mapRowToSource(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		sources = append(sources, *source)
+	}
+
+	return sources, nil
+}
+
+func mapPaginationParamsToOffset(params query.PaginationParams) int {
+	if params.Page == 1 {
+		return 0
+	}
+
+	return (params.Page - 1) * params.Limit
+}
+
+func mapToPaginationResult[T any](params query.PaginationParams, total uint64, data []T) query.Pagination[T] {
+	return query.Pagination[T]{
+		Data:        data,
+		Total:       int(total),
+		PerPage:     params.Limit,
+		CurrentPage: params.Page,
+		TotalPages:  int(math.Ceil(float64(total) / float64(params.Limit))),
+	}
+}
+
+func mapRowToUser(row driver.Row) (*domain.User, error) {
+	var id, email, password, role string
+	var createdAt time.Time
+
+	err := row.Scan(&id, &email, &password, &role, &createdAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, domain.ErrUserNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("error mapping user: %w", err)
+	}
+
+	return domain.MarshallToUser(id, email, password, role, createdAt), nil
+}
+
+func mapRowToEventType(row driver.Row) (query.EventType, error) {
+	var evt query.EventType
+	var version uint16
+	var schema string
+	err := row.Scan(
+		&evt.Action,
+		&evt.ShouldValidateMetadataSchema,
+		&version,
+		&schema,
+		&evt.TargetTypes,
+		&evt.CreatedAt,
+	)
+	if err != nil {
+		return query.EventType{}, err
+	}
+
+	evt.Schema = schema
+	evt.Version = int(version)
+
+	return evt, nil
+}
+
+func mapRowsToEventTypes(rows driver.Rows) ([]query.EventType, error) {
+	var result []query.EventType
+
+	for rows.Next() {
+		evt, err := mapRowToEventType(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, evt)
+	}
+
+	return result, nil
+}
+
+func mapStringToCursor(encodedCursor string) (Cursor, error) {
+	decodedCursor, err := base64.StdEncoding.DecodeString(encodedCursor)
+	if err != nil {
+		return Cursor{}, fmt.Errorf("error decoding cursor '%s': %w", encodedCursor, err)
+	}
+
+	var cursor Cursor
+	err = json.Unmarshal(decodedCursor, &cursor)
+	if err != nil {
+		return Cursor{}, fmt.Errorf("error unmarshalling cursor '%s': %w", encodedCursor, err)
+	}
+
+	return cursor, nil
+}
+
+func mapCursorToString(eventID string, occurredAt time.Time) (string, error) {
+	cursor := Cursor{
+		EventID:    eventID,
+		OccurredAt: occurredAt,
+	}
+
+	marshalledCursor, err := json.Marshal(cursor)
+	if err != nil {
+		return "", fmt.Errorf("error marshalling cursor: %w", err)
+	}
+
+	return base64.StdEncoding.EncodeToString(marshalledCursor), nil
+}
+
+func mapToLimit(limit *int) int {
+	if limit == nil {
+		return 50
+	}
+
+	return *limit
+}
+
+func mapLastItemCursor(rows []domain.Event) (string, error) {
+	if len(rows) == 0 {
+		return "", nil
+	}
+
+	lastRow := rows[len(rows)-1]
+	return mapCursorToString(lastRow.ID().String(), lastRow.OccurredAt())
 }

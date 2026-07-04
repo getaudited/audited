@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/friendsofgo/errors"
+	"github.com/getaudited/audited/internal/common/cli"
 	"github.com/getaudited/audited/internal/domain"
 	"github.com/kelseyhightower/envconfig"
 	_ "github.com/lib/pq"
@@ -26,6 +27,7 @@ import (
 )
 
 type Config struct {
+	ActiveDatabase        string   `envconfig:"ADT_ACTIVE_DATABASE"`
 	DatabaseURL           string   `envconfig:"ADT_DATABASE_URL"`
 	ClickhouseDatabaseURL string   `envconfig:"ADT_CLICKHOUSE_DATABASE_URL"`
 	HttpPort              int      `envconfig:"ADT_HTTP_PORT"`
@@ -60,7 +62,11 @@ func (s *Service) Run() error {
 		return err
 	}
 
-	application, closer, err := resolveAppFromDatabase(ctx, logger, jwtPrivateKey, config)
+	application, closer, err := cli.NewApp(ctx, logger, jwtPrivateKey, cli.Config{
+		ActiveDatabase:        config.ActiveDatabase,
+		DatabaseURL:           config.DatabaseURL,
+		ClickhouseDatabaseURL: config.ClickhouseDatabaseURL,
+	})
 	if err != nil {
 		return err
 	}
@@ -181,18 +187,6 @@ func (s *Service) parseJwtPrivateKey() (*ecdsa.PrivateKey, error) {
 	s.logger.Debug("ADT_JWT_PRIVATE_KEY loaded successfully")
 
 	return ecKey, nil
-}
-
-func resolveAppFromDatabase(ctx context.Context, logger *logs.Logger, jwtPrivateKey *ecdsa.PrivateKey, config *Config) (*app.App, Closer, error) {
-	if strings.TrimSpace(config.DatabaseURL) != "" {
-		return NewPostgresApp(ctx, logger, jwtPrivateKey, config)
-	}
-
-	if strings.TrimSpace(config.ClickhouseDatabaseURL) != "" {
-		return NewClickhouseApp(ctx, config, jwtPrivateKey)
-	}
-
-	return nil, nil, errors.New("no database has been set")
 }
 
 func main() {

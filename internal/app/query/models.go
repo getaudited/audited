@@ -33,15 +33,10 @@ type PaginationParams struct {
 type EventType struct {
 	Action                       string
 	ShouldValidateMetadataSchema bool
-	Versions                     []EventTypeVersion
+	Version                      int
+	TargetTypes                  []string
+	Schema                       string
 	CreatedAt                    time.Time
-}
-
-type EventTypeVersion struct {
-	Version     int
-	TargetTypes []string
-	Schema      domain.Schema
-	CreatedAt   time.Time
 }
 
 type eventTypeFinder interface {

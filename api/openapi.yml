@@ -341,7 +341,7 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        "201":
+        "200":
           description: A list of event types
           content:
             application/json:
@@ -387,7 +387,7 @@ paths:
           $ref: '#/components/responses/BadRequestError'
         default:
           $ref: "#/components/responses/InternalServerError"
-  /x/v1/event-types/{event_type_action}:
+  /x/v1/event-types/{action}:
     get:
       summary: Return the details of an Event Type
       description: Return the details of an Event Type
@@ -395,9 +395,9 @@ paths:
         - Admin API
       operationId: GetEventTypeByID
       parameters:
-        - $ref: '#/components/parameters/event_type_action'
-      # security:
-      # - ApiKeyAuth: [ ]
+        - $ref: '#/components/parameters/action'
+      security:
+        - BearerAuth: [ ]
       responses:
         "200":
           description: The event type
@@ -420,7 +420,7 @@ paths:
       security:
         - BearerAuth: [ ]
       parameters:
-        - $ref: '#/components/parameters/event_type_action'
+        - $ref: '#/components/parameters/action'
       responses:
         "204":
           description: Event has been successfully deleted
@@ -428,7 +428,7 @@ paths:
           $ref: '#/components/responses/BadRequestError'
         default:
           $ref: "#/components/responses/InternalServerError"
-  /x/v1/event-types/{event_type_action}/versions:
+  /x/v1/event-types/{action}/versions:
     post:
       summary: Create an event type version
       description: Create a new event type version
@@ -436,7 +436,7 @@ paths:
         - Admin API
       operationId: CreateEventTypeVersion
       parameters:
-        - $ref: '#/components/parameters/event_type_action'
+        - $ref: '#/components/parameters/action'
       security:
         - BearerAuth: [ ]
       requestBody:
@@ -468,7 +468,7 @@ paths:
         - Admin API
       operationId: RollbackEventTypeVersion
       parameters:
-        - $ref: '#/components/parameters/event_type_action'
+        - $ref: '#/components/parameters/action'
       security:
         - BearerAuth: [ ]
       responses:
@@ -487,8 +487,8 @@ components:
       required: true
       schema:
         type: string
-    event_type_action:
-      name: event_type_action
+    action:
+      name: action
       in: path
       required: true
       schema:
@@ -702,42 +702,31 @@ components:
             $ref: '#/components/schemas/Source'
 
     # Event type
-    EventTypeVersion:
-      required: [version, target_types, created_at]
-      properties:
-        version:
-          type: integer
-          x-order: 1
-        target_types:
-          type: array
-          items:
-            type: string
-          x-order: 2
-        schema:
-          type: string
-          x-order: 3
-        created_at:
-          type: string
-          format: date-time
-          x-order: 4
     EventType:
-      required: [action, target_types, versions, should_validate_metadata_schema, created_at]
+      required: [action, should_validate_metadata_schema, schema, version, target_types, created_at]
       properties:
         action:
           type: string
           x-order: 1
-        versions:
-          type: array
+        version:
+          type: integer
           x-order: 2
-          items:
-            $ref: '#/components/schemas/EventTypeVersion'
         should_validate_metadata_schema:
           type: boolean
           x-order: 3
+        schema:
+          type: object
+          additionalProperties: true
+          x-order: 4
+        target_types:
+          type: array
+          items:
+            type: string
+          x-order: 5
         created_at:
           type: string
           format: date-time
-          x-order: 4
+          x-order: 6
     EventTypeList:
       required: [ data, pagination ]
       properties:
