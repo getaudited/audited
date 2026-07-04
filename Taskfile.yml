@@ -33,33 +33,19 @@ tasks:
     cmds:
       - reflex -r '\.go' -r ''  -s -- sh -c '{{.CLI_ARGS}}'
 
-  mig:up:
-    cmds:
-      - goose -s -dir ./misc/sql/migrations up
-
-  mig:down:
-    cmds:
-      - goose -s -dir ./misc/sql/migrations down
-
   mig:reset:
     cmds:
-      - goose -s -dir ./misc/sql/migrations reset
+      - goose -s -dir ./misc/clickhouse reset
 
   mig:create:
     cmds:
-      - goose -s -dir ./misc/sql/migrations create {{.CLI_ARGS}} sql
+      - goose -s -dir ./misc/clickhouse create {{.CLI_ARGS}} sql
 
-  ch:up:
-    env:
-      GOOSE_DRIVER: clickhouse
-      GOOSE_DBSTRING: clickhouse://default:password@localhost:9000/default?secure=false&skip_verify=false
+  mig:up:
     cmds:
       - goose -s -dir ./misc/clickhouse up
 
-  ch:down:
-    env:
-      GOOSE_DRIVER: clickhouse
-      GOOSE_DBSTRING: clickhouse://default:password@localhost:9000/default?secure=false&skip_verify=false
+  mig:down:
     cmds:
       - goose -s -dir ./misc/clickhouse down
 

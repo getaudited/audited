@@ -14,7 +14,9 @@ import (
 	"time"
 
 	"github.com/friendsofgo/errors"
-	"github.com/getaudited/audited/internal/common/cli"
+	clickhouseadapter "github.com/getaudited/audited/internal/adapters/clickhouse"
+	"github.com/getaudited/audited/internal/app/query"
+	"github.com/getaudited/audited/internal/common/clickhouseconn"
 	"github.com/getaudited/audited/internal/domain"
 	"github.com/kelseyhightower/envconfig"
 	_ "github.com/lib/pq"
@@ -27,16 +29,14 @@ import (
 )
 
 type Config struct {
-	ActiveDatabase        string   `envconfig:"ADT_ACTIVE_DATABASE"`
-	DatabaseURL           string   `envconfig:"ADT_DATABASE_URL"`
-	ClickhouseDatabaseURL string   `envconfig:"ADT_CLICKHOUSE_DATABASE_URL"`
-	HttpPort              int      `envconfig:"ADT_HTTP_PORT"`
-	AllowedCorsOrigin     []string `envconfig:"ADT_ALLOWED_CORS_ORIGIN"`
-	LogLevel              string   `envconfig:"ADT_LOG_LEVEL"`
-	JWTPublicKey          string   `envconfig:"ADT_JWT_PUBLIC_KEY" required:"true"`
-	JWTPrivateKey         string   `envconfig:"ADT_JWT_PRIVATE_KEY" required:"true"`
-	AdminEmail            string   `envconfig:"ADT_ADMIN_EMAIL" required:"true"`
-	AdminPassword         string   `envconfig:"ADT_ADMIN_PASSWORD" required:"true"`
+	DatabaseURL       string   `envconfig:"ADT_DATABASE_URL"`
+	HttpPort          int      `envconfig:"ADT_HTTP_PORT"`
+	AllowedCorsOrigin []string `envconfig:"ADT_ALLOWED_CORS_ORIGIN"`
+	LogLevel          string   `envconfig:"ADT_LOG_LEVEL"`
+	JWTPublicKey      string   `envconfig:"ADT_JWT_PUBLIC_KEY" required:"true"`
+	JWTPrivateKey     string   `envconfig:"ADT_JWT_PRIVATE_KEY" required:"true"`
+	AdminEmail        string   `envconfig:"ADT_ADMIN_EMAIL" required:"true"`
+	AdminPassword     string   `envconfig:"ADT_ADMIN_PASSWORD" required:"true"`
 }
 
 type Service struct {
@@ -62,13 +62,49 @@ func (s *Service) Run() error {
 		return err
 	}
 
-	application, closer, err := cli.NewApp(ctx, logger, jwtPrivateKey, cli.Config{
-		ActiveDatabase:        config.ActiveDatabase,
-		DatabaseURL:           config.DatabaseURL,
-		ClickhouseDatabaseURL: config.ClickhouseDatabaseURL,
-	})
+	conn, err := clickhouseconn.NewConnection(ctx, config.DatabaseURL)
 	if err != nil {
 		return err
+	}
+
+	tokensRepo := clickhouseadapter.NewTokenChRepository(conn)
+	eventsRepo := clickhouseadapter.NewEventsClickhouseRepository(conn)
+	sourcesRepo := clickhouseadapter.NewSourcesClickhouseRepository(conn)
+	usersRepo := clickhouseadapter.NewUsersClickhouseRepository(conn)
+	eventTypesRepo := clickhouseadapter.NewEventTypesClickhouseRepository(conn)
+	shallowTxProvider := clickhouseadapter.NewShallowTxProvider(conn)
+
+	application := &app.App{
+		Commands: app.Commands{
+			CreateEventType:          command.NewCreateEventTypeHandler(eventTypesRepo),
+			DeleteEventType:          command.NewDeleteEventTypeHandler(eventTypesRepo),
+			CreateEventTypeVersion:   command.NewCreateEventTypeVersionHandler(shallowTxProvider),
+			RollbackEventTypeVersion: command.NewRollbackEventTypeVersionHandler(eventTypesRepo),
+
+			CreateEvent: command.NewCreateEventHandler(eventsRepo),
+
+			CreateSource: command.NewCreateSourceHandler(sourcesRepo),
+
+			CreateToken: command.NewCreateTokenHandler(tokensRepo),
+			DeleteToken: command.NewDeleteTokenHandler(tokensRepo),
+
+			LogIn:           command.NewLogInHandler(usersRepo, jwtPrivateKey),
+			CreateAdminUser: command.NewCreateAdminUserHandler(usersRepo),
+		},
+		Queries: app.Queries{
+			Events:    query.NewAllEventsHandler(eventsRepo),
+			EventByID: query.NewEventByIDHandler(eventsRepo),
+
+			AllEventTypes:     query.NewAllEventTypesHandler(eventTypesRepo),
+			EventTypeByAction: query.NewEventTypeByActionHandler(eventTypesRepo),
+
+			AllSources: query.NewAllSourcesHandler(sourcesRepo),
+			SourceByID: query.NewSourceByIDHandler(sourcesRepo),
+
+			AllTokens: query.NewAllTokensHandler(tokensRepo),
+
+			UserProfile: query.NewUserProfileHandler(usersRepo),
+		},
 	}
 
 	// Set up Admin user
@@ -110,9 +146,7 @@ func (s *Service) Run() error {
 			return err
 		}
 
-		_ = closer.Close()
-
-		return nil
+		return conn.Close()
 	})
 
 	return g.Wait()
