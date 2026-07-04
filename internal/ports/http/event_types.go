@@ -23,6 +23,17 @@ func (h handlers) GetEventTypes(c echo.Context, params GetEventTypesParams) erro
 	return c.JSON(http.StatusOK, mapToEventTypeList(result))
 }
 
+func (h handlers) GetEventTypeVersions(c echo.Context, action Action) error {
+	data, err := h.application.Queries.EventTypeVersions.Execute(mapEchoCtxToCtx(c), query.EventTypeVersions{
+		Action: action,
+	})
+	if err != nil {
+		return NewHandlerError(err, "error-fetching-event-type-versions")
+	}
+
+	return c.JSON(http.StatusOK, mapToEventTypeNonPaginatedList(data))
+}
+
 func (h handlers) CreateEventType(c echo.Context) error {
 	var body CreateEventTypeJSONBody
 	err := c.Bind(&body)

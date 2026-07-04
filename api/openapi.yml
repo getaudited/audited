@@ -429,6 +429,27 @@ paths:
         default:
           $ref: "#/components/responses/InternalServerError"
   /x/v1/event-types/{action}/versions:
+    get:
+      summary: List all versions of an event types
+      description: List all versions of an event types
+      tags:
+        - Admin API
+      operationId: GetEventTypeVersions
+      parameters:
+        - $ref: '#/components/parameters/action'
+      security:
+        - BearerAuth: [ ]
+      responses:
+        "200":
+          description: A list of event types
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventTypeNonPaginatedList"
+        "400":
+          $ref: '#/components/responses/BadRequestError'
+        default:
+          $ref: "#/components/responses/InternalServerError"
     post:
       summary: Create an event type version
       description: Create a new event type version
@@ -727,6 +748,13 @@ components:
           type: string
           format: date-time
           x-order: 6
+    EventTypeNonPaginatedList:
+      required: [ data ]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventType'
     EventTypeList:
       required: [ data, pagination ]
       properties:
