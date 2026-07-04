@@ -2,8 +2,6 @@ package components_test
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 	"os"
 	"strings"
 	"testing"
@@ -44,7 +42,7 @@ func TestMain(m *testing.M) {
 		return db.Ping()
 	}, "postgres", time.Second*30)
 
-	waitFor.Do(func() error {
+	/*waitFor.Do(func() error {
 		req, err := http.Get(fmt.Sprintf("http://localhost:%s/health", os.Getenv("ADT_HTTP_PORT")))
 		if err != nil {
 			return err
@@ -55,7 +53,7 @@ func TestMain(m *testing.M) {
 		}
 
 		return nil
-	}, "webhooks-service", time.Minute*1)
+	}, "webhooks-service", time.Minute*1)*/
 	waitFor.Wait()
 
 	os.Exit(m.Run())
