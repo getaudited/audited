@@ -21,11 +21,8 @@ func NewEventsClickhouseRepository(conn clickhousedb.Conn) *EventsClickhouseRepo
 	}
 }
 
-func (r EventsClickhouseRepository) QueryAll(
-	ctx context.Context,
-	params query.AllEventsParams,
-	pagination query.CursorPaginationParams,
-) (query.CursorPaginationResult[domain.Event], error) {
+func (r EventsClickhouseRepository) QueryAll(ctx context.Context, params query.AllEvents) (query.CursorPaginationResult[domain.Event], error) {
+	limit := mapToLimit(params.Limit)
 	queryAll := sq.
 		Select(`
 			id,
@@ -47,16 +44,16 @@ func (r EventsClickhouseRepository) QueryAll(
 			targets.metadata`,
 		).
 		From("events").
-		OrderBy("occurred_at DESC, id DESC").
-		Limit(uint64(mapToLimit(pagination.Limit)))
+		Where("source_id = ?", params.SourceID.String()).
+		OrderBy("id DESC").
+		Limit(limit + 1)
 
-	if pagination.StartFromCursor != nil {
-		cursor, err := mapStringToCursor(*pagination.StartFromCursor)
-		if err != nil {
-			return query.CursorPaginationResult[domain.Event]{}, err
-		}
+	if params.StartingAfter != nil {
+		queryAll = queryAll.Where("id < ?", *params.StartingAfter)
+	}
 
-		queryAll = queryAll.Where("(occurred_at, id) < (?, ?)", cursor.OccurredAt, cursor.EventID)
+	if params.EndingBefore != nil {
+		queryAll = queryAll.Where("id > ?", *params.EndingBefore)
 	}
 
 	if !params.ActorID.Empty() {
@@ -88,8 +85,6 @@ func (r EventsClickhouseRepository) QueryAll(
 		return query.CursorPaginationResult[domain.Event]{}, fmt.Errorf("error parsing query: %w", err)
 	}
 
-	fmt.Println("###", q)
-
 	rows, err := r.db.Query(ctx, q, args...)
 	if err != nil {
 		return query.CursorPaginationResult[domain.Event]{}, fmt.Errorf("error querying events: %w", err)
@@ -101,14 +96,15 @@ func (r EventsClickhouseRepository) QueryAll(
 		return query.CursorPaginationResult[domain.Event]{}, err
 	}
 
-	lastItemCursor, err := mapLastItemCursor(data)
-	if err != nil {
-		return query.CursorPaginationResult[domain.Event]{}, err
+	var hasMore bool
+	if len(data) > int(limit) {
+		data = data[:len(data)-1]
+		hasMore = true
 	}
 
 	return query.CursorPaginationResult[domain.Event]{
-		LastItemCursor: lastItemCursor,
-		Data:           data,
+		HasMore: hasMore,
+		Data:    data,
 	}, nil
 }
 

@@ -16,13 +16,8 @@ type Pagination[T any] struct {
 }
 
 type CursorPaginationResult[T any] struct {
-	LastItemCursor string
-	Data           []T
-}
-
-type CursorPaginationParams struct {
-	Limit           *int
-	StartFromCursor *string
+	HasMore bool
+	Data    []T
 }
 
 type PaginationParams struct {
@@ -50,5 +45,5 @@ type sourceByIDFinder interface {
 }
 
 type eventsFinder interface {
-	QueryAll(ctx context.Context, params AllEventsParams, pagination CursorPaginationParams) (CursorPaginationResult[domain.Event], error)
+	QueryAll(ctx context.Context, params AllEvents) (CursorPaginationResult[domain.Event], error)
 }
