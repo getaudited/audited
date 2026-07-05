@@ -20,11 +20,6 @@ type CursorPaginationResult[T any] struct {
 	Data    []T
 }
 
-type CursorPaginationParams struct {
-	Limit           *int
-	StartFromCursor *string
-}
-
 type PaginationParams struct {
 	Limit int
 	Page  int
