@@ -96,6 +96,7 @@ func (s *Service) Run() error {
 			EventByID: query.NewEventByIDHandler(eventsRepo),
 
 			AllEventTypes:     query.NewAllEventTypesHandler(eventTypesRepo),
+			EventTypeVersions: query.NewEventTypeVersionsHandler(eventTypesRepo),
 			EventTypeByAction: query.NewEventTypeByActionHandler(eventTypesRepo),
 
 			AllSources: query.NewAllSourcesHandler(sourcesRepo),

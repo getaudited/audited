@@ -72,7 +72,6 @@ func (g *generator) generate(ctx context.Context) error {
 		ShouldValidateMetadataSchema: false,
 		LastVersion:                  domain.NewEventTypeVersion([]string{"user"}, nil),
 		CreatedAt:                    time.Now(),
-		UpdatedAt:                    time.Now(),
 	}
 	err = g.createEventType.Execute(ctx, command.CreateEventType{
 		EventType: eventType,

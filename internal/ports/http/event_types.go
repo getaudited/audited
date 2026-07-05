@@ -51,7 +51,6 @@ func (h handlers) CreateEventType(c echo.Context) error {
 		ShouldValidateMetadataSchema: body.ShouldValidateMetadataSchema,
 		LastVersion:                  domain.NewEventTypeVersion(body.TargetTypes, schema),
 		CreatedAt:                    time.Now(),
-		UpdatedAt:                    time.Now(),
 	}
 
 	err = h.application.Commands.CreateEventType.Execute(mapEchoCtxToCtx(c), command.CreateEventType{

@@ -5,9 +5,11 @@ import "time"
 type EventType struct {
 	Action                       string
 	ShouldValidateMetadataSchema bool
+	Version                      int
+	TargetTypes                  []string
+	Schema                       Schema
 	LastVersion                  EventTypeVersion
 	CreatedAt                    time.Time
-	UpdatedAt                    time.Time
 }
 
 type EventTypeVersion struct {
