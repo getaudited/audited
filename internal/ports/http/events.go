@@ -52,27 +52,24 @@ func (h handlers) GetEvents(c echo.Context, params GetEventsParams) error {
 	}
 
 	result, err := h.application.Queries.Events.Execute(mapEchoCtxToCtx(c), query.AllEvents{
-		Params: query.AllEventsParams{
-			SourceID:  domain.ID(params.SourceId),
-			StartDate: params.StartDate,
-			EndDate:   params.EndDate,
-			ActorID:   actorID,
-			ActorName: params.ActorName,
-			TargetID:  targetID,
-			Action:    params.Action,
-		},
-		CursorPaginationParams: query.CursorPaginationParams{
-			Limit:           params.Limit,
-			StartFromCursor: params.StartFrom,
-		},
+		SourceID:      domain.ID(params.SourceId),
+		StartDate:     params.StartDate,
+		EndDate:       params.EndDate,
+		ActorID:       actorID,
+		ActorName:     params.ActorName,
+		TargetID:      targetID,
+		Action:        params.Action,
+		Limit:         params.Limit,
+		StartingAfter: params.StartingAfter,
+		EndingBefore:  params.EndingBefore,
 	})
 	if err != nil {
 		return NewHandlerError(err, "error-querying-events")
 	}
 
 	return c.JSON(http.StatusOK, EventList{
-		LastItemCursor: result.LastItemCursor,
-		Data:           mapDomainEventsToEvents(result.Data),
+		HasMore: result.HasMore,
+		Data:    mapDomainEventsToEvents(result.Data),
 	})
 }
 

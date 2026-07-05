@@ -2,7 +2,6 @@ package clickhouse
 
 import (
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -268,48 +267,10 @@ func mapRowsToEventTypes(rows driver.Rows) ([]query.EventType, error) {
 	return result, nil
 }
 
-func mapStringToCursor(encodedCursor string) (Cursor, error) {
-	decodedCursor, err := base64.StdEncoding.DecodeString(encodedCursor)
-	if err != nil {
-		return Cursor{}, fmt.Errorf("error decoding cursor '%s': %w", encodedCursor, err)
-	}
-
-	var cursor Cursor
-	err = json.Unmarshal(decodedCursor, &cursor)
-	if err != nil {
-		return Cursor{}, fmt.Errorf("error unmarshalling cursor '%s': %w", encodedCursor, err)
-	}
-
-	return cursor, nil
-}
-
-func mapCursorToString(eventID string, occurredAt time.Time) (string, error) {
-	cursor := Cursor{
-		EventID:    eventID,
-		OccurredAt: occurredAt,
-	}
-
-	marshalledCursor, err := json.Marshal(cursor)
-	if err != nil {
-		return "", fmt.Errorf("error marshalling cursor: %w", err)
-	}
-
-	return base64.StdEncoding.EncodeToString(marshalledCursor), nil
-}
-
-func mapToLimit(limit *int) int {
+func mapToLimit(limit *int) uint64 {
 	if limit == nil {
 		return 50
 	}
 
-	return *limit
-}
-
-func mapLastItemCursor(rows []domain.Event) (string, error) {
-	if len(rows) == 0 {
-		return "", nil
-	}
-
-	lastRow := rows[len(rows)-1]
-	return mapCursorToString(lastRow.ID().String(), lastRow.OccurredAt())
+	return uint64(*limit)
 }

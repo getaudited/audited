@@ -97,6 +97,10 @@ func (g *generator) generate(ctx context.Context) error {
 
 	since := time.Now().AddDate(0, -6, 0)
 
+	// occurredAt walks forward from `since`, advancing by a random positive
+	// step each iteration so every event occurs strictly after the previous one.
+	occurredAt := since
+
 	inserted := 0
 
 	targetName := gofakeit.ProductName()
@@ -109,6 +113,9 @@ func (g *generator) generate(ctx context.Context) error {
 	for i := range maxEvents {
 		actorName := gofakeit.Name()
 		ua := gofakeit.UserAgent()
+
+		// Advance by 1s–1h so occurredAt is always greater than the previous event's.
+		occurredAt = occurredAt.Add(time.Duration(gofakeit.Number(1, 3600)) * time.Second)
 
 		event, err := domain.NewEvent(
 			source.ID(),
@@ -130,7 +137,7 @@ func (g *generator) generate(ctx context.Context) error {
 				"ip":      gofakeit.IPv4Address(),
 				"session": gofakeit.UUID(),
 			},
-			gofakeit.DateRange(since, time.Now()),
+			occurredAt,
 		)
 		if err != nil {
 			return fmt.Errorf("build event %d: %w", i+1, err)

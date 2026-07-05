@@ -288,7 +288,8 @@ paths:
         - BearerAuth: []
       parameters:
         - $ref: '#/components/parameters/source_id_query'
-        - $ref: '#/components/parameters/start_from_cursor'
+        - $ref: '#/components/parameters/starting_after'
+        - $ref: '#/components/parameters/ending_before'
         - $ref: '#/components/parameters/pagination_limit'
         - $ref: '#/components/parameters/events_by_action'
         - $ref: '#/components/parameters/events_by_actor_id'
@@ -538,6 +539,20 @@ components:
       required: true
       schema:
         type: string
+    starting_after:
+      name: starting_after
+      description: A cursor for use in pagination. starting_after is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with obj_foo, your subsequent call can include starting_after=obj_foo in order to fetch the next page of the list.
+      in: query
+      required: false
+      schema:
+        type: string
+    ending_before:
+      name: ending_before
+      description: A cursor for use in pagination. ending_before is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with obj_bar, your subsequent call can include ending_before=obj_bar in order to fetch the previous page of the list.
+      in: query
+      required: false
+      schema:
+        type: string
     start_from_cursor:
       name: start_from
       description: Opaque cursor returned by the previous page. Omit to start from the most recent event.
@@ -684,10 +699,10 @@ components:
           type: string
           format: data-time
     EventList:
-      required: [data, last_item_cursor]
+      required: [data, has_more]
       properties:
-        last_item_cursor:
-          type: string
+        has_more:
+          type: boolean
         data:
           type: array
           items:
