@@ -18,7 +18,10 @@ Run the service (requires external Clickhouse):
 
 ```bash
 docker run -p 8080:8080 \
-  -e ADT_DATABASE_URL="clickhouse://default:password@localhost:9000/default?secure=false&skip_verify=false" \
+  -e ADT_CLICKHOUSE_HOSTS="clickhouse:9000" \
+  -e ADT_CLICKHOUSE_DBNAME="default" \
+  -e ADT_CLICKHOUSE_USERNAME="default" \
+  -e ADT_CLICKHOUSE_PASSWORD="password" \
   -e ADT_HTTP_PORT=8080 \
   -e ADT_JWT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----" \
   -e ADT_JWT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----" \
@@ -29,12 +32,15 @@ docker run -p 8080:8080 \
 
 | Variable | Required | Description                                                          |
 |---|---|----------------------------------------------------------------------|
-| `ADT_DATABASE_URL` | Yes | Clickhouse DSN                                                       |
-| `ADT_HTTP_PORT` | Yes | HTTP listen port                                                     |
+| `ADT_CLICKHOUSE_HOSTS` | Yes | Comma-separated list of Clickhouse hosts (e.g. `clickhouse:9000`)   |
+| `ADT_CLICKHOUSE_DBNAME` | Yes | Clickhouse database name                                            |
+| `ADT_CLICKHOUSE_USERNAME` | Yes | Clickhouse username                                                 |
+| `ADT_CLICKHOUSE_PASSWORD` | Yes | Clickhouse password                                                 |
 | `ADT_JWT_PUBLIC_KEY` | Yes | ECDSA public key (PEM) for JWT verification                          |
 | `ADT_JWT_PRIVATE_KEY` | Yes | ECDSA private key (PEM) for JWT signing                              |
 | `ADT_ADMIN_EMAIL` | Yes | Email for the bootstrap admin user                                   |
 | `ADT_ADMIN_PASSWORD` | Yes | Password for the bootstrap admin user                                |
+| `ADT_HTTP_PORT` | No | HTTP listen port (default `8080`)                                    |
 | `ADT_ALLOWED_CORS_ORIGIN` | No | Comma-separated list of allowed CORS origins                         |
 | `ADT_LOG_LEVEL` | No | Log verbosity (`DEBUG`, `INFO`, `WARN`, `ERROR`). Defaults to `INFO` |
 
