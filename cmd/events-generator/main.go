@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
+	"github.com/getaudited/audited/internal/common/config"
 
 	clickhouseadapter "github.com/getaudited/audited/internal/adapters/clickhouse"
 	"github.com/getaudited/audited/internal/app/command"
@@ -35,7 +35,18 @@ type generator struct {
 func main() {
 	ctx := context.Background()
 
-	conn, err := clickhouseconn.NewConnection(ctx, os.Getenv("ADT_DATABASE_URL"))
+	cfg, err := config.New()
+	if err != nil {
+		panic(err)
+	}
+
+	conn, err := clickhouseconn.NewConnection(ctx, clickhouseconn.Config{
+		Version:  "development",
+		Hosts:    cfg.ClickhouseHosts,
+		Database: cfg.ClickhouseDbName,
+		Username: cfg.ClickhouseUsername,
+		Password: cfg.ClickhousePassword,
+	})
 	if err != nil {
 		log.Fatalf("connect to clickhouse: %v", err)
 	}

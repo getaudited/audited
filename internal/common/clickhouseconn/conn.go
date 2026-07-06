@@ -3,25 +3,32 @@ package clickhouseconn
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 )
 
-func NewConnection(ctx context.Context, databaseURL string) (clickhouse.Conn, error) {
+type Config struct {
+	Version  string
+	Hosts    []string
+	Database string
+	Username string
+	Password string
+}
+
+func NewConnection(ctx context.Context, config Config) (clickhouse.Conn, error) {
 	conn, err := clickhouse.Open(&clickhouse.Options{
-		Addr: []string{strings.TrimPrefix(databaseURL, "clickhouse://")},
+		Addr: config.Hosts,
 		Auth: clickhouse.Auth{
-			Database: "default",  // TODO: Edit me
-			Username: "default",  // TODO: Edit me
-			Password: "password", // TODO: Edit me
+			Database: config.Database,
+			Username: config.Username,
+			Password: config.Password,
 		},
 		ClientInfo: clickhouse.ClientInfo{
 			Products: []struct {
 				Name    string
 				Version string
 			}{
-				{Name: "an-example-go-client", Version: "0.1"},
+				{Name: "audited", Version: config.Version},
 			},
 		},
 		Debugf: func(format string, v ...any) {

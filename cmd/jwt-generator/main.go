@@ -7,10 +7,10 @@ import (
 	"encoding/pem"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/getaudited/audited/internal/common/clickhouseconn"
+	"github.com/getaudited/audited/internal/common/config"
 	"github.com/getaudited/audited/internal/domain"
 	"github.com/golang-jwt/jwt"
 )
@@ -41,7 +41,18 @@ func main() {
 
 	ctx := context.Background()
 
-	conn, err := clickhouseconn.NewConnection(ctx, os.Getenv("ADT_DATABASE_URL"))
+	cfg, err := config.New()
+	if err != nil {
+		log.Fatalf("error loading config: %v", err)
+	}
+
+	conn, err := clickhouseconn.NewConnection(ctx, clickhouseconn.Config{
+		Version:  "development",
+		Hosts:    cfg.ClickhouseHosts,
+		Database: cfg.ClickhouseDbName,
+		Username: cfg.ClickhouseUsername,
+		Password: cfg.ClickhousePassword,
+	})
 	if err != nil {
 		log.Fatalf("unable to open db: %v", err)
 	}

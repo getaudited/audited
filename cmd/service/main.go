@@ -17,8 +17,8 @@ import (
 	clickhouseadapter "github.com/getaudited/audited/internal/adapters/clickhouse"
 	"github.com/getaudited/audited/internal/app/query"
 	"github.com/getaudited/audited/internal/common/clickhouseconn"
+	"github.com/getaudited/audited/internal/common/config"
 	"github.com/getaudited/audited/internal/domain"
-	"github.com/kelseyhightower/envconfig"
 	_ "github.com/lib/pq"
 	"golang.org/x/sync/errgroup"
 
@@ -28,19 +28,10 @@ import (
 	"github.com/getaudited/audited/internal/ports/http"
 )
 
-type Config struct {
-	DatabaseURL       string   `envconfig:"ADT_DATABASE_URL"`
-	HttpPort          int      `envconfig:"ADT_HTTP_PORT"`
-	AllowedCorsOrigin []string `envconfig:"ADT_ALLOWED_CORS_ORIGIN"`
-	LogLevel          string   `envconfig:"ADT_LOG_LEVEL"`
-	JWTPublicKey      string   `envconfig:"ADT_JWT_PUBLIC_KEY" required:"true"`
-	JWTPrivateKey     string   `envconfig:"ADT_JWT_PRIVATE_KEY" required:"true"`
-	AdminEmail        string   `envconfig:"ADT_ADMIN_EMAIL" required:"true"`
-	AdminPassword     string   `envconfig:"ADT_ADMIN_PASSWORD" required:"true"`
-}
+var Version = "development"
 
 type Service struct {
-	config *Config
+	config *config.Config
 	logger *logs.Logger
 }
 
@@ -48,11 +39,11 @@ func (s *Service) Run() error {
 	logger := s.logger
 	logger.Info("Kick starting service", "process_id", os.Getpid())
 
-	config, err := s.loadEnvVariables()
+	cfg, err := config.New()
 	if err != nil {
 		return err
 	}
-	s.config = config
+	s.config = cfg
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	g, ctx := errgroup.WithContext(ctx)
@@ -62,7 +53,13 @@ func (s *Service) Run() error {
 		return err
 	}
 
-	conn, err := clickhouseconn.NewConnection(ctx, config.DatabaseURL)
+	conn, err := clickhouseconn.NewConnection(ctx, clickhouseconn.Config{
+		Version:  Version,
+		Hosts:    cfg.ClickhouseHosts,
+		Database: cfg.ClickhouseDbName,
+		Username: cfg.ClickhouseUsername,
+		Password: cfg.ClickhousePassword,
+	})
 	if err != nil {
 		return err
 	}
@@ -114,15 +111,15 @@ func (s *Service) Run() error {
 		return err
 	}
 
-	jwtPublicKey, err := s.parsePublicKey(config.JWTPublicKey)
+	jwtPublicKey, err := s.parsePublicKey(cfg.JWTPublicKey)
 	if err != nil {
 		return err
 	}
 
 	httpPort, err := http.NewServer(http.Config{
 		Application:       application,
-		Port:              config.HttpPort,
-		AllowedCorsOrigin: config.AllowedCorsOrigin,
+		Port:              cfg.HttpPort,
+		AllowedCorsOrigin: cfg.AllowedCorsOrigin,
 		Logger:            logger,
 		Context:           ctx,
 		JwtPublicKey:      jwtPublicKey,
@@ -151,17 +148,6 @@ func (s *Service) Run() error {
 	})
 
 	return g.Wait()
-}
-
-func (s *Service) loadEnvVariables() (*Config, error) {
-	config := &Config{}
-
-	err := envconfig.Process("", config)
-	if err != nil {
-		return nil, fmt.Errorf("unable to load environment variables: %w", err)
-	}
-
-	return config, nil
 }
 
 func (s *Service) parsePublicKey(content string) (*ecdsa.PublicKey, error) {
