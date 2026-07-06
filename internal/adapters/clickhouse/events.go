@@ -2,7 +2,9 @@ package clickhouse
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	clickhousedb "github.com/ClickHouse/clickhouse-go/v2"
@@ -114,6 +116,11 @@ func (r EventsClickhouseRepository) FindByID(ctx context.Context, id domain.ID) 
 }
 
 func (r EventsClickhouseRepository) Save(ctx context.Context, e domain.Event, token domain.TokenValue) error {
+	err := r.checkToken(ctx, token)
+	if err != nil {
+		return err
+	}
+
 	targetsLen := len(e.Targets())
 	internalIDs := make([]string, targetsLen)
 	ids := make([]string, targetsLen)
@@ -153,7 +160,7 @@ func (r EventsClickhouseRepository) Save(ctx context.Context, e domain.Event, to
 		eventMetadata = string(m)
 	}
 
-	err := r.db.Exec(ctx, querySaveEvent,
+	err = r.db.Exec(ctx, querySaveEvent,
 		e.ID().String(),
 		e.SourceID().String(),
 		e.Version(),
@@ -174,6 +181,21 @@ func (r EventsClickhouseRepository) Save(ctx context.Context, e domain.Event, to
 	)
 	if err != nil {
 		return fmt.Errorf("unable to save event: %w", err)
+	}
+
+	return nil
+}
+
+func (r EventsClickhouseRepository) checkToken(ctx context.Context, token domain.TokenValue) error {
+	row := r.db.QueryRow(ctx, `SELECT value FROM tokens WHERE value = ?`, token.String())
+	var foundToken string
+
+	err := row.Scan(&foundToken)
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.ErrTokenNotFound
+	}
+	if err != nil {
+		return fmt.Errorf("error checking if token exists: %w", err)
 	}
 
 	return nil
