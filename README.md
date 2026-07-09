@@ -1,6 +1,17 @@
-# `Audited`
+<h1 align="center">
+    <a style="text-decoration: none" href="https://www.svix.com">
+      <img width="120" src="https://avatars.githubusercontent.com/u/290810143?s=200&v=4" />
+      <p align="center">Audited - Audit log management for cloud-native applications.</p>
+    </a>
+</h1>
 
+<h2 align="center">
+  <a href="https://getaudited.dev">Website</a> | <a href="https://docs.getaudited.dev">Documentation</a>
+</h2>
+
+![GitHub tag](https://img.shields.io/github/tag/getaudited/audited.svg)
 [![main](https://github.com/getaudited/audited/actions/workflows/main.yml/badge.svg)](https://github.com/getaudited/audited/actions/workflows/main.yml)
+[![Docker Pulls](https://img.shields.io/docker/pulls/getauditeddev/audited?logo=docker)](https://hub.docker.com/r/getauditeddev/audited/)
 
 Audit log management for cloud-native applications.
 
@@ -45,3 +56,19 @@ docker run -p 8080:8080 \
 | `ADT_LOG_LEVEL` | No | Log verbosity (`DEBUG`, `INFO`, `WARN`, `ERROR`). Defaults to `INFO` |
 
 The service auto-applies migrations on startup, so no separate migration step is needed.
+
+## Client library overview
+
+| Language    | Officially supported | API support |
+|-------------|----------------------|-------------|
+| Go          | ⚠️                   | ⚠️          |
+| Rust        | ⚠️                   | ⚠️          |
+| Typescript  | ⚠️                   | ⚠️          |
+| Java        | ⚠️                   | ⚠️          |
+| PHP         | ⚠️                   | ⚠️          |
+| C# (dotnet) | ⚠️                   | ⚠️          |
+| Python      | ⚠️                   | ⚠️          |
+
+## License
+
+Distributed under the AGPLv3 license. See [LICENSE](./LICENSE) for more information.
