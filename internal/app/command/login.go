@@ -18,11 +18,13 @@ type LogIn struct {
 type LogInHandler struct {
 	repo          domain.UserRepository
 	privateJwtKey *ecdsa.PrivateKey
+	jwtSecret     string
 }
 
-func NewLogInHandler(repo domain.UserRepository, privateJwtKey *ecdsa.PrivateKey) LogInHandler {
+func NewLogInHandler(repo domain.UserRepository, privateJwtKey *ecdsa.PrivateKey, jwtSecret string) LogInHandler {
 	return LogInHandler{
 		repo:          repo,
+		jwtSecret:     jwtSecret,
 		privateJwtKey: privateJwtKey,
 	}
 }
@@ -39,13 +41,34 @@ func (c LogInHandler) Execute(ctx context.Context, cmd LogIn) (string, error) {
 	}
 
 	now := time.Now()
-	token := jwt.NewWithClaims(jwt.SigningMethodES256, jwt.StandardClaims{
+	claims := jwt.StandardClaims{
 		IssuedAt:  now.Unix(),
 		Subject:   user.ID().String(),
 		ExpiresAt: now.Add(24 * time.Hour).Unix(),
-	})
+	}
+
+	if c.privateJwtKey != nil {
+		return c.signWithPrivateKey(claims)
+	}
+
+	return c.signWithSecretKey(claims)
+}
+
+func (c LogInHandler) signWithPrivateKey(claims jwt.StandardClaims) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
 
 	signedToken, err := token.SignedString(c.privateJwtKey)
+	if err != nil {
+		return "", fmt.Errorf("unable to sign the jwt: %w", err)
+	}
+
+	return signedToken, nil
+}
+
+func (c LogInHandler) signWithSecretKey(claims jwt.StandardClaims) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	signedToken, err := token.SignedString([]byte(c.jwtSecret))
 	if err != nil {
 		return "", fmt.Errorf("unable to sign the jwt: %w", err)
 	}
