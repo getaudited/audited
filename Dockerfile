@@ -23,8 +23,8 @@ RUN apk add --no-cache ca-certificates tzdata && \
     addgroup -S audited && adduser -S audited -G audited
 
 WORKDIR /usr/app
-RUN mkdir -p misc/sql/migrations
-COPY --from=builder /usr/app/misc/sql/migrations/* ./misc/sql/migrations/
+RUN mkdir -p misc/clickhouse
+COPY --from=builder /usr/app/misc/clickhouse/* ./misc/clickhouse/
 COPY --from=builder /usr/app/bin/service ./service
 
 USER audited
