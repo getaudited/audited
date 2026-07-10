@@ -64,7 +64,7 @@ func main() {
 		`SELECT id FROM users WHERE role = ? LIMIT 1`,
 		domain.UserRoleAdmin.String(),
 	)
-	if err := row.Scan(&adminUserID); err != nil {
+	if err = row.Scan(&adminUserID); err != nil {
 		log.Fatalf("error querying user: %v", err)
 	}
 

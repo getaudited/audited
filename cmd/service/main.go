@@ -48,9 +48,19 @@ func (s *Service) Run() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	g, ctx := errgroup.WithContext(ctx)
 
-	jwtPrivateKey, err := s.parseJwtPrivateKey()
-	if err != nil {
-		return err
+	var jwtPublicKey *ecdsa.PublicKey
+	var jwtPrivateKey *ecdsa.PrivateKey
+
+	if cfg.JwtKeysSet() {
+		jwtPrivateKey, err = s.parseJwtPrivateKey()
+		if err != nil {
+			return err
+		}
+
+		jwtPublicKey, err = s.parsePublicKey(cfg.JWTPublicKey)
+		if err != nil {
+			return err
+		}
 	}
 
 	conn, err := clickhouseconn.NewConnection(ctx, clickhouseconn.Config{
@@ -85,7 +95,7 @@ func (s *Service) Run() error {
 			CreateToken: command.NewCreateTokenHandler(tokensRepo),
 			DeleteToken: command.NewDeleteTokenHandler(tokensRepo),
 
-			LogIn:           command.NewLogInHandler(usersRepo, jwtPrivateKey),
+			LogIn:           command.NewLogInHandler(usersRepo, jwtPrivateKey, cfg.JWTSecret),
 			CreateAdminUser: command.NewCreateAdminUserHandler(usersRepo),
 		},
 		Queries: app.Queries{
@@ -111,18 +121,14 @@ func (s *Service) Run() error {
 		return err
 	}
 
-	jwtPublicKey, err := s.parsePublicKey(cfg.JWTPublicKey)
-	if err != nil {
-		return err
-	}
-
 	httpPort, err := http.NewServer(http.Config{
+		Context:           ctx,
+		Logger:            logger,
 		Application:       application,
+		JwtPublicKey:      jwtPublicKey,
+		JwtSecret:         cfg.JWTSecret,
 		Port:              cfg.HttpPort,
 		AllowedCorsOrigin: cfg.AllowedCorsOrigin,
-		Logger:            logger,
-		Context:           ctx,
-		JwtPublicKey:      jwtPublicKey,
 	})
 	if err != nil {
 		return err

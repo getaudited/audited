@@ -30,7 +30,9 @@ type Config struct {
 	AllowedCorsOrigin []string
 	Logger            *logs.Logger
 	Context           context.Context
-	JwtPublicKey      *ecdsa.PublicKey
+
+	JwtSecret    string
+	JwtPublicKey *ecdsa.PublicKey
 }
 
 func NewServer(config Config) (*Server, error) {
@@ -98,7 +100,7 @@ func registerMiddlewares(router *echo.Echo, spec *openapi3.T, config Config) {
 
 	spec.Servers = nil
 
-	jwtMiddleware := NewJWTMiddleware(config.JwtPublicKey)
+	jwtMiddleware := NewJWTMiddleware(config.JwtPublicKey, config.JwtSecret)
 
 	router.Use(oapimiddleware.OapiRequestValidatorWithOptions(
 		spec,

@@ -58,12 +58,14 @@ func loggerMiddleware(logger *logs.Logger) echo.MiddlewareFunc {
 }
 
 type JWTMiddleware struct {
+	jwtSecret string
 	publicKey *ecdsa.PublicKey
 }
 
-func NewJWTMiddleware(publicKey *ecdsa.PublicKey) *JWTMiddleware {
+func NewJWTMiddleware(publicKey *ecdsa.PublicKey, jwtSecret string) *JWTMiddleware {
 	return &JWTMiddleware{
 		publicKey: publicKey,
+		jwtSecret: jwtSecret,
 	}
 }
 
@@ -78,7 +80,11 @@ func (m *JWTMiddleware) Authenticate(ctx context.Context, input *openapi3filter.
 			return nil, errors.New("incorrect signing method")
 		}
 
-		return m.publicKey, nil
+		if m.publicKey != nil {
+			return m.publicKey, nil
+		}
+
+		return []byte(m.jwtSecret), nil
 	})
 	if err != nil {
 		return fmt.Errorf("error parsing the JWT provided: %w", err)
