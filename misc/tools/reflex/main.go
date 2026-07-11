@@ -35,6 +35,6 @@ func main() {
 		}
 
 		return db.Ping(ctx)
-	}, "clickhouse", time.Second*5)
+	}, "clickhouse", time.Second*30)
 	waitFor.Wait()
 }
