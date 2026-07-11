@@ -7,9 +7,7 @@ dotenv:
 tasks:
   setup:
     cmds:
-      - go install github.com/aarondl/sqlboiler/v4@latest
-      - go install github.com/aarondl/sqlboiler/v4/drivers/sqlboiler-psql@latest
-      - go install github.com/pressly/goose/v3/cmd/goose@latest
+      - go install github.com/pressly/goose/v3/cmd/goose@v3.27.2
       - go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
       - go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.4
 
@@ -73,7 +71,6 @@ tasks:
     cmds:
       - task mig:down
       - task mig:up
-      - sqlboiler psql --wipe --no-tests -o ./internal/adapters/models
 
   test:all:
     cmds:

@@ -8,10 +8,12 @@ import (
 )
 
 type Config struct {
-	ClickhouseHosts    []string `envconfig:"ADT_CLICKHOUSE_HOSTS"`
-	ClickhouseDbName   string   `envconfig:"ADT_CLICKHOUSE_DBNAME"`
-	ClickhouseUsername string   `envconfig:"ADT_CLICKHOUSE_USERNAME"`
-	ClickhousePassword string   `envconfig:"ADT_CLICKHOUSE_PASSWORD"`
+	ClickhouseHosts                 []string `envconfig:"ADT_CLICKHOUSE_HOSTS"`
+	ClickhouseDbName                string   `envconfig:"ADT_CLICKHOUSE_DBNAME"`
+	ClickhouseUsername              string   `envconfig:"ADT_CLICKHOUSE_USERNAME"`
+	ClickhousePassword              string   `envconfig:"ADT_CLICKHOUSE_PASSWORD"`
+	ClickhouseTlsEnabled            bool     `envconfig:"ADT_CLICKHOUSE_TLS_ENABLED"`
+	ClickhouseTlsInsecureSkipVerify bool     `envconfig:"ADT_CLICKHOUSE_TLS_INSECURE_SKIP_VERIFY"`
 
 	DatabaseURL string `envconfig:"ADT_DATABASE_URL"`
 

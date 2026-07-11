@@ -6,6 +6,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -13,18 +14,16 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/friendsofgo/errors"
+	"golang.org/x/sync/errgroup"
+
 	clickhouseadapter "github.com/getaudited/audited/internal/adapters/clickhouse"
+	"github.com/getaudited/audited/internal/app"
+	"github.com/getaudited/audited/internal/app/command"
 	"github.com/getaudited/audited/internal/app/query"
 	"github.com/getaudited/audited/internal/common/clickhouseconn"
 	"github.com/getaudited/audited/internal/common/config"
-	"github.com/getaudited/audited/internal/domain"
-	_ "github.com/lib/pq"
-	"golang.org/x/sync/errgroup"
-
-	"github.com/getaudited/audited/internal/app"
-	"github.com/getaudited/audited/internal/app/command"
 	"github.com/getaudited/audited/internal/common/logs"
+	"github.com/getaudited/audited/internal/domain"
 	"github.com/getaudited/audited/internal/ports/http"
 )
 
@@ -63,13 +62,22 @@ func (s *Service) Run() error {
 		}
 	}
 
-	conn, err := clickhouseconn.NewConnection(ctx, clickhouseconn.Config{
-		Version:  Version,
-		Hosts:    cfg.ClickhouseHosts,
-		Database: cfg.ClickhouseDbName,
-		Username: cfg.ClickhouseUsername,
-		Password: cfg.ClickhousePassword,
-	})
+	clickhousecfg := clickhouseconn.Config{
+		Version:               Version,
+		Hosts:                 cfg.ClickhouseHosts,
+		Database:              cfg.ClickhouseDbName,
+		Username:              cfg.ClickhouseUsername,
+		Password:              cfg.ClickhousePassword,
+		TlsEnabled:            cfg.ClickhouseTlsEnabled,
+		TlsInsecureSkipVerify: cfg.ClickhouseTlsInsecureSkipVerify,
+	}
+
+	conn, err := clickhouseconn.NewConnection(ctx, clickhousecfg)
+	if err != nil {
+		return err
+	}
+
+	err = clickhouseconn.ApplyMigrations(ctx, clickhousecfg, "misc/clickhouse", logger)
 	if err != nil {
 		return err
 	}
