@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/getaudited/audited/internal/common/logs"
-	_ "github.com/lib/pq"
 )
 
 type WaitFor struct {

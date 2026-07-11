@@ -19,13 +19,17 @@ func main() {
 	waitFor := waitfor.NewWaitFor(logs.New("DEBUG"))
 	waitFor.Do(func() error {
 		ctx := context.Background()
-		db, err := clickhouseconn.NewConnection(ctx, clickhouseconn.Config{
-			Version:  "development",
-			Hosts:    cfg.ClickhouseHosts,
-			Database: cfg.ClickhouseDbName,
-			Username: cfg.ClickhouseUsername,
-			Password: cfg.ClickhousePassword,
-		})
+		c := clickhouseconn.Config{
+			Version:               "development",
+			Hosts:                 cfg.ClickhouseHosts,
+			Database:              cfg.ClickhouseDbName,
+			Username:              cfg.ClickhouseUsername,
+			Password:              cfg.ClickhousePassword,
+			TlsEnabled:            cfg.ClickhouseTlsEnabled,
+			TlsInsecureSkipVerify: cfg.ClickhouseTlsInsecureSkipVerify,
+		}
+
+		db, err := clickhouseconn.NewConnection(ctx, c)
 		if err != nil {
 			return err
 		}

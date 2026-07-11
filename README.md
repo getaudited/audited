@@ -40,6 +40,20 @@ docker run -p 8080:8080 \
   getauditeddev/audited:latest
 ```
 
+### Connecting to a managed Clickhouse
+
+Managed Clickhouse services (Clickhouse Cloud and similar) require TLS on the native port. Set `ADT_CLICKHOUSE_TLS_ENABLED=true` and point `ADT_CLICKHOUSE_HOSTS` at the secure native endpoint (usually port `9440`):
+
+```bash
+docker run -p 8080:8080 \
+  -e ADT_CLICKHOUSE_HOSTS="your-instance.clickhouse.cloud:9440" \
+  -e ADT_CLICKHOUSE_TLS_ENABLED=true \
+  ... \
+  getauditeddev/audited:latest
+```
+
+TLS is off by default, which works for a local Clickhouse on port `9000`. If you terminate TLS with a self-signed certificate, `ADT_CLICKHOUSE_TLS_INSECURE_SKIP_VERIFY=true` disables certificate verification — it makes the connection vulnerable to man-in-the-middle attacks, so keep it out of production.
+
 ### JWT signing
 
 You must configure JWT signing using **one** of the following options:
@@ -55,6 +69,8 @@ If `ADT_JWT_SECRET` is set it takes precedence; otherwise both key pair variable
 | `ADT_CLICKHOUSE_DBNAME` | Yes | Clickhouse database name                                            |
 | `ADT_CLICKHOUSE_USERNAME` | Yes | Clickhouse username                                                 |
 | `ADT_CLICKHOUSE_PASSWORD` | Yes | Clickhouse password                                                 |
+| `ADT_CLICKHOUSE_TLS_ENABLED` | No | Connect to Clickhouse over TLS (default `false`). Required by most managed/cloud Clickhouse providers |
+| `ADT_CLICKHOUSE_TLS_INSECURE_SKIP_VERIFY` | No | Skip verification of the Clickhouse TLS certificate (default `false`). Only for self-signed certificates in development |
 | `ADT_ADMIN_EMAIL` | Yes | Email for the bootstrap admin user                                   |
 | `ADT_ADMIN_PASSWORD` | Yes | Password for the bootstrap admin user                                |
 | `ADT_JWT_SECRET` | Conditional | HMAC secret for signing/verifying JWTs. Alternative to the key pair below; required unless `ADT_JWT_PUBLIC_KEY` and `ADT_JWT_PRIVATE_KEY` are set |
