@@ -95,6 +95,14 @@ The service auto-applies migrations on startup, so no separate migration step is
 | Python      | ⚠️                   | ⚠️          |
 | Elixir      | ⚠️                   | ⚠️          |
 
+## Observability and Monitoring
+
+_Needs work, stay tuned._
+
+## Status
+
+Audited is still in early-stage development.
+
 ## License
 
 Audited is free and open source software, licensed under the [AGPL v3](./LICENSE) While often misunderstood, this license is very permissive and allows the following without any additional requirements from you or your organization:
