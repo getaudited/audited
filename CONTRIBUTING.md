@@ -1,8 +1,9 @@
 # Contributing guide
 
-Hi there, thanks for demonstrating interest on this project. As of this moment due to limited capacity I am only able to
-accept issues as a form of contribution.
+Hi there,
 
-Accepting pull requests, engage reviews, dealing with drive-by pull requests take a lot of time resource which I am not to allocate therefore PRs won't be accepted.
+Thank you for showing interest in this project! Due to limited capacity at the moment, I am only able to accept contributions in the form of [issues](https://github.com/getaudited/audited/issues).
 
-I appreciate your understanding and interest to this project.
+Reviewing and managing pull requests, including drive-by PRs, requires a significant amount of time and resources that I currently cannot allocate. Therefore, pull requests will not be accepted at this time.
+
+I truly appreciate your understanding and your interest in the project.
