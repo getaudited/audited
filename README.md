@@ -15,6 +15,10 @@
 
 Audit log management for cloud-native applications.
 
+## Documentation
+
+Audited documentation can be found [here](docs.getaudited.dev).
+
 ## Installation
 
 ### Docker Hub
