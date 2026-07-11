@@ -84,6 +84,7 @@ func mapConfigToOptions(config Config) *clickhouse.Options {
 
 	if config.TlsEnabled {
 		opts.TLS = &tls.Config{
+			//nolint
 			InsecureSkipVerify: config.TlsInsecureSkipVerify,
 		}
 	}
