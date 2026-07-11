@@ -15,6 +15,10 @@
 
 Audit log management for cloud-native applications.
 
+## Documentation
+
+Audited documentation can be found [here](docs.getaudited.dev).
+
 ## Installation
 
 ### Docker Hub
@@ -93,7 +97,27 @@ The service auto-applies migrations on startup, so no separate migration step is
 | PHP         | ⚠️                   | ⚠️          |
 | C# (dotnet) | ⚠️                   | ⚠️          |
 | Python      | ⚠️                   | ⚠️          |
+| Elixir      | ⚠️                   | ⚠️          |
+
+## Observability and Monitoring
+
+_Needs work, stay tuned._
+
+## Status
+
+Audited is still in early-stage development.
 
 ## License
 
-Distributed under the AGPLv3 license. See [LICENSE](./LICENSE) for more information.
+Audited is free and open source software, licensed under the [AGPL v3](./LICENSE) While often misunderstood, this license is very permissive and allows the following without any additional requirements from you or your organization:
+
+* Internal use
+* Private modifications for internal use without sharing any source code
+
+You can freely use Audited without having to share any source code, including proprietary work product or any modifications to Audited you make.
+
+AGPL was written specifically for organizations that offer Audited as a public service (e.g. database cloud providers) and require those organizations to share any modifications they make to Audited, including new features and bug fixes.
+
+## Contributions
+
+Please read our [Contributions Guidelines](./CONTRIBUTING.md).
