@@ -1,13 +1,9 @@
 <h1 align="center">
-    <a style="text-decoration: none" href="https://www.svix.com">
+    <a style="text-decoration: none" href="https://docs.getaudited.dev">
       <img width="120" src="https://avatars.githubusercontent.com/u/290810143?s=200&v=4" />
       <p align="center">Audited - Audit log management for cloud-native applications.</p>
     </a>
 </h1>
-
-<h2 align="center">
-  <a href="https://getaudited.dev">Website</a> | <a href="https://docs.getaudited.dev">Documentation</a>
-</h2>
 
 ![GitHub tag](https://img.shields.io/github/tag/getaudited/audited.svg)
 [![main](https://github.com/getaudited/audited/actions/workflows/main.yml/badge.svg)](https://github.com/getaudited/audited/actions/workflows/main.yml)
@@ -17,7 +13,7 @@ Audit log management for cloud-native applications.
 
 ## Documentation
 
-Audited documentation can be found [here](docs.getaudited.dev).
+Audited documentation can be found [here](https://docs.getaudited.dev).
 
 ## Installation
 
