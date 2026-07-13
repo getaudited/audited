@@ -1,7 +1,7 @@
 <p align="center">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="/.github/assets/audited-light.png" height="128" width="auto">
-      <source media="(prefers-color-scheme: light)" srcset="/.github/assets/audited-dark.png" height="128" width="auto">
+      <source media="(prefers-color-scheme: light)" srcset="/.github/assets/audited-light.png" height="128" width="auto">
+      <source media="(prefers-color-scheme: dark)" srcset="/.github/assets/audited-dark.png" height="128" width="auto">
       <img alt="Fallback image description" src="/.github/assets/audited-dark.png" height="128" width="auto">
     </picture>
 </p>
