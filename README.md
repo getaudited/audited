@@ -1,15 +1,17 @@
-<h1 align="center">
-    <a style="text-decoration: none" href="https://docs.getaudited.dev">
-      <img width="120" src="https://avatars.githubusercontent.com/u/290810143?s=200&v=4" />
-      <p align="center">Audited - Audit log management for cloud-native applications.</p>
-    </a>
-</h1>
+<p align="center">
+    <picture>
+      <source media="(prefers-color-scheme: light)" srcset="/.github/assets/audited-light.png" height="128" width="auto">
+      <source media="(prefers-color-scheme: dark)" srcset="/.github/assets/audited-dark.png" height="128" width="auto">
+      <img alt="Fallback image description" src="/.github/assets/audited-dark.png" height="128" width="auto">
+    </picture>
+</p>
 
-![GitHub tag](https://img.shields.io/github/tag/getaudited/audited.svg)
+[![Go Coverage](https://github.com/getaudited/audited/wiki/coverage.svg)](https://raw.githack.com/wiki/getaudited/audited/coverage.html)
 [![main](https://github.com/getaudited/audited/actions/workflows/main.yml/badge.svg)](https://github.com/getaudited/audited/actions/workflows/main.yml)
+![GitHub tag](https://img.shields.io/github/tag/getaudited/audited.svg)
 [![Docker Pulls](https://img.shields.io/docker/pulls/getauditeddev/audited?logo=docker)](https://hub.docker.com/r/getauditeddev/audited/)
 
-Audit log management for cloud-native applications.
+Audit log management for cloud-native applications. Written in Go and Clickhouse.
 
 ## Documentation
 
