@@ -11,6 +11,7 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/getaudited/audited/internal/common/clickhouseconn"
 	"github.com/getaudited/audited/internal/common/config"
+	"github.com/getaudited/audited/internal/common/logs"
 )
 
 var (
@@ -31,12 +32,19 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	db, err = clickhouseconn.NewConnection(ctx, clickhouseconn.Config{
+	chConfig := clickhouseconn.Config{
 		Hosts:    cfg.ClickhouseHosts,
 		Database: cfg.ClickhouseDbName,
 		Username: cfg.ClickhouseUsername,
 		Password: cfg.ClickhousePassword,
-	})
+	}
+
+	db, err = clickhouseconn.NewConnection(ctx, chConfig)
+	if err != nil {
+		panic(err)
+	}
+
+	err = clickhouseconn.ApplyMigrations(ctx, chConfig, "../../../misc/clickhouse", logs.New("DEBUG"))
 	if err != nil {
 		panic(err)
 	}
