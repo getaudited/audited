@@ -6,10 +6,6 @@ import (
 	"time"
 )
 
-var (
-	ErrSourceNotFoundWhileSavingEvent = errors.New("source not found while saving event")
-)
-
 type Event struct {
 	id         ID
 	sourceID   ID
