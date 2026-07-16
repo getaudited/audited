@@ -30,6 +30,20 @@ jobs:
         run: task test:all
         timeout-minutes: 4
 
+      - name: Read environment file and set variables
+        uses: cosq-network/dotenv-loader@v1.0.2
+        if: github.ref_name == 'main'
+        with:
+          env-file: .env.local
+
+      - name: Update coverage report
+        uses: ncruces/go-coverage-report@v0
+        if: github.ref_name == 'main'
+        with:
+          report: true
+          chart: true
+          amend: true
+
       - run: docker compose logs app || true
         if: always()
 
