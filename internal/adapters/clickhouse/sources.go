@@ -53,6 +53,7 @@ func (r SourcesClickhouseRepository) QueryAll(
 	queryAll := sq.
 		Select("id, name, created_at, updated_at").
 		From("sources").
+		OrderBy("created_at DESC").
 		Limit(uint64(params.Pagination.Limit)).
 		Offset(uint64(mapPaginationParamsToOffset(params.Pagination)))
 
