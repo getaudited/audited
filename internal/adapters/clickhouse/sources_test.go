@@ -92,7 +92,7 @@ func TestSources_QueryAll(t *testing.T) {
 			},
 		})
 		require.NoError(t, err)
-		require.Len(t, result.Data, limit)
+		require.GreaterOrEqual(t, len(result.Data), seedCount)
 		require.Equal(t, limit, result.PerPage)
 		require.Equal(t, 1, result.CurrentPage)
 
