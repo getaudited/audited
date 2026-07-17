@@ -105,17 +105,15 @@ func (r EventTypesClickhouseRepository) Delete(ctx context.Context, action strin
 }
 
 func (r EventTypesClickhouseRepository) Save(ctx context.Context, et domain.EventType) error {
-	//row := r.db.QueryRow(ctx, `SELECT action FROM event_types WHERE action = ?`, et.Action)
+	exists, err := r.eventTypeExists(ctx, et.Action)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return domain.ErrEventTypeExists
+	}
 
-	// found, err := r.FindByAction(ctx, et.Action)
-	// if err != nil && !errors.Is(err, domain.ErrEventTypeNotFound) {
-	// 	return err
-	// }
-	// if found.Action == et.Action {
-	// 	return domain.ErrEventTypeExists
-	// }
-
-	err := r.db.Exec(
+	err = r.db.Exec(
 		ctx,
 		`
 		INSERT INTO event_types (
@@ -209,4 +207,16 @@ func (r EventTypesClickhouseRepository) AllVersionsByAction(ctx context.Context,
 	}
 
 	return mapRowsToEventTypes(rows)
+}
+
+func (r EventTypesClickhouseRepository) eventTypeExists(ctx context.Context, action string) (bool, error) {
+	_, err := r.FindByAction(ctx, action)
+	if err != nil && !errors.Is(err, domain.ErrEventTypeNotFound) {
+		return false, err
+	}
+	if errors.Is(err, domain.ErrEventTypeNotFound) {
+		return false, nil
+	}
+
+	return true, nil
 }

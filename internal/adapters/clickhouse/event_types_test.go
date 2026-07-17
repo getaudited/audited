@@ -126,9 +126,66 @@ func TestEventTypes_Delete(t *testing.T) {
 	})
 }
 
-func TestEventTypes_Save(t *testing.T)                {}
-func TestEventTypes_RollbackVersion(t *testing.T)     {}
-func TestEventTypes_SaveVersion(t *testing.T)         {}
+func TestEventTypes_Save(t *testing.T) {
+	t.Run("save_event_type", func(t *testing.T) {
+		t.Parallel()
+
+		repo := chadapters.NewEventTypesClickhouseRepository(db)
+		eventType := fixtureEventType()
+
+		err := repo.Save(ctx, eventType)
+		require.NoError(t, err)
+
+		_, err = repo.FindByAction(ctx, eventType.Action)
+		require.NoError(t, err)
+	})
+
+	t.Run("error_event_type_exists", func(t *testing.T) {
+		t.Parallel()
+
+		repo := chadapters.NewEventTypesClickhouseRepository(db)
+		eventType := fixtureEventType()
+
+		err := repo.Save(ctx, eventType)
+		require.NoError(t, err)
+
+		err = repo.Save(ctx, eventType)
+		require.ErrorIs(t, err, domain.ErrEventTypeExists)
+	})
+
+	t.Run("error_saving_event_type", func(t *testing.T) {
+		repo := chadapters.NewEventTypesClickhouseRepository(dbError)
+		err := repo.Save(ctx, fixtureEventType())
+		require.ErrorAs(t, err, &errMockedClickhouse)
+	})
+}
+
+func TestEventTypes_SaveVersion(t *testing.T) {
+	t.Run("save_event_type_version", func(t *testing.T) {
+		t.Parallel()
+
+		repo := chadapters.NewEventTypesClickhouseRepository(db)
+		eventTypes, _ := seedEventTypes(t, repo, 1)
+		eventType := eventTypes[0]
+
+		err := repo.SaveVersion(ctx, eventType.Action, eventType.TargetTypes, eventType.Schema)
+		require.NoError(t, err)
+
+		eventTypeV2, err := repo.FindByAction(ctx, eventType.Action)
+		require.NoError(t, err)
+
+		require.Equal(t, 2, eventTypeV2.Version)
+	})
+
+	t.Run("error_saving_event_type_version", func(t *testing.T) {
+		repo := chadapters.NewEventTypesClickhouseRepository(dbError)
+		err := repo.SaveVersion(ctx, "user.created", []string{"user"}, []byte(""))
+		require.ErrorAs(t, err, &errMockedClickhouse)
+	})
+}
+
+func TestEventTypes_RollbackVersion(t *testing.T) {}
+
 func TestEventTypes_AllVersionsByAction(t *testing.T) {}
 
 func seedEventTypes(
@@ -140,20 +197,7 @@ func seedEventTypes(
 	eventTypesByAction := map[string]domain.EventType{}
 
 	for i := 0; i < count; i++ {
-		eventType := domain.EventType{
-			Action:                       fmt.Sprintf("test.created.%s", domain.NewID()),
-			ShouldValidateMetadataSchema: gofakeit.Bool(),
-			Version:                      1,
-			TargetTypes:                  []string{"test"},
-			Schema:                       nil,
-			LastVersion: domain.EventTypeVersion{
-				Version:     1,
-				TargetTypes: []string{"test"},
-				Schema:      nil,
-				CreatedAt:   time.Now(),
-			},
-			CreatedAt: time.Now(),
-		}
+		eventType := fixtureEventType()
 		err := repo.Save(ctx, eventType)
 		require.NoError(t, err)
 
@@ -162,6 +206,23 @@ func seedEventTypes(
 	}
 
 	return eventTypes, eventTypesByAction
+}
+
+func fixtureEventType() domain.EventType {
+	return domain.EventType{
+		Action:                       fmt.Sprintf("test.created.%s", domain.NewID()),
+		ShouldValidateMetadataSchema: gofakeit.Bool(),
+		Version:                      1,
+		TargetTypes:                  []string{"test"},
+		Schema:                       nil,
+		LastVersion: domain.EventTypeVersion{
+			Version:     1,
+			TargetTypes: []string{"test"},
+			Schema:      nil,
+			CreatedAt:   time.Now(),
+		},
+		CreatedAt: time.Now(),
+	}
 }
 
 func requireEqualEventTypes(t *testing.T, expected domain.EventType, got query.EventType) {
