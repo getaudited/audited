@@ -1,11 +1,10 @@
 package clickhouse_test
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
-	"github.com/brianvoe/gofakeit/v7"
+	"github.com/getaudited/audited/internal/common/testhelpers"
 	"github.com/stretchr/testify/require"
 
 	chadapters "github.com/getaudited/audited/internal/adapters/clickhouse"
@@ -17,7 +16,7 @@ func TestUsers_Save(t *testing.T) {
 		t.Parallel()
 
 		repo := chadapters.NewUsersClickhouseRepository(db)
-		user, err := domain.NewUser(mustEmail(t), mustPassword(t), domain.UserRoleAdmin)
+		user, err := domain.NewUser(testhelpers.MustEmail(t), testhelpers.MustPassword(t), domain.UserRoleAdmin)
 		require.NoError(t, err)
 
 		err = repo.Save(ctx, user)
@@ -33,7 +32,7 @@ func TestUsers_Save(t *testing.T) {
 		t.Parallel()
 
 		repo := chadapters.NewUsersClickhouseRepository(db)
-		user, err := domain.NewUser(mustEmail(t), mustPassword(t), domain.UserRoleAdmin)
+		user, err := domain.NewUser(testhelpers.MustEmail(t), testhelpers.MustPassword(t), domain.UserRoleAdmin)
 		require.NoError(t, err)
 
 		err = repo.Save(ctx, user)
@@ -48,7 +47,7 @@ func TestUsers_Save(t *testing.T) {
 		t.Parallel()
 
 		repo := chadapters.NewUsersClickhouseRepository(dbError)
-		user, err := domain.NewUser(mustEmail(t), mustPassword(t), domain.UserRoleAdmin)
+		user, err := domain.NewUser(testhelpers.MustEmail(t), testhelpers.MustPassword(t), domain.UserRoleAdmin)
 		require.NoError(t, err)
 
 		err = repo.Save(ctx, user)
@@ -74,7 +73,7 @@ func TestUsers_FindByEmail(t *testing.T) {
 
 		repo := chadapters.NewUsersClickhouseRepository(db)
 
-		found, err := repo.FindByEmail(ctx, mustEmail(t))
+		found, err := repo.FindByEmail(ctx, testhelpers.MustEmail(t))
 		require.ErrorIs(t, err, domain.ErrUserNotFound)
 		require.Nil(t, found)
 	})
@@ -84,7 +83,7 @@ func TestUsers_FindByEmail(t *testing.T) {
 
 		repo := chadapters.NewUsersClickhouseRepository(dbError)
 
-		found, err := repo.FindByEmail(ctx, mustEmail(t))
+		found, err := repo.FindByEmail(ctx, testhelpers.MustEmail(t))
 		require.ErrorIs(t, err, errMockedClickhouse)
 		require.Nil(t, found)
 	})
@@ -123,25 +122,6 @@ func TestUsers_FindByID(t *testing.T) {
 	})
 }
 
-func mustEmail(t *testing.T) domain.Email {
-	email, err := domain.NewEmail(fmt.Sprintf("%s.%s", domain.NewID().String(), gofakeit.Email()))
-	require.NoError(t, err)
-	return email
-}
-
-func mustPassword(t *testing.T) domain.Password {
-	password, err := domain.NewPassword(gofakeit.Password(
-		true,
-		true,
-		true,
-		true,
-		false,
-		12,
-	))
-	require.NoError(t, err)
-	return password
-}
-
 func requireEqualUsers(t *testing.T, expected, got *domain.User) {
 	t.Helper()
 
@@ -153,7 +133,7 @@ func requireEqualUsers(t *testing.T, expected, got *domain.User) {
 }
 
 func seedUser(t *testing.T, repo chadapters.UsersClickhouseRepository) *domain.User {
-	user, err := domain.NewUser(mustEmail(t), mustPassword(t), domain.UserRoleAdmin)
+	user, err := domain.NewUser(testhelpers.MustEmail(t), testhelpers.MustPassword(t), domain.UserRoleAdmin)
 	require.NoError(t, err)
 
 	err = repo.Save(ctx, user)

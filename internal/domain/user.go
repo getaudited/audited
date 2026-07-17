@@ -105,7 +105,11 @@ type Password struct {
 }
 
 func NewPassword(plainTextPassword string) (Password, error) {
-	// TODO: extract bcrypt out of the doamin
+	if strings.TrimSpace(plainTextPassword) == "" {
+		return Password{}, errors.New("password cannot be empty")
+	}
+
+	// TODO: extract bcrypt out of the domain
 	hash, err := bcrypt.GenerateFromPassword([]byte(plainTextPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return Password{}, fmt.Errorf("error generating password: %w", err)
