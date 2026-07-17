@@ -2,6 +2,8 @@ package clickhouse
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
 	clickhousedb "github.com/ClickHouse/clickhouse-go/v2"
@@ -36,7 +38,15 @@ func (r EventTypesClickhouseRepository) FindByAction(ctx context.Context, action
 		action,
 	)
 
-	return mapRowToEventType(row)
+	eventType, err := mapRowToEventType(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return query.EventType{}, domain.ErrEventTypeNotFound
+	}
+	if err != nil {
+		return query.EventType{}, fmt.Errorf("error querying event_type by action '%s': %w", action, err)
+	}
+
+	return eventType, nil
 }
 
 func (r EventTypesClickhouseRepository) QueryAll(ctx context.Context, params query.AllEventTypes) (query.Pagination[query.EventType], error) {
