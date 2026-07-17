@@ -184,9 +184,82 @@ func TestEventTypes_SaveVersion(t *testing.T) {
 	})
 }
 
-func TestEventTypes_RollbackVersion(t *testing.T) {}
+func TestEventTypes_RollbackVersion(t *testing.T) {
+	t.Run("rollback_event_type_version", func(t *testing.T) {
+		t.Parallel()
 
-func TestEventTypes_AllVersionsByAction(t *testing.T) {}
+		repo := chadapters.NewEventTypesClickhouseRepository(db)
+		eventTypes, _ := seedEventTypes(t, repo, 1)
+		eventType := eventTypes[0]
+
+		for i := 0; i < 3; i++ {
+			err := repo.SaveVersion(ctx, eventType.Action, eventType.TargetTypes, eventType.Schema)
+			require.NoError(t, err)
+		}
+
+		eventTypeV4, err := repo.FindByAction(ctx, eventType.Action)
+		require.NoError(t, err)
+		require.Equal(t, 4, eventTypeV4.Version)
+
+		for i := 0; i < 3; i++ {
+			err := repo.RollbackVersion(ctx, eventType.Action)
+			require.NoError(t, err)
+		}
+
+		eventTypeV1, err := repo.FindByAction(ctx, eventType.Action)
+		require.NoError(t, err)
+		require.Equal(t, 1, eventTypeV1.Version)
+	})
+
+	t.Run("error_rolling_back_event_type_version_1", func(t *testing.T) {
+		t.Parallel()
+
+		repo := chadapters.NewEventTypesClickhouseRepository(db)
+		eventTypes, _ := seedEventTypes(t, repo, 1)
+		eventType := eventTypes[0]
+
+		err := repo.RollbackVersion(ctx, eventType.Action)
+		require.ErrorIs(t, err, domain.ErrVersionOneOfEventTypeCannotBeRolledBack)
+	})
+
+	t.Run("error_rolling_back_event_type", func(t *testing.T) {
+		repo := chadapters.NewEventTypesClickhouseRepository(dbError)
+		err := repo.RollbackVersion(ctx, "user.created")
+		require.ErrorAs(t, err, &errMockedClickhouse)
+	})
+}
+
+func TestEventTypes_AllVersionsByAction(t *testing.T) {
+	t.Run("get_all_versions_of_an_event_type", func(t *testing.T) {
+		t.Parallel()
+
+		repo := chadapters.NewEventTypesClickhouseRepository(db)
+		eventTypes, _ := seedEventTypes(t, repo, 1)
+		eventType := eventTypes[0]
+		totalVersionsExpected := 4
+
+		for i := 0; i < totalVersionsExpected-1; i++ {
+			err := repo.SaveVersion(ctx, eventType.Action, eventType.TargetTypes, eventType.Schema)
+			require.NoError(t, err)
+		}
+
+		allEventTypeVersions, err := repo.AllVersionsByAction(ctx, eventType.Action)
+		require.NoError(t, err)
+		require.Len(t, allEventTypeVersions, 4)
+
+		version := totalVersionsExpected
+		for _, et := range allEventTypeVersions {
+			require.Equal(t, version, et.Version)
+			version--
+		}
+	})
+
+	t.Run("error_querying_all_event_type_versions", func(t *testing.T) {
+		repo := chadapters.NewEventTypesClickhouseRepository(dbError)
+		_, err := repo.AllVersionsByAction(ctx, "user.created")
+		require.ErrorAs(t, err, &errMockedClickhouse)
+	})
+}
 
 func seedEventTypes(
 	t *testing.T,
