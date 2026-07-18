@@ -32,7 +32,7 @@ func NewEvent(
 		return Event{}, errors.New("sourceID cannot be empty")
 	}
 
-	if version == 0 {
+	if version < 1 {
 		return Event{}, errors.New("version cannot be less than 1")
 	}
 
