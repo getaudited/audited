@@ -27,6 +27,11 @@ func (c CreateAdminUserHandler) Execute(ctx context.Context, cmd CreateAdminUser
 	if err != nil {
 		return err
 	}
+	
+	password, err := domain.NewPassword(cmd.Password)
+	if err != nil {
+		return err
+	}
 
 	adminUser, err := c.repo.FindByEmail(ctx, email)
 	if err != nil && !errors.Is(err, domain.ErrUserNotFound) {
@@ -34,11 +39,6 @@ func (c CreateAdminUserHandler) Execute(ctx context.Context, cmd CreateAdminUser
 	}
 	if adminUser != nil {
 		return domain.ErrUserExists
-	}
-
-	password, err := domain.NewPassword(cmd.Password)
-	if err != nil {
-		return err
 	}
 
 	user, err := domain.NewUser(email, password, domain.UserRoleAdmin)
