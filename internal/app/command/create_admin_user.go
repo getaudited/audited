@@ -27,7 +27,7 @@ func (c CreateAdminUserHandler) Execute(ctx context.Context, cmd CreateAdminUser
 	if err != nil {
 		return err
 	}
-	
+
 	password, err := domain.NewPassword(cmd.Password)
 	if err != nil {
 		return err
