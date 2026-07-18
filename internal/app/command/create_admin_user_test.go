@@ -13,8 +13,10 @@ import (
 )
 
 func TestCreateAdminUser(t *testing.T) {
-	existingUser, err := domain.NewUser(testhelpers.MustEmail(t), testhelpers.MustPassword(t), domain.UserRoleAdmin)
-	require.NoError(t, err)
+	email := testhelpers.MustEmail(t)
+	password := testhelpers.MustPassword(t)
+	existingUser, newUserErr := domain.NewUser(email, password, domain.UserRoleAdmin)
+	require.NoError(t, newUserErr)
 
 	testCases := []struct {
 		name        string
@@ -55,7 +57,7 @@ func TestCreateAdminUser(t *testing.T) {
 					existingUser.ID().String(): existingUser,
 				},
 			},
-			email:       existingUser.Email().String(),
+			email:       email.String(),
 			password:    "some-password",
 			expectedErr: domain.ErrUserExists.Error(),
 		},
@@ -66,7 +68,7 @@ func TestCreateAdminUser(t *testing.T) {
 			t.Parallel()
 
 			handler := command.NewCreateAdminUserHandler(tc.userRepo)
-			err = handler.Execute(context.Background(), command.CreateAdminUser{
+			err := handler.Execute(context.Background(), command.CreateAdminUser{
 				Email:    tc.email,
 				Password: tc.password,
 			})
