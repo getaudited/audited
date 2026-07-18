@@ -86,16 +86,16 @@ The service auto-applies migrations on startup, so no separate migration step is
 
 ## Client library overview
 
-| Language    | Officially supported | API support |
-|-------------|----------------------|-------------|
-| Go          | ⚠️                   | ⚠️          |
-| Rust        | ⚠️                   | ⚠️          |
-| Typescript  | ⚠️                   | ⚠️          |
-| Java        | ⚠️                   | ⚠️          |
-| PHP         | ⚠️                   | ⚠️          |
-| C# (dotnet) | ⚠️                   | ⚠️          |
-| Python      | ⚠️                   | ⚠️          |
-| Elixir      | ⚠️                   | ⚠️          |
+| Language    | Officially supported |
+|-------------|----------------------|
+| [Go](https://github.com/getaudited/audited-go)      | ✅                    |
+| Rust        | ⚠️                   |
+| Typescript  | ⚠️                   |
+| Java        | ⚠️                   |
+| PHP         | ⚠️                   |
+| C# (dotnet) | ⚠️                   |
+| Python      | ⚠️                   |
+| Elixir      | ⚠️                   |
 
 ## Observability and Monitoring
 
