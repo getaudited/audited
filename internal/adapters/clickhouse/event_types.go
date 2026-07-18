@@ -105,7 +105,7 @@ func (r EventTypesClickhouseRepository) Delete(ctx context.Context, action strin
 }
 
 func (r EventTypesClickhouseRepository) Save(ctx context.Context, et domain.EventType) error {
-	exists, err := r.eventTypeExists(ctx, et.Action)
+	exists, err := r.eventTypeExists(ctx, et.Action())
 	if err != nil {
 		return err
 	}
@@ -125,13 +125,12 @@ func (r EventTypesClickhouseRepository) Save(ctx context.Context, et domain.Even
 			created_at
 		) VALUES (?, ?, ?, ?, ?, ?)
 	`,
-		et.Action,
-		et.ShouldValidateMetadataSchema,
-		uint16(et.LastVersion.Version),
-		string(et.LastVersion.Schema),
-		et.LastVersion.TargetTypes,
-		et.LastVersion.CreatedAt,
-		et.CreatedAt,
+		et.Action(),
+		et.ShouldValidateMetadataSchema(),
+		uint16(et.Version()),
+		string(et.Schema()),
+		et.TargetTypes(),
+		et.CreatedAt(),
 	)
 	if err != nil {
 		return fmt.Errorf("error saving event_type: %w", err)
