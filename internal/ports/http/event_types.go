@@ -2,7 +2,6 @@ package http
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/friendsofgo/errors"
 	"github.com/getaudited/audited/internal/app/command"
@@ -46,15 +45,13 @@ func (h handlers) CreateEventType(c echo.Context) error {
 		schema = []byte(*body.Schema)
 	}
 
-	et := domain.EventType{
-		Action:                       body.Action,
-		ShouldValidateMetadataSchema: body.ShouldValidateMetadataSchema,
-		LastVersion:                  domain.NewEventTypeVersion(body.TargetTypes, schema),
-		CreatedAt:                    time.Now(),
+	eventType, err := domain.NewEventType(body.Action, body.ShouldValidateMetadataSchema, body.TargetTypes, schema)
+	if err != nil {
+		return NewBadRequestError(err, "error-validating-fields")
 	}
 
 	err = h.application.Commands.CreateEventType.Execute(mapEchoCtxToCtx(c), command.CreateEventType{
-		EventType: et,
+		EventType: *eventType,
 	})
 	if errors.Is(err, domain.ErrEventTypeExists) {
 		return NewHandlerErrorWithStatus(err, "error-event-type-exists", http.StatusConflict)
@@ -64,12 +61,12 @@ func (h handlers) CreateEventType(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusCreated, EventType{
-		Action:                       et.Action,
-		ShouldValidateMetadataSchema: et.ShouldValidateMetadataSchema,
-		Version:                      et.LastVersion.Version,
+		Action:                       eventType.Action(),
+		ShouldValidateMetadataSchema: eventType.ShouldValidateMetadataSchema(),
+		Version:                      eventType.Version(),
 		Schema:                       nil,
-		TargetTypes:                  et.LastVersion.TargetTypes,
-		CreatedAt:                    et.CreatedAt,
+		TargetTypes:                  eventType.TargetTypes(),
+		CreatedAt:                    eventType.CreatedAt(),
 	})
 }
 

@@ -21,15 +21,15 @@ func TestEventTypes_FindByAction(t *testing.T) {
 		eventTypes, _ := seedEventTypes(t, repo, 1)
 		eventType := eventTypes[0]
 
-		found, err := repo.FindByAction(ctx, eventType.Action)
+		found, err := repo.FindByAction(ctx, eventType.Action())
 		require.NoError(t, err)
 
-		require.Equal(t, eventType.Action, found.Action)
-		require.Equal(t, eventType.TargetTypes, found.TargetTypes)
-		require.Equal(t, eventType.Version, found.Version)
-		require.Equal(t, eventType.ShouldValidateMetadataSchema, found.ShouldValidateMetadataSchema)
-		require.Equal(t, string(eventType.Schema), found.Schema)
-		require.WithinDuration(t, eventType.CreatedAt, found.CreatedAt, time.Second)
+		require.Equal(t, eventType.Action(), found.Action)
+		require.Equal(t, eventType.TargetTypes(), found.TargetTypes)
+		require.Equal(t, eventType.Version(), found.Version)
+		require.Equal(t, eventType.ShouldValidateMetadataSchema(), found.ShouldValidateMetadataSchema)
+		require.Equal(t, string(eventType.Schema()), found.Schema)
+		require.WithinDuration(t, eventType.CreatedAt(), found.CreatedAt, time.Second)
 	})
 
 	t.Run("error_event_type_not_found", func(t *testing.T) {
@@ -85,7 +85,7 @@ func TestEventTypes_QueryAll(t *testing.T) {
 		eventTypes, _ := seedEventTypes(t, repo, 1)
 
 		result, err := repo.QueryAll(ctx, query.AllEventTypes{
-			Action: new(eventTypes[0].Action),
+			Action: new(eventTypes[0].Action()),
 			PaginationParams: query.PaginationParams{
 				Limit: 1,
 				Page:  1,
@@ -112,10 +112,10 @@ func TestEventTypes_Delete(t *testing.T) {
 		repo := chadapters.NewEventTypesClickhouseRepository(db)
 		eventTypes, _ := seedEventTypes(t, repo, 1)
 
-		err := repo.Delete(ctx, eventTypes[0].Action)
+		err := repo.Delete(ctx, eventTypes[0].Action())
 		require.NoError(t, err)
 
-		_, err = repo.FindByAction(ctx, eventTypes[0].Action)
+		_, err = repo.FindByAction(ctx, eventTypes[0].Action())
 		require.ErrorIs(t, err, domain.ErrEventTypeNotFound)
 	})
 
@@ -131,12 +131,12 @@ func TestEventTypes_Save(t *testing.T) {
 		t.Parallel()
 
 		repo := chadapters.NewEventTypesClickhouseRepository(db)
-		eventType := fixtureEventType()
+		eventType := fixtureEventType(t)
 
 		err := repo.Save(ctx, eventType)
 		require.NoError(t, err)
 
-		_, err = repo.FindByAction(ctx, eventType.Action)
+		_, err = repo.FindByAction(ctx, eventType.Action())
 		require.NoError(t, err)
 	})
 
@@ -144,7 +144,7 @@ func TestEventTypes_Save(t *testing.T) {
 		t.Parallel()
 
 		repo := chadapters.NewEventTypesClickhouseRepository(db)
-		eventType := fixtureEventType()
+		eventType := fixtureEventType(t)
 
 		err := repo.Save(ctx, eventType)
 		require.NoError(t, err)
@@ -155,7 +155,7 @@ func TestEventTypes_Save(t *testing.T) {
 
 	t.Run("error_saving_event_type", func(t *testing.T) {
 		repo := chadapters.NewEventTypesClickhouseRepository(dbError)
-		err := repo.Save(ctx, fixtureEventType())
+		err := repo.Save(ctx, fixtureEventType(t))
 		require.ErrorAs(t, err, &errMockedClickhouse)
 	})
 }
@@ -168,10 +168,10 @@ func TestEventTypes_SaveVersion(t *testing.T) {
 		eventTypes, _ := seedEventTypes(t, repo, 1)
 		eventType := eventTypes[0]
 
-		err := repo.SaveVersion(ctx, eventType.Action, eventType.TargetTypes, eventType.Schema)
+		err := repo.SaveVersion(ctx, eventType.Action(), eventType.TargetTypes(), eventType.Schema())
 		require.NoError(t, err)
 
-		eventTypeV2, err := repo.FindByAction(ctx, eventType.Action)
+		eventTypeV2, err := repo.FindByAction(ctx, eventType.Action())
 		require.NoError(t, err)
 
 		require.Equal(t, 2, eventTypeV2.Version)
@@ -193,20 +193,20 @@ func TestEventTypes_RollbackVersion(t *testing.T) {
 		eventType := eventTypes[0]
 
 		for i := 0; i < 3; i++ {
-			err := repo.SaveVersion(ctx, eventType.Action, eventType.TargetTypes, eventType.Schema)
+			err := repo.SaveVersion(ctx, eventType.Action(), eventType.TargetTypes(), eventType.Schema())
 			require.NoError(t, err)
 		}
 
-		eventTypeV4, err := repo.FindByAction(ctx, eventType.Action)
+		eventTypeV4, err := repo.FindByAction(ctx, eventType.Action())
 		require.NoError(t, err)
 		require.Equal(t, 4, eventTypeV4.Version)
 
 		for i := 0; i < 3; i++ {
-			err := repo.RollbackVersion(ctx, eventType.Action)
+			err := repo.RollbackVersion(ctx, eventType.Action())
 			require.NoError(t, err)
 		}
 
-		eventTypeV1, err := repo.FindByAction(ctx, eventType.Action)
+		eventTypeV1, err := repo.FindByAction(ctx, eventType.Action())
 		require.NoError(t, err)
 		require.Equal(t, 1, eventTypeV1.Version)
 	})
@@ -218,7 +218,7 @@ func TestEventTypes_RollbackVersion(t *testing.T) {
 		eventTypes, _ := seedEventTypes(t, repo, 1)
 		eventType := eventTypes[0]
 
-		err := repo.RollbackVersion(ctx, eventType.Action)
+		err := repo.RollbackVersion(ctx, eventType.Action())
 		require.ErrorIs(t, err, domain.ErrVersionOneOfEventTypeCannotBeRolledBack)
 	})
 
@@ -239,11 +239,11 @@ func TestEventTypes_AllVersionsByAction(t *testing.T) {
 		totalVersionsExpected := 4
 
 		for i := 0; i < totalVersionsExpected-1; i++ {
-			err := repo.SaveVersion(ctx, eventType.Action, eventType.TargetTypes, eventType.Schema)
+			err := repo.SaveVersion(ctx, eventType.Action(), eventType.TargetTypes(), eventType.Schema())
 			require.NoError(t, err)
 		}
 
-		allEventTypeVersions, err := repo.AllVersionsByAction(ctx, eventType.Action)
+		allEventTypeVersions, err := repo.AllVersionsByAction(ctx, eventType.Action())
 		require.NoError(t, err)
 		require.Len(t, allEventTypeVersions, 4)
 
@@ -270,41 +270,30 @@ func seedEventTypes(
 	eventTypesByAction := map[string]domain.EventType{}
 
 	for i := 0; i < count; i++ {
-		eventType := fixtureEventType()
+		eventType := fixtureEventType(t)
 		err := repo.Save(ctx, eventType)
 		require.NoError(t, err)
 
 		eventTypes[i] = eventType
-		eventTypesByAction[eventType.Action] = eventType
+		eventTypesByAction[eventType.Action()] = eventType
 	}
 
 	return eventTypes, eventTypesByAction
 }
 
-func fixtureEventType() domain.EventType {
-	return domain.EventType{
-		Action:                       fmt.Sprintf("test.created.%s", domain.NewID()),
-		ShouldValidateMetadataSchema: gofakeit.Bool(),
-		Version:                      1,
-		TargetTypes:                  []string{"test"},
-		Schema:                       nil,
-		LastVersion: domain.EventTypeVersion{
-			Version:     1,
-			TargetTypes: []string{"test"},
-			Schema:      nil,
-			CreatedAt:   time.Now(),
-		},
-		CreatedAt: time.Now(),
-	}
+func fixtureEventType(t *testing.T) domain.EventType {
+	eventType, err := domain.NewEventType(fmt.Sprintf("test.created.%s", domain.NewID()), gofakeit.Bool(), []string{"test"}, nil)
+	require.NoError(t, err)
+	return *eventType
 }
 
 func requireEqualEventTypes(t *testing.T, expected domain.EventType, got query.EventType) {
 	t.Helper()
 
-	require.Equal(t, expected.Action, got.Action)
-	require.Equal(t, expected.TargetTypes, got.TargetTypes)
-	require.Equal(t, expected.Version, got.Version)
-	require.Equal(t, string(expected.Schema), got.Schema)
-	require.Equal(t, expected.ShouldValidateMetadataSchema, got.ShouldValidateMetadataSchema)
-	require.WithinDuration(t, expected.CreatedAt, got.CreatedAt, time.Second)
+	require.Equal(t, expected.Action(), got.Action)
+	require.Equal(t, expected.TargetTypes(), got.TargetTypes)
+	require.Equal(t, expected.Version(), got.Version)
+	require.Equal(t, string(expected.Schema()), got.Schema)
+	require.Equal(t, expected.ShouldValidateMetadataSchema(), got.ShouldValidateMetadataSchema)
+	require.WithinDuration(t, expected.CreatedAt(), got.CreatedAt, time.Second)
 }

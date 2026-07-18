@@ -78,14 +78,13 @@ func (g *generator) generate(ctx context.Context) error {
 	}
 	fmt.Printf("source created  id=%-26s  name=%s\n", source.ID(), source.Name())
 
-	eventType := domain.EventType{
-		Action:                       "user.created",
-		ShouldValidateMetadataSchema: false,
-		LastVersion:                  domain.NewEventTypeVersion([]string{"user"}, nil),
-		CreatedAt:                    time.Now(),
+	eventType, err := domain.NewEventType("user.created", false, []string{"user"}, nil)
+	if err != nil {
+		return err
 	}
+
 	err = g.createEventType.Execute(ctx, command.CreateEventType{
-		EventType: eventType,
+		EventType: *eventType,
 	})
 	if err != nil && !errors.Is(err, domain.ErrEventTypeExists) {
 		return fmt.Errorf("error creating event type: %w", err)
@@ -131,7 +130,7 @@ func (g *generator) generate(ctx context.Context) error {
 		event, err := domain.NewEvent(
 			source.ID(),
 			i+1,
-			eventType.Action,
+			eventType.Action(),
 			domain.Actor{
 				ID:        gofakeit.UUID(),
 				ActorType: pick(actorTypes),
