@@ -87,13 +87,12 @@ func (s *Service) Run() error {
 	sourcesRepo := clickhouseadapter.NewSourcesClickhouseRepository(conn)
 	usersRepo := clickhouseadapter.NewUsersClickhouseRepository(conn)
 	eventTypesRepo := clickhouseadapter.NewEventTypesClickhouseRepository(conn)
-	shallowTxProvider := clickhouseadapter.NewShallowTxProvider(conn)
 
 	application := &app.App{
 		Commands: app.Commands{
 			CreateEventType:          command.NewCreateEventTypeHandler(eventTypesRepo),
 			DeleteEventType:          command.NewDeleteEventTypeHandler(eventTypesRepo),
-			CreateEventTypeVersion:   command.NewCreateEventTypeVersionHandler(shallowTxProvider),
+			CreateEventTypeVersion:   command.NewCreateEventTypeVersionHandler(eventTypesRepo),
 			RollbackEventTypeVersion: command.NewRollbackEventTypeVersionHandler(eventTypesRepo),
 
 			CreateEvent: command.NewCreateEventHandler(eventsRepo),

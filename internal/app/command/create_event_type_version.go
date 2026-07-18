@@ -13,17 +13,15 @@ type CreateEventTypeVersion struct {
 }
 
 type CreateEventTypeVersionHandler struct {
-	txProvider TransactionProvider
+	repo domain.EventTypeRepository
 }
 
-func NewCreateEventTypeVersionHandler(txProvider TransactionProvider) CreateEventTypeVersionHandler {
+func NewCreateEventTypeVersionHandler(repo domain.EventTypeRepository) CreateEventTypeVersionHandler {
 	return CreateEventTypeVersionHandler{
-		txProvider: txProvider,
+		repo: repo,
 	}
 }
 
 func (c CreateEventTypeVersionHandler) Execute(ctx context.Context, cmd CreateEventTypeVersion) error {
-	return c.txProvider.Transact(ctx, func(adapter TransactionAdapters) error {
-		return adapter.EventTypeRepository.SaveVersion(ctx, cmd.Action, cmd.TargetTypes, cmd.Schema)
-	})
+	return c.repo.SaveVersion(ctx, cmd.Action, cmd.TargetTypes, cmd.Schema)
 }
