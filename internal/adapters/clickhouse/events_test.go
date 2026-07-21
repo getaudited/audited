@@ -47,7 +47,6 @@ func TestEvents_Save(t *testing.T) {
 }
 
 func TestEvents_QueryAll(t *testing.T) {
-
 	t.Run("query_all", func(t *testing.T) {
 		t.Parallel()
 
