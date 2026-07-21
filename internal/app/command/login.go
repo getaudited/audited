@@ -16,7 +16,8 @@ type LogIn struct {
 }
 
 type LogInHandler struct {
-	repo          domain.UserRepository
+	repo domain.UserRepository
+	// TODO: extract JWT signing to an adapter
 	privateJwtKey *ecdsa.PrivateKey
 	jwtSecret     string
 }
