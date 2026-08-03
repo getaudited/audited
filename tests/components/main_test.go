@@ -13,6 +13,7 @@ import (
 
 var ctx context.Context
 
+// nolint
 func newApiClient(t *testing.T, token string) *client.ClientWithResponses {
 	cli, err := client.NewClientWithResponses(
 		"http://localhost:8080",
