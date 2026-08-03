@@ -2,6 +2,7 @@ package components_test
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"testing"
 	"time"
@@ -13,8 +14,17 @@ import (
 var ctx context.Context
 
 // nolint
-func newApiClient(t *testing.T) *client.ClientWithResponses {
-	cli, err := client.NewClientWithResponses("http://localhost:8080")
+func newApiClient(t *testing.T, token string) *client.ClientWithResponses {
+	cli, err := client.NewClientWithResponses(
+		"http://localhost:8080",
+		client.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
+			if token != "" {
+				req.Header.Set("Authorization", "Bearer "+token)
+			}
+
+			return nil
+		}),
+	)
 	require.NoError(t, err)
 	return cli
 }

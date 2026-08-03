@@ -6,7 +6,6 @@
     </picture>
 </p>
 
-[![Go Coverage](https://github.com/getaudited/audited/wiki/coverage.svg)](https://raw.githack.com/wiki/getaudited/audited/coverage.html)
 [![main](https://github.com/getaudited/audited/actions/workflows/main.yml/badge.svg)](https://github.com/getaudited/audited/actions/workflows/main.yml)
 ![GitHub tag](https://img.shields.io/github/tag/getaudited/audited.svg)
 [![Docker Pulls](https://img.shields.io/docker/pulls/getauditeddev/audited?logo=docker)](https://hub.docker.com/r/getauditeddev/audited/)
